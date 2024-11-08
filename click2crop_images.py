@@ -13,8 +13,8 @@ It opens and displays each image. The user can then click on the image to select
 The function then connects the `onclick` function to the mouse click event using `fig.canvas.mpl_connect('button_press_event', onclick)`.
  - every time a mouse click occurs in the plot, the `onclick` function will be called.
 
-After displaying the plot, the function checks if two coordinates have been selected. 
-If they have, it crops the image to the rectangle defined by the two coordinates using `image.crop()`.
+After displaying plot, function checks if 2 coords have been selected. 
+If so, crop the image to the rect defined by the 2 coords using `image.crop()`.
 The cropped image is then saved in a subdirectory named `cropped` within the original directory.
 
 The coords are then reset to an empty list, ready for the next image.
