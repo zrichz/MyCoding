@@ -1,4 +1,4 @@
-# vanilla autoencoder, all images in directory. adapted from Mike X Cohen code with copilot
+# vanilla autoencoder, ,all images in directory. adapted from Mike X Cohen code with copilot
 
 import numpy as np
 import torch
