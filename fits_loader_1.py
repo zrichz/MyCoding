@@ -23,60 +23,70 @@ if file_path:
     print(primary_hdu.header)  # Print the header of the primary HDU
     data = primary_hdu.data  # Access the data of the primary HDU
     
-    print(f"Data shape: {data.shape}")
+    print(f"original raw data shape: {data.shape}")
 
-    # Debayer the data (GRBG). do this by separating the data into the three color channels
-    blue = data[1::2, 1::2]
-    red = data[0::2, 0::2]
-    green = data[1::2, 0::2] + data[0::2, 1::2]
+    ''' Debayer the data (GBRG). do this by separating the data into the three color channels
+            |-0-1---2-3---4-5---6-7--
+            |_column____________________
+    row 0   | G B   G B   G B   G B
+        1   | R G   R G   R G   R G
+            |________________________
+        2   | G B   G B   G B   G B
+        3   | R G   R G   R G   R G
+            |________________________
+    '''
+# note GBRG is apparently the bayer pattern for the Dwarf2, and is also what is in the FITS header
 
-    print(f" blue Data shape after debayer: {blue.shape}")
-    print(f"  red Data shape after debayer: {red.shape}")
-    print(f"green Data shape after debayer: {green.shape}")
-
-    print("\nnow apply bicubic interpolation to restore each channel to 4K...")
-    #the three color channels are now half the size of the original data
-    #we need to expand them to the original size of the data, using bicubic interpolation
-    blue = resize(blue, (data.shape[0], data.shape[1]), order=3, mode='reflect', anti_aliasing=False)
-    red = resize(red, (data.shape[0], data.shape[1]), order=3, mode='reflect', anti_aliasing=False)
-    green = resize(green, (data.shape[0], data.shape[1]), order=3, mode='reflect', anti_aliasing=False)
+    red = data[1::2, 0::2]     # Red: start at row 1, col 0
+    green = (data[0::2, 0::2] + data[1::2, 1::2]) / 2  # Green: positions (0,0) and (1,1) (average the two)
+    blue = data[0::2, 1::2]    # Blue: start at row 0, col 1
     
-    print(f" blue Data shape after expansion: {blue.shape}")
-    print(f"  red Data shape after expansion: {red.shape}")
-    print(f"green Data shape after expansion: {green.shape}")
+    assert blue.shape == red.shape == green.shape, "The shapes of the extracted color channels do not match!"
+    print(f"Extraction of RBG channels complete. All channels have the same shape: {blue.shape}")
+
+    print("\napply interpolation to restore each channel to 4K...")
+    # the three color channels are now half the size of the original data
+    # we can expand them to the original size of the data, using bicubic interpolation
+    # a note on "order" parameter: 
+    # order=0: Nearest-neighbor
+    # order=1: Bi-linear : Uses weighted avg of 4 nearest pixels
+    # order=2: Bi-quadratic : Uses weighted avg of 9 nearest pixels
+    # orders=3,4,5: Use weighted average of 16,25,36 nearest pixels respectively
+    # mode='reflect' : Reflects the image at the boundaries
+    
+    blue = resize(blue, (data.shape[0], data.shape[1]), order=1, mode='reflect', anti_aliasing=False)
+    red = resize(red, (data.shape[0], data.shape[1]), order=1, mode='reflect', anti_aliasing=False)
+    green = resize(green, (data.shape[0], data.shape[1]), order=1, mode='reflect', anti_aliasing=False)
+    
+    assert blue.shape == red.shape == green.shape, "The shapes of the color channels do not match after expansion!"
+    print(f"All channels have the same shape after expansion: {blue.shape}")
 
     # Print statistics before normalization
     print("\nBefore normalization")
 
-    #show min,max and mean values for each channel, to 2 decimal places
-    print(f"  red channel min: {np.min(red):.2f}    max: {np.max(red):.2f}    mean: {np.mean(red):.2f}")
-    print(f"green channel min: {np.min(green):.2f}    max: {np.max(green):.2f}    mean: {np.mean(green):.2f}")
-    print(f" blue channel min: {np.min(blue):.2f}    max: {np.max(blue):.2f}    mean: {np.mean(blue):.2f}")
-    
+    #show min,max and mean values for each channel, to n decimal places
+    print(f"  red channel min: {np.min(red):.3f}    max: {np.max(red):.3f}    mean: {np.mean(red):.3f}")
+    print(f"green channel min: {np.min(green):.3f}    max: {np.max(green):.3f}    mean: {np.mean(green):.3f}")
+    print(f" blue channel min: {np.min(blue):.3f}    max: {np.max(blue):.3f}    mean: {np.mean(blue):.3f}")
+
     #use log transformation to enhance the image
     blue = np.log(blue + 1)
     red = np.log(red + 1)
     green = np.log(green + 1)
-
-    # Normalize the color channels to the range [0, 255]
-    blue = (blue - np.min(blue)) / (np.max(blue) - np.min(blue)) * 255
+    
+    # normalize to 0-255 range
     red = (red - np.min(red)) / (np.max(red) - np.min(red)) * 255
     green = (green - np.min(green)) / (np.max(green) - np.min(green)) * 255
+    blue = (blue - np.min(blue)) / (np.max(blue) - np.min(blue)) * 255
 
-    print("\nAfter normalization")
-    print(f" blue channel min: {np.min(blue)}")
-    print(f" blue channel max: {np.max(blue)}")
-    print(f"  red channel min: {np.min(red)}")
-    print(f"  red channel max: {np.max(red)}")
-    print(f"green channel min: {np.min(green)}")
-    print(f"green channel max: {np.max(green)}")
-    print(f" blue channel mean: {np.mean(blue)}")
-    print(f"  red channel mean: {np.mean(red)}")
-    print(f"green channel mean: {np.mean(green)}")
-
-    
-    # Create a color image with three channels
-    color = np.zeros((data.shape[0], data.shape[1], 3), dtype=np.uint8)
+    # Verify results
+    print("\nstats after log transform and subsequent normalization")
+    print(f"  RED min: {np.min(red):.3f}    max: {np.max(red):.3f}    mean: {np.mean(red):.3f}")
+    print(f"GREEN channel min: {np.min(green):.3f}    max: {np.max(green):.3f}    mean: {np.mean(green):.3f}")
+    print(f" BLUE channel min: {np.min(blue):.3f}    max: {np.max(blue):.3f}    mean: {np.mean(blue):.3f}")
+        
+    # Create a color 4K image with three channels
+    color = np.zeros((data.shape[0], data.shape[1], 3), dtype=np.uint8) # Initialize with zeros
     color[:, :, 0] = red
     color[:, :, 1] = green
     color[:, :, 2] = blue
@@ -85,9 +95,9 @@ if file_path:
 
     # Display the debayered color image
     plt.imshow(color)
+    #plt.axis('off')  # Turn off axis
     plt.title('Debayered Color Image')
     plt.show()
-    
     # Close the FITS file
     hdul.close()
 else:
