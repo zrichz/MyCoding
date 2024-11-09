@@ -3,15 +3,15 @@ from tkinter import filedialog
 from astropy.io import fits
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.ndimage import zoom
+from skimage.transform import resize
 
 # Create a Tkinter root window (it will not be shown)
 root = tk.Tk()
 root.withdraw()
 
 # Open a file dialog to choose the FITS file
-#file_path = filedialog.askopenfilename(filetypes=[("FITS files", "*.fits")])
-file_path = "/home/rich/Documents/astro/myDwarf_Fits_Files/DWARF_RAW_M31_EXP_6_GAIN_80_2024-01-06-20-58-33-796/0012.fits"
+file_path = filedialog.askopenfilename(filetypes=[("FITS files", "*.fits")])
+#file_path = "/home/rich/Documents/astro/myDwarf_Fits_Files/DWARF_RAW_M31_EXP_6_GAIN_80_2024-01-06-20-58-33-796/0012.fits"
 
 # Open the selected FITS file
 if file_path:
@@ -37,26 +37,22 @@ if file_path:
     print("\nnow apply bicubic interpolation to restore each channel to 4K...")
     #the three color channels are now half the size of the original data
     #we need to expand them to the original size of the data, using bicubic interpolation
-    blue = zoom(blue, 2, order=3) # order=3 means bicubic interpolation
-    red = zoom(red, 2, order=3)
-    green = zoom(green, 2, order=3)
+    blue = resize(blue, (data.shape[0], data.shape[1]), order=3, mode='reflect', anti_aliasing=False)
+    red = resize(red, (data.shape[0], data.shape[1]), order=3, mode='reflect', anti_aliasing=False)
+    green = resize(green, (data.shape[0], data.shape[1]), order=3, mode='reflect', anti_aliasing=False)
     
     print(f" blue Data shape after expansion: {blue.shape}")
     print(f"  red Data shape after expansion: {red.shape}")
     print(f"green Data shape after expansion: {green.shape}")
 
-    #print min, max,mean values of the each channel before normalization
+    # Print statistics before normalization
     print("\nBefore normalization")
-    print(f" blue channel min: {np.min(blue)}")
-    print(f" blue channel max: {np.max(blue)}")
-    print(f"  red channel min: {np.min(red)}")
-    print(f"  red channel max: {np.max(red)}")
-    print(f"green channel min: {np.min(green)}")
-    print(f"green channel max: {np.max(green)}")
-    print(f" blue channel mean: {np.mean(blue)}")
-    print(f"  red channel mean: {np.mean(red)}")
-    print(f"green channel mean: {np.mean(green)}")
 
+    #show min,max and mean values for each channel, to 2 decimal places
+    print(f"  red channel min: {np.min(red):.2f}    max: {np.max(red):.2f}    mean: {np.mean(red):.2f}")
+    print(f"green channel min: {np.min(green):.2f}    max: {np.max(green):.2f}    mean: {np.mean(green):.2f}")
+    print(f" blue channel min: {np.min(blue):.2f}    max: {np.max(blue):.2f}    mean: {np.mean(blue):.2f}")
+    
     #use log transformation to enhance the image
     blue = np.log(blue + 1)
     red = np.log(red + 1)
