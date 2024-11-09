@@ -104,6 +104,30 @@ if file_path:
     #plt.axis('off')  # Turn off axis
     plt.title('Debayered Color Image')
     plt.show()
+
+
+    #now convert the RGB image to grayscale, using the formula: Y = 0.2126 R + 0.7152 G + 0.0722 B
+    #note that the above formula is for the sRGB color space, which is what we are using here
+    #we will use the same formula to convert the color image to grayscale
+    #first, normalize the color channels to 0-1 range
+    red = red / 255
+    green = green / 255
+    blue = blue / 255
+
+    #apply the formula to convert to grayscale
+    gray = 0.2126 * red + 0.7152 * green + 0.0722 * blue
+    gray = gray * 255 #convert back to 0-255 range
+
+    # Display the grayscale image
+    plt.imshow(gray, cmap='plasma')
+    plt.title('Grayscale Image')
+    
+    plt.show()
+
+
+
+
+
     # Close the FITS file
     hdul.close()
 else:
