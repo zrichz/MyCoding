@@ -84,6 +84,12 @@ if file_path:
     print(f"  RED min: {np.min(red):.3f}    max: {np.max(red):.3f}    mean: {np.mean(red):.3f}")
     print(f"GREEN channel min: {np.min(green):.3f}    max: {np.max(green):.3f}    mean: {np.mean(green):.3f}")
     print(f" BLUE channel min: {np.min(blue):.3f}    max: {np.max(blue):.3f}    mean: {np.mean(blue):.3f}")
+
+    # apply a curve adjustment to the green channel
+    # this is a simple gamma correction
+    gamma = 1.5
+    green = ((green/255) ** gamma) * 255 # apply gamma correction. CARE: need to normalize to 0-1 range first, then multiply by 255
+    print(f"GREEN channel following gamma correction: min: {np.min(green):.3f}    max: {np.max(green):.3f}    mean: {np.mean(green):.3f}")
         
     # Create a color 4K image with three channels
     color = np.zeros((data.shape[0], data.shape[1], 3), dtype=np.uint8) # Initialize with zeros
