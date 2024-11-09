@@ -3,6 +3,7 @@ from tkinter import filedialog
 from astropy.io import fits
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.ndimage import zoom
 
 # Create a Tkinter root window (it will not be shown)
 root = tk.Tk()
@@ -24,14 +25,25 @@ if file_path:
     
     print(f"Data shape: {data.shape}")
 
-    # Debayer the data (GRBG)
+    # Debayer the data (GRBG). do this by separating the data into the three color channels
     blue = data[1::2, 1::2]
     red = data[0::2, 0::2]
     green = data[1::2, 0::2] + data[0::2, 1::2]
-    
+
     print(f" blue Data shape after debayer: {blue.shape}")
     print(f"  red Data shape after debayer: {red.shape}")
     print(f"green Data shape after debayer: {green.shape}")
+
+    print("\nnow apply bicubic interpolation to restore each channel to 4K...")
+    #the three color channels are now half the size of the original data
+    #we need to expand them to the original size of the data, using bicubic interpolation
+    blue = zoom(blue, 2, order=3) # order=3 means bicubic interpolation
+    red = zoom(red, 2, order=3)
+    green = zoom(green, 2, order=3)
+    
+    print(f" blue Data shape after expansion: {blue.shape}")
+    print(f"  red Data shape after expansion: {red.shape}")
+    print(f"green Data shape after expansion: {green.shape}")
 
     #print min, max,mean values of the each channel before normalization
     print("\nBefore normalization")
@@ -68,7 +80,7 @@ if file_path:
 
     
     # Create a color image with three channels
-    color = np.zeros((data.shape[0]//2, data.shape[1]//2, 3), dtype=np.uint8)
+    color = np.zeros((data.shape[0], data.shape[1], 3), dtype=np.uint8)
     color[:, :, 0] = red
     color[:, :, 1] = green
     color[:, :, 2] = blue
