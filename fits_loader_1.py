@@ -99,11 +99,11 @@ if file_path:
 
     print(f"\ncolor Data shape after debayer: {color.shape}")
 
-    # Display the debayered color image
-    plt.imshow(color)
-    #plt.axis('off')  # Turn off axis
-    plt.title('Debayered Color Image')
-    plt.show()
+    # # Display the debayered color image
+    # plt.imshow(color)
+    # #plt.axis('off')  # Turn off axis
+    # plt.title('Debayered Color Image')
+    # plt.show()
 
 
     #now convert the RGB image to grayscale, using the formula: Y = 0.2126 R + 0.7152 G + 0.0722 B
@@ -119,7 +119,12 @@ if file_path:
     gray = gray * 255 #convert back to 0-255 range
 
     # Display the grayscale image
-    plt.imshow(gray, cmap='plasma')
+    #set vmin and vmax to ensure that the image is displayed correctly
+    vmin = np.min(gray)
+    vmax = np.max(gray)/5
+    
+    plt.imshow(gray, cmap='plasma', vmin=vmin, vmax=vmax)
+    plt.colorbar()
     plt.title('Grayscale Image')
     
     plt.show()
