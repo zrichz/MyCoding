@@ -122,7 +122,7 @@ if file_path:
     plt.imshow(gray, cmap='plasma')
     plt.title('Grayscale Image')
     
-    plt.show()
+    plt.show() # Display the grayscale image    
 
 
 
