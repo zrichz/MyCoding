@@ -1,7 +1,9 @@
 from PIL import Image
 
 # Open the image file
-img = Image.open('C:/MyPythonCoding/MyDeepLearningCoding/general_images/64GANfaces.jpg')
+img = Image.open(r'C:\MyPythonCoding\MyCoding\images_general\symbols.png') # r is for raw string
+
+#C:\MyPythonCoding\MyCoding\images_general\symbols.png
 
 # Get the size of the image
 width, height = img.size
@@ -23,4 +25,4 @@ for i in range(h_splits):
         # Crop the image
         cropped_img = img.crop(box)
         # Save the cropped image
-        cropped_img.save(f'cropped_{i}_{j}.jpg')
+        cropped_img.save(f'image_processors/crops/cropped_{i}_{j}.png')
