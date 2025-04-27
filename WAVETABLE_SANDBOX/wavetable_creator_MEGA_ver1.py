@@ -22,11 +22,11 @@ fundamental_freq = 1      # Base frequency of the waveform in Hz
 # Vowel Formant Frequencies (F1, F2, F3) for different vowel sounds
 # These are the characteristic frequencies for vowel sounds in human speech
 formant_data = {
-    "A": (730, 1090, 2440),  # "Ah"
-    "E": (660, 1700, 2400),  # "Eh"
-    "I": (440, 1900, 2800),  # "Ee"
-    "O": (460, 1150, 2800),  # "Oh"
-    "U": (350, 900, 2600)    # "Oo"
+    "A": (730, 1090, 2440),
+    "E": (660, 1700, 2400),
+    "I": (440, 1900, 2800),
+    "O": (460, 1150, 2800),
+    "U": (350, 900, 2600)
 }
 
 # ----------------- Utility Functions -----------------
@@ -85,16 +85,7 @@ def save_and_visualize_wavetable(wavetable, filename):
     plt.tight_layout()
     plt.show()
     
-    # Also include a traditional 2D view for reference
-    plt.figure(figsize=(10, 5))
-    for i in range(0, num_frames, num_frames // 16):  # Plot fewer frames
-        plt.plot(wavetable[i], label=f"Frame {i}")
-    plt.title("Wavetable Frames")
-    plt.xlabel("Sample Index")
-    plt.ylabel("Amp")
-    plt.grid(True)
-    # plt.legend()
-    plt.show()
+    
 
 # ----------------- Wavetable Generation Functions -----------------
 
@@ -332,7 +323,7 @@ def generate_noise_wavetable(noise_types=None):
             filter_freq = 1000 * (frame / num_frames + 0.5)  # Vary filter freq with frame
             nyquist = sample_rate / 2
             normalized_cutoff = filter_freq / nyquist
-            b, a = butter(2, normalized_cutoff, btype='low')
+            b, a = butter(2, normalized_cutoff, btype='low') # Lowpass filter
             noise = lfilter(b, a, white_noise)
         
         # Normalize
@@ -508,7 +499,7 @@ def generate_spectral_morphing_wavetable(num_spectra=4):
             freqs = np.zeros_like(spectrum, dtype=float)
             for j in range(5):
                 peak_pos = random.randint(0, len(freqs)-1)
-                peak_width = len(freqs) // 20
+                peak_width = len(freqs) // 20 # Width of the peak
                 freqs += np.exp(-((np.arange(len(freqs)) - peak_pos) / peak_width)**2)
         
         # Add random phases
@@ -920,83 +911,65 @@ def generate_sample_based_wavetable(sample_path=None):
         np.ndarray: The generated wavetable
     """
     wavetable = np.zeros((num_frames, samples_per_frame))
-    
-    # If sample path not provided, generate a synthetic sample
+
+    def synthetic_sample():
+        t = np.linspace(0, 2, sample_rate * 2)
+        sample = np.sin(2 * np.pi * 440 * t) + 0.5 * np.sin(2 * np.pi * 880 * t) + 0.25 * np.sin(2 * np.pi * 1320 * t)
+        sample *= np.exp(-t)
+        return sample
+
+    # If sample path not provided or file does not exist, use synthetic sample
     if sample_path is None or not os.path.exists(sample_path):
-        # Generate a synthetic sound with interesting harmonics
-        t = np.linspace(0, 2, sample_rate*2)
-        sample = np.sin(2*np.pi*440*t) + 0.5*np.sin(2*np.pi*880*t) + 0.25*np.sin(2*np.pi*1320*t)
-        sample *= np.exp(-t)  # Apply decay envelope
+        sample = synthetic_sample()
     else:
         try:
-            # Load sample from file
             sample_rate_file, sample = read(sample_path)
-            # Convert to mono if stereo
             if len(sample.shape) > 1:
                 sample = np.mean(sample, axis=1)
-            # Convert to float in [-1, 1] range
             sample = sample.astype(float) / max(np.max(np.abs(sample)), 1)
-        except:
-            # Fall back to synthetic sample if file loading fails
-            t = np.linspace(0, 2, sample_rate*2)
-            sample = np.sin(2*np.pi*440*t) * np.exp(-t)
-    
-    # Choose slices of the sample
+        except Exception:
+            sample = synthetic_sample()
+
+    # ...existing code for slicing and processing sample...
     sample_length = len(sample)
     slices = []
-    
     if sample_length < samples_per_frame:
-        # If sample is shorter than needed, repeat it
         repetitions = int(np.ceil(samples_per_frame / sample_length))
         sample = np.tile(sample, repetitions)[:samples_per_frame]
         slices = [sample]
     else:
-        # Select frames from different parts of the sample
         for i in range(num_frames):
             start_idx = int((sample_length - samples_per_frame) * i / max(1, num_frames - 1))
             slices.append(sample[start_idx:start_idx + samples_per_frame])
-            
-            # If slice is too short, pad with zeros
             if len(slices[-1]) < samples_per_frame:
                 padding = samples_per_frame - len(slices[-1])
                 slices[-1] = np.pad(slices[-1], (0, padding), 'constant')
-    
-    # Apply processing to each slice to create frames
+
     for frame in range(num_frames):
         if frame < len(slices):
             wave = slices[frame].copy()
         else:
-            # Use the first slice for any additional frames
             wave = slices[0].copy()
-        
-        # Apply different processing based on frame index
         if frame % 4 == 0:
-            # Time stretching (simple resampling)
             indices = np.linspace(0, len(wave) - 1, samples_per_frame)
             wave = np.interp(indices, np.arange(len(wave)), wave)
         elif frame % 4 == 1:
-            # Apply filter
             nyquist = sample_rate / 2
             cutoff = (0.1 + 0.8 * (frame / num_frames)) * nyquist
             b, a = butter(4, cutoff / nyquist, btype='low')
             wave = lfilter(b, a, wave)
         elif frame % 4 == 2:
-            # Spectral shift (via FFT)
             spectrum = fft(wave)
             shift_amount = int(len(spectrum) * 0.1 * (frame / num_frames))
             spectrum = np.roll(spectrum, shift_amount)
             wave = np.real(ifft(spectrum))
         elif frame % 4 == 3:
-            # Apply envelope
             env = np.exp(-5 * np.linspace(0, 1, samples_per_frame) ** (frame / num_frames))
             wave *= env
-        
-        # Normalize
         if np.max(np.abs(wave)) > 0:
             wave /= np.max(np.abs(wave))
-        
         wavetable[frame] = wave
-    
+
     return wavetable
 
 def generate_bitcrushed_wavetable(bit_depth_range=(2, 16), base_waveform='sine'):
@@ -1627,24 +1600,24 @@ def main():
     """Main function to control the program flow based on user selection."""
     while True:
         print("\n===== Advanced Wavetable Creator =====\n")
-        print(" 1. Formant Wavetable")
-        print(" 2. Harmonic Wavetable")
-        print(" 3. Additive Wavetable")
-        print(" 4. Subtractive Wavetable")
-        print(" 5. Noise Wavetable")
-        print(" 6. FM Wavetable")
-        print(" 7. Wavefolding Wavetable")
-        print(" 8. Granular Wavetable")
-        print(" 9. Spectral Morphing Wavetable")
-        print("10. Chaotic Wavetable")
-        print("11. Physical Modeling Wavetable")
-        print("12. Vocal Wavetable")
-        print("13. Wave Morphing Wavetable")
-        print("14. Fractal Wavetable")
-        print("15. Sample-Based Wavetable")
-        print("16. Bitcrushed Wavetable")
-        print("17. User-Drawn Wavetable")
-        print("18. Image-Based Wavetable")
+        print(" 1. Formant")
+        print(" 2. Harmonic")
+        print(" 3. Additive")
+        print(" 4. Subtractive")
+        print(" 5. Noise")
+        print(" 6. FM")
+        print(" 7. Wavefolding")
+        print(" 8. Granular")
+        print(" 9. Spectral Morphing")
+        print("10. Chaotic")
+        print("11. Physical Modeling")
+        print("12. Vocal")
+        print("13. Wave Morphing")
+        print("14. Fractal")
+        print("15. Sample-Based")
+        print("16. Bitcrushed")
+        print("17. User-Drawn")
+        print("18. Image-Based")
         print("\n")
         
         try:
