@@ -931,7 +931,8 @@ def generate_sample_based_wavetable(sample_path=None):
         except:
             # Fall back to synthetic sample if file loading fails
             t = np.linspace(0, 2, sample_rate*2)
-            sample = np.sin(2*np.pi*440*t) * np.exp(-t)
+            sample = np.sin(2*np.pi*440*t) + 0.5*np.sin(2*np.pi*880*t) + 0.25*np.sin(2*np.pi*1320*t)
+            sample *= np.exp(-t)
     
     # Choose slices of the sample
     sample_length = len(sample)
@@ -953,42 +954,50 @@ def generate_sample_based_wavetable(sample_path=None):
                 padding = samples_per_frame - len(slices[-1])
                 slices[-1] = np.pad(slices[-1], (0, padding), 'constant')
     
-    # Apply processing to each slice to create frames
-    for frame in range(num_frames):
-        if frame < len(slices):
-            wave = slices[frame].copy()
-        else:
-            # Use the first slice for any additional frames
-            wave = slices[0].copy()
-        
-        # Apply different processing based on frame index
-        if frame % 4 == 0:
+    # --- Refactored: Only process frames 0, 21, 42, 63, then interpolate the rest ---
+    key_frames = [0, 21, 42, 63]
+    processed = {}
+
+    for idx, frame in enumerate(key_frames):
+        wave = slices[frame].copy()
+        if idx == 0:
             # Time stretching (simple resampling)
             indices = np.linspace(0, len(wave) - 1, samples_per_frame)
             wave = np.interp(indices, np.arange(len(wave)), wave)
-        elif frame % 4 == 1:
+        elif idx == 1:
             # Apply filter
             nyquist = sample_rate / 2
             cutoff = (0.1 + 0.8 * (frame / num_frames)) * nyquist
             b, a = butter(4, cutoff / nyquist, btype='low')
             wave = lfilter(b, a, wave)
-        elif frame % 4 == 2:
+        elif idx == 2:
             # Spectral shift (via FFT)
             spectrum = fft(wave)
             shift_amount = int(len(spectrum) * 0.1 * (frame / num_frames))
             spectrum = np.roll(spectrum, shift_amount)
             wave = np.real(ifft(spectrum))
-        elif frame % 4 == 3:
+        elif idx == 3:
             # Apply envelope
             env = np.exp(-5 * np.linspace(0, 1, samples_per_frame) ** (frame / num_frames))
             wave *= env
-        
-        # Normalize
         if np.max(np.abs(wave)) > 0:
             wave /= np.max(np.abs(wave))
-        
-        wavetable[frame] = wave
-    
+        processed[frame] = wave
+
+    # Quadratic interpolation for all frames
+    # Use numpy.interp for each sample index across the four key frames
+    key_x = np.array(key_frames)
+    for i in range(samples_per_frame):
+        key_y = np.array([processed[k][i] for k in key_frames])
+        # Fit a quadratic polynomial to the four points
+        coeffs = np.polyfit(key_x, key_y, 2)
+        poly = np.poly1d(coeffs)
+        for frame in range(num_frames):
+            wavetable[frame, i] = poly(frame)
+    # Normalize each frame
+    for frame in range(num_frames):
+        if np.max(np.abs(wavetable[frame])) > 0:
+            wavetable[frame] /= np.max(np.abs(wavetable[frame]))
     return wavetable
 
 def generate_bitcrushed_wavetable(bit_depth_range=(2, 16), base_waveform='sine'):
