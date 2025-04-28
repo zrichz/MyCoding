@@ -57,7 +57,7 @@ def save_and_visualize_wavetable(wavetable, filename):
     write(filename, sample_rate, wavetable[32].astype(np.float32))
     
     # Create a 3D visualization of the wavetable
-    fig = plt.figure(figsize=(12, 8))
+    fig = plt.figure(figsize=(15, 10))  # 25% larger than (12, 8)
     ax = fig.add_subplot(111, projection='3d')
     
     # Create meshgrid for 3D surface - ensure X and Z downsampling factors match
@@ -74,7 +74,7 @@ def save_and_visualize_wavetable(wavetable, filename):
     fig.colorbar(surf, ax=ax, shrink=0.5, aspect=10)
     
     # Set z-axis limits to "squash" the visualization vertically
-    ax.set_zlim(-3, 3)
+    ax.set_zlim(-5, 5)  # Changed from (-3, 3) to (-5, 5)
     
     # Set labels and title
     ax.set_xlabel('Sample Index')
@@ -913,7 +913,7 @@ def generate_sample_based_wavetable(sample_path=None):
     wavetable = np.zeros((num_frames, samples_per_frame))
 
     def synthetic_sample():
-        t = np.linspace(0, 2, sample_rate * 2)
+        t = np.linspace(0, 0.5, sample_rate // 2)  # Reduce duration to 0.5 seconds
         sample = np.sin(2 * np.pi * 440 * t) + 0.5 * np.sin(2 * np.pi * 880 * t) + 0.25 * np.sin(2 * np.pi * 1320 * t)
         sample *= np.exp(-t)
         return sample
@@ -925,7 +925,7 @@ def generate_sample_based_wavetable(sample_path=None):
         try:
             sample_rate_file, sample = read(sample_path)
             if len(sample.shape) > 1:
-                sample = np.mean(sample, axis=1)
+                sample = np.mean(sample, axis=1) # Convert to mono
             sample = sample.astype(float) / max(np.max(np.abs(sample)), 1)
         except Exception:
             sample = synthetic_sample()
@@ -945,27 +945,64 @@ def generate_sample_based_wavetable(sample_path=None):
                 padding = samples_per_frame - len(slices[-1])
                 slices[-1] = np.pad(slices[-1], (0, padding), 'constant')
 
-    for frame in range(num_frames):
+    # Precompute the four operations at anchor frames
+    anchor_frames = [0, 21, 42, 63]
+    anchor_ops = []
+    for idx, frame in enumerate(anchor_frames):
         if frame < len(slices):
             wave = slices[frame].copy()
         else:
             wave = slices[0].copy()
-        if frame % 4 == 0:
+        if idx == 0:
             indices = np.linspace(0, len(wave) - 1, samples_per_frame)
-            wave = np.interp(indices, np.arange(len(wave)), wave)
-        elif frame % 4 == 1:
+            op_wave = np.interp(indices, np.arange(len(wave)), wave)
+        elif idx == 1:
             nyquist = sample_rate / 2
             cutoff = (0.1 + 0.8 * (frame / num_frames)) * nyquist
             b, a = butter(4, cutoff / nyquist, btype='low')
-            wave = lfilter(b, a, wave)
-        elif frame % 4 == 2:
+            op_wave = lfilter(b, a, wave)
+        elif idx == 2:
             spectrum = fft(wave)
             shift_amount = int(len(spectrum) * 0.1 * (frame / num_frames))
             spectrum = np.roll(spectrum, shift_amount)
-            wave = np.real(ifft(spectrum))
-        elif frame % 4 == 3:
+            op_wave = np.real(ifft(spectrum))
+        elif idx == 3:
             env = np.exp(-5 * np.linspace(0, 1, samples_per_frame) ** (frame / num_frames))
-            wave *= env
+            op_wave = wave * env
+        if np.max(np.abs(op_wave)) > 0:
+            op_wave /= np.max(np.abs(op_wave))
+        anchor_ops.append(op_wave)
+
+    # For each frame, interpolate quadratically between the four anchor operations
+    for frame in range(num_frames):
+        if frame in anchor_frames:
+            op_idx = anchor_frames.index(frame)
+            wave = anchor_ops[op_idx].copy()
+        else:
+            # Quadratic interpolation between anchor frames
+            # Find which three anchors this frame is between
+            if frame < anchor_frames[1]:
+                # Between 0 and 21
+                f0, f1, f2 = anchor_frames[0], anchor_frames[1], anchor_frames[2]
+                w0, w1, w2 = anchor_ops[0], anchor_ops[1], anchor_ops[2]
+            elif frame < anchor_frames[2]:
+                # Between 21 and 42
+                f0, f1, f2 = anchor_frames[1], anchor_frames[2], anchor_frames[3]
+                w0, w1, w2 = anchor_ops[1], anchor_ops[2], anchor_ops[3]
+            else:
+                # Between 42 and 63
+                f0, f1, f2 = anchor_frames[2], anchor_frames[3], anchor_frames[3]
+                w0, w1, w2 = anchor_ops[2], anchor_ops[3], anchor_ops[3]
+            # Quadratic Lagrange interpolation weights
+            x = frame
+            denom0 = (f0 - f1) * (f0 - f2)
+            denom1 = (f1 - f0) * (f1 - f2)
+            denom2 = (f2 - f0) * (f2 - f1)
+            l0 = ((x - f1) * (x - f2)) / denom0 if denom0 != 0 else 0
+            l1 = ((x - f0) * (x - f2)) / denom1 if denom1 != 0 else 0
+            l2 = ((x - f0) * (x - f1)) / denom2 if denom2 != 0 else 0
+            wave = l0 * w0 + l1 * w1 + l2 * w2
+        # Normalize
         if np.max(np.abs(wave)) > 0:
             wave /= np.max(np.abs(wave))
         wavetable[frame] = wave
@@ -1108,27 +1145,28 @@ def generate_user_drawn_wavetable():
         wave = user_wave.copy()
         
         # Apply varying spectral modifications
-        spectrum = fft(wave)
+        spectrum = fft(wave)  # Perform Fast Fourier Transform (FFT) to convert the waveform to the frequency domain
         
         # Modify spectrum based on frame
         if frame < num_frames // 3:
-            # Emphasize low frequencies
-            freqs = np.linspace(0, 1, len(spectrum))
-            mod = np.exp(-5 * freqs * (frame / (num_frames // 3)))
-            spectrum *= mod
+            # Emphasize low frequencies in the first third of the frames
+            freqs = np.linspace(0, 1, len(spectrum))  # Create a normalized frequency array (0 to 1)
+            mod = np.exp(-5 * freqs * (frame / (num_frames // 3)))  # Exponential decay to emphasize low frequencies
+            spectrum *= mod  # Apply the modification to the spectrum
         elif frame < 2 * (num_frames // 3):
-            # Shift spectral components
-            shift = int(len(spectrum) * 0.1 * ((frame - num_frames // 3) / (num_frames // 3)))
-            spectrum = np.roll(spectrum, shift)
+            # Shift spectral components in the middle third of the frames
+            shift = int(len(spectrum) * 0.1 * ((frame - num_frames // 3) / (num_frames // 3)))  
+            # Calculate the amount to shift the spectrum, proportional to the frame's position in this range
+            spectrum = np.roll(spectrum, shift)  # Circularly shift the spectrum by the calculated amount
         else:
-            # Add harmonics
-            for harm in range(2, 5):
-                harm_shift = int(len(spectrum) / harm)
-                spectrum = np.roll(spectrum, harm_shift)
-                spectrum[:harm_shift] = 0  # Clear lower frequencies to avoid aliasing
+            # Add harmonics in the last third of the frames
+            for harm in range(2, 5):  # Loop through harmonic multipliers (2nd, 3rd, 4th harmonics)
+                harm_shift = int(len(spectrum) / harm)  # Calculate the shift amount for the current harmonic
+            spectrum = np.roll(spectrum, harm_shift)  # Circularly shift the spectrum by the harmonic shift
+            spectrum[:harm_shift] = 0  # Zero out the lower frequencies to avoid aliasing artifacts
         
         # Convert back to time domain
-        wave = np.real(ifft(spectrum))
+        wave = np.real(ifft(spectrum))  # Perform Inverse FFT (IFFT) to convert the modified spectrum back to a waveform
         
         # Normalize
         if np.max(np.abs(wave)) > 0:
