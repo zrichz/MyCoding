@@ -20,8 +20,8 @@ def fn_create_wavetable(sample_rate=44100, num_waveforms=64, samples_per_wavefor
     Returns:
         np.ndarray: The generated wavetable as a NumPy array.
     """
-    # Initialize an empty array to store all waveforms
-    wavetable = np.array([], dtype=np.float32)
+    # Initialize a 2D array to store all waveforms
+    wavetable = np.zeros((num_waveforms, samples_per_waveform), dtype=np.float32)
     
     # Prompt the user to choose the start and end waveforms
     print("Choose the start waveform (sine, square, sawtooth, triangle):")
@@ -58,12 +58,12 @@ def fn_create_wavetable(sample_rate=44100, num_waveforms=64, samples_per_wavefor
         # Normalize waveform to -1 to 1
         waveform = waveform / np.max(np.abs(waveform))
 
-        # Append to wavetable
-        wavetable = np.concatenate((wavetable, waveform))
+        # Assign to wavetable row
+        wavetable[i] = waveform
     
-    # Scale to 16-bit PCM format
-    wavetable_int = (wavetable * 32767).astype(np.int16)
-    return wavetable_int
+    # For saving as 32-bit float WAV, flatten to 1D
+    wavetable_float = wavetable.flatten().astype(np.float32)
+    return wavetable_float
 
 ###########################################################################
 def fn_save_wavetable(filename, sample_rate, wavetable):
