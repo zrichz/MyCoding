@@ -1,0 +1,2 @@
+Pillow==9.3.0
+tkinter==0.1.0
