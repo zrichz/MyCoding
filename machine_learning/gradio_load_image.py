@@ -1,5 +1,5 @@
 import gradio as gr
-from PIL import Image, ImageEnhance
+from PIL import Image
 import numpy as np
 
 def process_image(image, slider1_value, slider2_value, slider3_value):
@@ -9,28 +9,38 @@ def process_image(image, slider1_value, slider2_value, slider3_value):
     # Convert the image to a PIL Image
     pil_image = Image.fromarray(np.array(image))
     
-    # Adjust contrast, brightness, and hue based on slider values
-    enhancer = ImageEnhance.Contrast(pil_image)
-    pil_image = enhancer.enhance(slider1_value)
+    # Adjust width of image non-linearly, using the slider values
+    # Define the coefficients
+    a = slider1_value
+    b = slider2_value
+    c = slider3_value
+    d = 1.0
+
+    # Get image dimensions
+    width, height = pil_image.size
+    pixels = np.array(pil_image)
+
+    # Calc max possible new_x value
+    max_new_x = 0
+    for x in range(width):
+        new_x = int(a * (x / width)**3 + b * (x / width)**2 + c * (x / width) + d * width)
+        max_new_x = max(max_new_x, new_x)
     
-    enhancer = ImageEnhance.Brightness(pil_image)
-    pil_image = enhancer.enhance(slider2_value)
+    # Create a new array with appropriate width (add 1 because indexing starts at 0)
+    new_width = max_new_x + 1
+    transformed_pixels = np.zeros((height, new_width, pixels.shape[2]), dtype=pixels.dtype)
+
+    # Apply transform
+    for y in range(height):
+        for x in range(width):
+            new_x = int(a * (x / width)**3 + b * (x / width)**2 + c * (x / width) + d * width)
+            if 0 <= new_x < new_width:  # Ensure new_x is within bounds
+                transformed_pixels[y, new_x] = pixels[y, x]
+
+    # Convert transformed pixels back to a PIL Image
+    pil_image = Image.fromarray(transformed_pixels)
     
-    # Fix the overflow error by using proper data type conversion
-    hsv_image = pil_image.convert("HSV")
-    hsv_array = np.array(hsv_image)
-    
-    # Convert to int32 before performing arithmetic to avoid overflow
-    h_channel = hsv_array[..., 0].astype(np.int32)
-    hue_shift = int(slider3_value)
-    
-    # Now perform the arithmetic and modulo, then convert back to uint8
-    h_channel = (h_channel + hue_shift) % 256
-    hsv_array[..., 0] = h_channel.astype(np.uint8)
-    
-    pil_image = Image.fromarray(hsv_array, "HSV").convert("RGB")
-    
-    return pil_image, f"Image processed with slider values: {slider1_value}, {slider2_value}, {slider3_value}"
+    return pil_image, f"processed image, values: {slider1_value}, {slider2_value}, {slider3_value}"
 
 # Create interface
 with gr.Blocks() as demo:
@@ -39,9 +49,9 @@ with gr.Blocks() as demo:
             image_input = gr.Image(label="Upload an Image")
         
         with gr.Column():
-            sl_contrast = gr.Slider(minimum=0, maximum=2, step=0.1, value=1, label="Contrast")
-            sl_brightness = gr.Slider(minimum=0, maximum=2, step=0.1, value=1, label="Brightness")
-            sl_hue = gr.Slider(minimum=-180, maximum=180, step=1, value=0, label="Hue")
+            sl_a = gr.Slider(minimum=-40, maximum=40, step=0.1, value=0, label="a")
+            sl_b = gr.Slider(minimum=-40, maximum=40, step=0.1, value=0, label="b")
+            sl_c = gr.Slider(minimum=-800, maximum=800, step=0.1, value=0, label="c")
     
     with gr.Row():
         output_image = gr.Image(label="Processed Image")
@@ -51,7 +61,7 @@ with gr.Blocks() as demo:
     
     submit_button.click(
         fn=process_image,  
-        inputs=[image_input, sl_contrast, sl_brightness, sl_hue],
+        inputs=[image_input, sl_a, sl_b, sl_c],
         outputs=[output_image, output_text]
     )
 
