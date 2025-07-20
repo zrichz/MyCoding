@@ -97,7 +97,7 @@ if file_path:
     #     for j in range(tmpsize):
     #         ax[1].text(j, i, f'{expanded_data[i, j]:.0f}', ha='center', va='center', color='white')
     
-    plt.show()
+    plt.show() # Display the grayscale image    
 
 
 
