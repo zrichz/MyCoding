@@ -223,24 +223,38 @@ class ImageAligner:
                     logger.warning(f"Homography estimation failed for image {i}")
             except cv2.error as e:
                 logger.warning(f"Homography estimation failed for image {i}: {e}")
+            
+            processed_images += 1
         
-        return aligned_images
+        alignment_time = time.time() - start_time
+        
+        if progress_callback:
+            progress_callback(1.0, f"Feature-based alignment complete! Aligned {len(images)} images in {alignment_time:.2f} seconds")
+        
+        return aligned_images, alignment_time
     
     @staticmethod
     def align_images_phase_correlation(images: List[np.ndarray], 
-                                     reference_idx: int = 0) -> List[np.ndarray]:
+                                     reference_idx: int = 0,
+                                     progress_callback: Optional[Callable[[float, str], None]] = None) -> Tuple[List[np.ndarray], float]:
         """
         Align images using phase correlation (translation only).
         
         Args:
             images: List of images to align
             reference_idx: Index of reference image
+            progress_callback: Optional callback for progress updates (progress, message)
             
         Returns:
-            List of aligned images
+            Tuple of (aligned images, alignment time in seconds)
         """
+        start_time = time.time()
+        
         if not images or reference_idx >= len(images):
             raise ValueError("Invalid images or reference index")
+        
+        if progress_callback:
+            progress_callback(0.1, "Starting phase correlation alignment...")
         
         reference = images[reference_idx]
         if len(reference.shape) == 3:
@@ -249,10 +263,16 @@ class ImageAligner:
             reference_gray = reference
         
         aligned_images = [img.copy() for img in images]
+        total_images = len(images) - 1  # Exclude reference image
+        processed_images = 0
         
         for i, img in enumerate(images):
             if i == reference_idx:
                 continue
+            
+            if progress_callback:
+                progress = 0.2 + (processed_images / total_images) * 0.7
+                progress_callback(progress, f"Aligning image {i+1}/{len(images)} using phase correlation...")
             
             if len(img.shape) == 3:
                 img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -269,13 +289,21 @@ class ImageAligner:
             # Apply translation
             aligned = cv2.warpAffine(img, M, (img.shape[1], img.shape[0]))
             aligned_images[i] = aligned
+            
+            processed_images += 1
         
-        return aligned_images
+        alignment_time = time.time() - start_time
+        
+        if progress_callback:
+            progress_callback(1.0, f"Phase correlation alignment complete! Aligned {len(images)} images in {alignment_time:.2f} seconds")
+        
+        return aligned_images, alignment_time
     
     @staticmethod
     def auto_align(images: List[np.ndarray], 
                   reference_idx: int = 0,
-                  method: str = 'auto') -> List[np.ndarray]:
+                  method: str = 'auto',
+                  progress_callback: Optional[Callable[[float, str], None]] = None) -> Tuple[List[np.ndarray], float]:
         """
         Automatically choose and apply the best alignment method.
         
@@ -283,33 +311,50 @@ class ImageAligner:
             images: List of images to align
             reference_idx: Index of reference image
             method: Alignment method ('auto', 'ecc', 'feature', 'phase')
+            progress_callback: Optional callback for progress updates (progress, message)
             
         Returns:
-            List of aligned images
+            Tuple of (aligned images, alignment time in seconds)
         """
+        start_time = time.time()
+        
         if not images:
-            return images
+            return images, 0.0
+        
+        if progress_callback:
+            progress_callback(0.05, f"Starting auto alignment with method: {method}")
         
         if method == 'auto':
             # Try methods in order of robustness vs speed
             methods = ['ecc', 'feature', 'phase']
-            for align_method in methods:
+            for i, align_method in enumerate(methods):
                 try:
-                    return ImageAligner.auto_align(images, reference_idx, align_method)
+                    if progress_callback:
+                        progress_callback(0.1 + i * 0.3, f"Trying {align_method} alignment...")
+                    
+                    result, align_time = ImageAligner.auto_align(images, reference_idx, align_method, progress_callback)
+                    total_time = time.time() - start_time
+                    
+                    if progress_callback:
+                        progress_callback(1.0, f"Auto alignment successful using {align_method} method in {total_time:.2f} seconds")
+                    
+                    return result, total_time
                 except Exception as e:
                     logger.warning(f"Alignment method {align_method} failed: {e}")
                     continue
             
             # If all methods fail, return original images
             logger.warning("All alignment methods failed, returning original images")
-            return images
+            if progress_callback:
+                progress_callback(1.0, "All alignment methods failed, using original images")
+            return images, time.time() - start_time
         
         elif method == 'ecc':
-            return ImageAligner.align_images_ecc(images, reference_idx)
+            return ImageAligner.align_images_ecc(images, reference_idx, progress_callback=progress_callback)
         elif method == 'feature':
-            return ImageAligner.align_images_feature_based(images, reference_idx)
+            return ImageAligner.align_images_feature_based(images, reference_idx, progress_callback=progress_callback)
         elif method == 'phase':
-            return ImageAligner.align_images_phase_correlation(images, reference_idx)
+            return ImageAligner.align_images_phase_correlation(images, reference_idx, progress_callback=progress_callback)
         else:
             raise ValueError(f"Unknown alignment method: {method}")
 

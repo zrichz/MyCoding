@@ -15,7 +15,6 @@ import os
 from pathlib import Path
 from typing import List, Optional, Callable
 import logging
-import queue
 import time
 
 from focus_stacking_algorithms import FocusStackingAlgorithms
@@ -191,7 +190,6 @@ class FocusStackerGUI:
         self.current_preview_index = 0
         
         # Progress tracking
-        self.progress_queue = queue.Queue()
         self.is_processing = False
         
         # Setup logging
@@ -216,6 +214,9 @@ class FocusStackerGUI:
         
         self.setup_left_panel(left_panel)
         self.setup_right_panel(right_panel)
+        
+        # Initialize parameter visibility (show only for Laplacian Pyramid by default)
+        self.on_stack_method_change("Laplacian Pyramid")
     
     def setup_left_panel(self, parent):
         """Setup the left control panel."""
@@ -287,23 +288,26 @@ class FocusStackerGUI:
         stack_title.pack(pady=(10, 5))
         
         self.stack_method = ctk.CTkOptionMenu(stack_frame, 
-                                             values=["Laplacian Pyramid", "Gradient-based", "Variance-based", "Simple Average"])
+                                             values=["Laplacian Pyramid", "Gradient-based", "Variance-based", "Simple Average"],
+                                             command=self.on_stack_method_change)
         self.stack_method.pack(pady=5)
         self.stack_method.set("Laplacian Pyramid")
         
-        # Algorithm parameters
-        param_frame = ctk.CTkFrame(stack_frame)
-        param_frame.pack(fill=tk.X, pady=5)
+        # Algorithm parameters (only for Laplacian Pyramid)
+        self.param_frame = ctk.CTkFrame(stack_frame)
+        self.param_frame.pack(fill=tk.X, pady=5)
         
         # Pyramid levels
-        ctk.CTkLabel(param_frame, text="Pyramid Levels:").pack(anchor=tk.W)
-        self.pyramid_levels = ctk.CTkSlider(param_frame, from_=3, to=8, number_of_steps=5)
+        self.pyramid_label = ctk.CTkLabel(self.param_frame, text="Pyramid Levels:")
+        self.pyramid_label.pack(anchor=tk.W)
+        self.pyramid_levels = ctk.CTkSlider(self.param_frame, from_=3, to=8, number_of_steps=5)
         self.pyramid_levels.pack(fill=tk.X, pady=2)
         self.pyramid_levels.set(5)
         
         # Sigma
-        ctk.CTkLabel(param_frame, text="Gaussian Sigma:").pack(anchor=tk.W)
-        self.gaussian_sigma = ctk.CTkSlider(param_frame, from_=0.5, to=3.0, number_of_steps=25)
+        self.sigma_label = ctk.CTkLabel(self.param_frame, text="Gaussian Sigma:")
+        self.sigma_label.pack(anchor=tk.W)
+        self.gaussian_sigma = ctk.CTkSlider(self.param_frame, from_=0.5, to=3.0, number_of_steps=25)
         self.gaussian_sigma.pack(fill=tk.X, pady=2)
         self.gaussian_sigma.set(1.0)
         
@@ -487,6 +491,21 @@ class FocusStackerGUI:
         """Reset preview zoom and pan."""
         self.preview_widget.reset_view()
     
+    def on_stack_method_change(self, method):
+        """Handle stacking method change to show/hide parameters."""
+        if method == "Laplacian Pyramid":
+            # Show parameters
+            self.pyramid_label.pack(anchor=tk.W)
+            self.pyramid_levels.pack(fill=tk.X, pady=2)
+            self.sigma_label.pack(anchor=tk.W)
+            self.gaussian_sigma.pack(fill=tk.X, pady=2)
+        else:
+            # Hide parameters
+            self.pyramid_label.pack_forget()
+            self.pyramid_levels.pack_forget()
+            self.sigma_label.pack_forget()
+            self.gaussian_sigma.pack_forget()
+    
     def align_images(self):
         """Align loaded images."""
         if not self.loaded_images:
@@ -502,26 +521,30 @@ class FocusStackerGUI:
         # Show progress dialog
         progress = ProgressDialog(self.root, "Aligning Images", "Aligning images...")
         
+        def progress_callback(prog_value, message):
+            """Progress callback for alignment."""
+            if not progress.cancelled:
+                progress.update_progress(prog_value, message)
+        
         def align_thread():
             try:
-                progress.update_progress(0.1, "Initializing alignment...")
+                progress_callback(0.05, "Initializing alignment...")
                 
                 if method == "auto":
-                    aligned = ImageAligner.auto_align(self.loaded_images)
+                    aligned, align_time = ImageAligner.auto_align(self.loaded_images, progress_callback=progress_callback)
                 elif method == "ecc":
-                    aligned = ImageAligner.align_images_ecc(self.loaded_images)
+                    aligned, align_time = ImageAligner.align_images_ecc(self.loaded_images, progress_callback=progress_callback)
                 elif method == "feature_based":
-                    aligned = ImageAligner.align_images_feature_based(self.loaded_images)
+                    aligned, align_time = ImageAligner.align_images_feature_based(self.loaded_images, progress_callback=progress_callback)
                 elif method == "phase_correlation":
-                    aligned = ImageAligner.align_images_phase_correlation(self.loaded_images)
+                    aligned, align_time = ImageAligner.align_images_phase_correlation(self.loaded_images, progress_callback=progress_callback)
                 else:
                     aligned = self.loaded_images.copy()
-                
-                progress.update_progress(1.0, "Alignment complete!")
+                    align_time = 0.0
                 
                 if not progress.cancelled:
                     self.aligned_images = aligned
-                    self.root.after(0, lambda: self.status_label.configure(text="Images aligned successfully"))
+                    self.root.after(0, lambda: self.status_label.configure(text=f"Images aligned successfully in {align_time:.2f}s"))
                     self.root.after(0, self.update_preview)
                 
             except Exception as e:
@@ -535,115 +558,81 @@ class FocusStackerGUI:
         threading.Thread(target=align_thread, daemon=True).start()
     
     def stack_images(self):
-        """Stack the images using the selected algorithm with enhanced progress tracking."""
+        """Stack the images using the selected algorithm with progress dialog."""
         images_to_stack = self.aligned_images if self.aligned_images else self.loaded_images
         
         if not images_to_stack:
-            self.update_status("❌ No images loaded!")
             messagebox.showwarning("Warning", "Please load images first.")
             return
         
         if self.is_processing:
-            self.update_status("⚠️ Already processing...")
+            messagebox.showinfo("Info", "Already processing images...")
             return
         
         self.is_processing = True
-        self.clear_status()
         
-        # Run stacking in separate thread
-        thread = threading.Thread(target=self._stack_worker, args=(images_to_stack,))
-        thread.daemon = True
-        thread.start()
+        # Show progress dialog
+        progress = ProgressDialog(self.root, "Stacking Images", "Starting focus stacking...")
         
-        # Start progress monitoring
-        self.monitor_progress()
-    
-    def _stack_worker(self, images):
-        """Worker function for stacking in separate thread."""
-        try:
-            self.progress_queue.put(("status", "🔄 Starting image stacking...", 0))
-            
-            # Get parameters
-            method = self.stack_method.get()
-            levels = int(self.pyramid_levels.get())
-            sigma = self.gaussian_sigma.get()
-            
-            self.progress_queue.put(("status", f"🎯 Stacking using {method} method...", 10))
-            
-            def progress_callback(msg):
-                # Estimate progress based on message content
-                progress = 10
-                if "Converting" in msg:
-                    progress = 20
-                elif "Building" in msg or "Computing" in msg:
-                    progress = 50
-                elif "Processing" in msg or "Selecting" in msg or "Adding" in msg:
-                    progress = 70
-                elif "Reconstructing" in msg or "Converting result" in msg:
-                    progress = 85
-                elif "complete" in msg.lower():
-                    progress = 90
-                
-                self.progress_queue.put(("status", f"  {msg}", progress))
-            
-            if method == "Laplacian Pyramid":
-                result = FocusStackingAlgorithms.laplacian_pyramid_stack(
-                    images, levels=levels, sigma=sigma, progress_callback=progress_callback)
-            elif method == "Gradient-based":
-                result = FocusStackingAlgorithms.gradient_based_stack(images, progress_callback=progress_callback)
-            elif method == "Variance-based":
-                result = FocusStackingAlgorithms.variance_based_stack(images, progress_callback=progress_callback)
-            elif method == "Simple Average":
-                result = FocusStackingAlgorithms.average_stack(images, progress_callback=progress_callback)
-            else:
-                raise ValueError(f"Unknown stacking method: {method}")
-            
-            self.progress_queue.put(("status", "✅ Stacking completed successfully!", 95))
-            
-            # Quality assessment
-            self.progress_queue.put(("status", "📊 Assessing quality...", 98))
+        def progress_callback(prog_value, message):
+            """Progress callback for stacking."""
+            if not progress.cancelled:
+                progress.update_progress(prog_value, message)
+        
+        def stack_thread():
             try:
-                metrics = QualityAssessment.assess_stack_quality(images, result)
-                quality_msg = f"📈 Quality: Focus={metrics['stacked_focus_measure']:.1f}, Improvement={metrics['improvement_ratio']:.2f}x"
-                self.progress_queue.put(("status", quality_msg, 99))
-                self.progress_queue.put(("quality", metrics, 100))
-            except Exception as e:
-                self.progress_queue.put(("status", f"⚠️ Quality assessment failed: {e}", 100))
-            
-            # Store result
-            self.progress_queue.put(("result", result, 100))
-            
-        except Exception as e:
-            self.progress_queue.put(("error", f"❌ Stacking failed: {str(e)}", 0))
-        finally:
-            self.progress_queue.put(("done", "", 100))
-    
-    def monitor_progress(self):
-        """Monitor progress from worker thread."""
-        try:
-            while True:
-                msg_type, message, progress = self.progress_queue.get_nowait()
+                progress_callback(0.05, "Initializing focus stacking...")
                 
-                if msg_type == "status":
-                    self.update_status(message, progress)
-                elif msg_type == "result":
-                    self.stacked_image = message
-                    self.update_preview()
-                    self.update_status("🎉 Stacking complete! Result displayed.", 100)
-                elif msg_type == "quality":
-                    self.display_quality_metrics(message)
-                elif msg_type == "error":
-                    self.update_status(message, 0)
-                    messagebox.showerror("Error", message)
-                elif msg_type == "done":
-                    self.is_processing = False
-                    break
+                # Get parameters
+                method = self.stack_method.get()
+                levels = int(self.pyramid_levels.get())
+                sigma = self.gaussian_sigma.get()
+                
+                progress_callback(0.1, f"Stacking using {method} method...")
+                
+                if method == "Laplacian Pyramid":
+                    result = FocusStackingAlgorithms.laplacian_pyramid_stack(
+                        images_to_stack, levels=levels, sigma=sigma, progress_callback=progress_callback)
+                elif method == "Gradient-based":
+                    result = FocusStackingAlgorithms.gradient_based_stack(images_to_stack, progress_callback=progress_callback)
+                elif method == "Variance-based":
+                    result = FocusStackingAlgorithms.variance_based_stack(images_to_stack, progress_callback=progress_callback)
+                elif method == "Simple Average":
+                    result = FocusStackingAlgorithms.average_stack(images_to_stack, progress_callback=progress_callback)
+                else:
+                    raise ValueError(f"Unknown stacking method: {method}")
+                
+                if not progress.cancelled:
+                    progress_callback(0.95, "Stacking completed! Assessing quality...")
                     
-        except queue.Empty:
-            pass
+                    # Quality assessment
+                    try:
+                        metrics = QualityAssessment.assess_stack_quality(images_to_stack, result)
+                        progress_callback(1.0, f"Complete! Quality improvement: {metrics['improvement_ratio']:.2f}x")
+                        
+                        # Store results
+                        self.stacked_image = result
+                        self.root.after(0, self.update_preview)
+                        self.root.after(0, lambda: self.display_quality_metrics(metrics))
+                        self.root.after(0, lambda: self.status_label.configure(text=f"Stacking complete! Quality: {metrics['improvement_ratio']:.2f}x improvement"))
+                        
+                    except Exception as e:
+                        progress_callback(1.0, "Stacking complete! (Quality assessment failed)")
+                        self.stacked_image = result
+                        self.root.after(0, self.update_preview)
+                        self.root.after(0, lambda: self.status_label.configure(text="Stacking complete!"))
+                        logger.warning(f"Quality assessment failed: {e}")
+                
+            except Exception as e:
+                if not progress.cancelled:
+                    logger.error(f"Stacking failed: {e}")
+                    self.root.after(0, lambda: messagebox.showerror("Error", f"Stacking failed: {e}"))
+                    self.root.after(0, lambda: self.status_label.configure(text="Stacking failed"))
+            finally:
+                self.is_processing = False
+                self.root.after(0, progress.destroy)
         
-        if self.is_processing:
-            self.root.after(100, self.monitor_progress)
+        threading.Thread(target=stack_thread, daemon=True).start()
     
     def display_quality_metrics(self, metrics: dict):
         """Display quality assessment metrics."""
