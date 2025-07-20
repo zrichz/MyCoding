@@ -95,13 +95,18 @@ class SlitscannerApp:
         
         # N frames input (initially hidden)
         self.n_frame = ctk.CTkFrame(options_frame)
-        self.n_frame.pack(pady=5, padx=20, fill="x")
-        self.n_frame.pack_forget()  # Hide initially
         
-        ctk.CTkLabel(self.n_frame, text="Every N frames:").pack(side="left", padx=10, pady=10)
-        self.n_entry = ctk.CTkEntry(self.n_frame, width=100, placeholder_text="Enter N")
+        ctk.CTkLabel(self.n_frame, text="Every N frames (3-1000):").pack(side="left", padx=10, pady=10)
+        self.n_entry = ctk.CTkEntry(self.n_frame, width=100, placeholder_text="Enter N (3-1000)")
         self.n_entry.pack(side="left", padx=10, pady=10)
         self.n_entry.insert(0, "3")
+        
+        # Add validation feedback label
+        self.n_validation_label = ctk.CTkLabel(self.n_frame, text="", text_color="orange")
+        self.n_validation_label.pack(side="left", padx=10, pady=10)
+        
+        # Bind validation to entry changes
+        self.n_entry.bind("<KeyRelease>", self.validate_n_input)
         
         # Process button
         self.process_button = ctk.CTkButton(
@@ -140,9 +145,27 @@ class SlitscannerApp:
     def on_sampling_change(self):
         """Show/hide N frames input based on selection"""
         if self.sampling_var.get() == "every_n":
-            self.n_frame.pack(pady=5, padx=20, fill="x", before=self.process_button)
+            self.n_frame.pack(pady=5, padx=20, fill="x")
+            self.validate_n_input()  # Validate current value when shown
         else:
             self.n_frame.pack_forget()
+    
+    def validate_n_input(self, event=None):
+        """Validate the N frames input and provide feedback"""
+        try:
+            value = int(self.n_entry.get())
+            if 3 <= value <= 1000:
+                self.n_validation_label.configure(text="✓ Valid", text_color="green")
+                return True
+            else:
+                self.n_validation_label.configure(text="Must be 3-1000", text_color="orange")
+                return False
+        except ValueError:
+            if self.n_entry.get().strip() == "":
+                self.n_validation_label.configure(text="Required", text_color="orange")
+            else:
+                self.n_validation_label.configure(text="Invalid number", text_color="red")
+            return False
     
     def select_video_file(self):
         """Open file dialog to select video file"""
@@ -170,9 +193,24 @@ class SlitscannerApp:
             return 2
         elif sampling == "every_n":
             try:
-                return max(1, int(self.n_entry.get()))
+                value = int(self.n_entry.get())
+                # Enforce the 3-1000 range
+                if 3 <= value <= 1000:
+                    return value
+                else:
+                    # Show error and return default
+                    self.root.after(0, lambda: messagebox.showwarning(
+                        "Invalid Input", 
+                        f"N frames value must be between 3 and 1000. Using default value of 3."
+                    ))
+                    return 3
             except ValueError:
-                return 3  # Default to 3 if invalid input
+                # Show error and return default
+                self.root.after(0, lambda: messagebox.showwarning(
+                    "Invalid Input", 
+                    f"Please enter a valid number between 3 and 1000. Using default value of 3."
+                ))
+                return 3
         return 1
     
     def start_processing(self):
@@ -183,6 +221,13 @@ class SlitscannerApp:
             
         if self.processing:
             return
+        
+        # Validate N frames input if "every_n" is selected
+        if self.sampling_var.get() == "every_n":
+            if not self.validate_n_input():
+                messagebox.showerror("Invalid Input", 
+                                   "Please enter a valid number between 3 and 1000 for frame sampling.")
+                return
             
         # Start processing in background thread
         self.processing = True
@@ -251,7 +296,7 @@ class SlitscannerApp:
                     self.root.after(0, lambda p=progress: self.progress_bar.set(p))
                     self.root.after(0, lambda c=processed_count, t=frames_to_process: 
                                   self.progress_label.configure(
-                                      text=f"Processed {c}/{t} frames ({c/t*100:.1f}%)"
+                                      text=f"Processed {c}/{t} frames ({round(c/t*100)}%)"
                                   ))
                 
                 frame_count += 1
@@ -289,12 +334,13 @@ class SlitscannerApp:
             # Resize for display
             display_image = self.output_image.resize((display_width, display_height), Image.Resampling.LANCZOS)
             
-            # Convert to PhotoImage
-            photo = ImageTk.PhotoImage(display_image)
+            # Convert to CTkImage for better compatibility
+            ctk_image = ctk.CTkImage(light_image=display_image, dark_image=display_image, 
+                                   size=(display_width, display_height))
             
             # Update label
-            self.image_label.configure(image=photo, text="")
-            self.image_label.image = photo  # Keep a reference
+            self.image_label.configure(image=ctk_image, text="")
+            self.image_label.image = ctk_image  # Keep a reference
             
             # Enable save button
             self.save_button.configure(state="normal")
