@@ -1,0 +1,20 @@
+# MyCoding Repository .gitignore 
+# Virtual Environments  
+focus_env/  
+.venv/  
+venv/  
+env/ 
+# Python Cache  
+__pycache__/  
+*.pyc  
+*.pyo  
+*.pyd 
+# Large Data Files  
+machine_learning/data/  
+*.tar.gz  
+*.zip  
+*.dll 
+# Images  
+*.png  
+*.jpg  
+*.jpeg 
