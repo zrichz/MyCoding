@@ -1,13 +1,12 @@
 """
-World's Best Focus Stacker
-==========================
+Image Stacking Tool
+==================
 Advanced focus stacking application with multiple algorithms and modern GUI.
 
 Features:
-- Multiple focus stacking algorithms (Laplacian Pyramid, Gradient-based, Variance-based)
+- Multiple focus stacking algorithms (Laplacian Pyramid, Gradient-based with smoothing, Variance-based)
 - Advanced image alignment (ECC, Feature-based, Phase Correlation)
-- Modern GUI with real-time preview
-- Quality assessment metrics
+- Modern GUI with 800x800 image preview
 - Batch processing support
 - Multiple export formats
 

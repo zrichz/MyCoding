@@ -18,7 +18,8 @@ import logging
 import time
 
 from focus_stacking_algorithms import FocusStackingAlgorithms
-from image_alignment import ImageAligner, QualityAssessment
+from image_alignment import ImageAligner
+from gradient_debug_window import GradientStackingDebugWindow
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +54,7 @@ class ImagePreviewWidget(ctk.CTkFrame):
         self.last_y = 0
     
     def set_image(self, image: np.ndarray):
-        """Set the image to display."""
+        """Set the image to display, automatically scaled to fit 800x800."""
         if image is None:
             return
         
@@ -63,7 +64,23 @@ class ImagePreviewWidget(ctk.CTkFrame):
         else:
             image_pil = Image.fromarray(image)
         
+        # Calculate scale to fit within 800x800 while maintaining aspect ratio
+        max_size = 800
+        img_width, img_height = image_pil.size
+        
+        if img_width > max_size or img_height > max_size:
+            # Calculate scale factor to fit within max_size
+            scale_factor = min(max_size / img_width, max_size / img_height)
+            new_width = int(img_width * scale_factor)
+            new_height = int(img_height * scale_factor)
+            
+            # Resize image to fit within 800x800
+            image_pil = image_pil.resize((new_width, new_height), Image.Resampling.LANCZOS)
+        
         self.image = image_pil
+        self.zoom_factor = 1.0  # Reset zoom when setting new image
+        self.pan_x = 0  # Reset pan when setting new image
+        self.pan_y = 0
         self.update_display()
     
     def update_display(self):
@@ -180,8 +197,8 @@ class FocusStackerGUI:
     
     def __init__(self):
         self.root = ctk.CTk()
-        self.root.title("World's Best Focus Stacker")
-        self.root.geometry("1400x900")
+        self.root.title("Image Stacking Tool")
+        self.root.geometry("1200x900")
         
         # Data
         self.loaded_images = []
@@ -204,7 +221,7 @@ class FocusStackerGUI:
         main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
         # Left panel - Controls
-        left_panel = ctk.CTkFrame(main_frame, width=350)
+        left_panel = ctk.CTkFrame(main_frame, width=320)
         left_panel.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 10))
         left_panel.pack_propagate(False)
         
@@ -358,20 +375,14 @@ class FocusStackerGUI:
                                              font=ctk.CTkFont(size=12, weight="bold"),
                                              text_color="lightyellow")
         
+        # Debug button for gradient method
+        self.debug_button = ctk.CTkButton(self.param_frame, text="Debug Process 🔍", 
+                                         command=self.show_gradient_debug,
+                                         height=32, font=ctk.CTkFont(size=12))
+        
         stack_button = ctk.CTkButton(stack_frame, text="Stack Images", 
                                     command=self.stack_images)
         stack_button.pack(pady=10)
-        
-        # Quality assessment
-        quality_frame = ctk.CTkFrame(parent)
-        quality_frame.pack(fill=tk.X, padx=20, pady=10)
-        
-        quality_title = ctk.CTkLabel(quality_frame, text="Quality Assessment", 
-                                    font=ctk.CTkFont(size=16, weight="bold"))
-        quality_title.pack(pady=(10, 5))
-        
-        self.quality_text = ctk.CTkTextbox(quality_frame, height=100)
-        self.quality_text.pack(fill=tk.X, pady=5)
         
         # Export
         export_frame = ctk.CTkFrame(parent)
@@ -564,6 +575,7 @@ class FocusStackerGUI:
         self.smooth_desc_label.pack_forget()
         self.smooth_radius.pack_forget()
         self.smooth_value_label.pack_forget()
+        self.debug_button.pack_forget()
         
         # Show relevant parameters
         if method == "Laplacian Pyramid":
@@ -578,7 +590,20 @@ class FocusStackerGUI:
             self.smooth_label.pack(anchor=tk.W)
             self.smooth_desc_label.pack(anchor=tk.W, pady=(0, 2))
             self.smooth_radius.pack(fill=tk.X, pady=2)
-            self.smooth_value_label.pack(anchor=tk.W, pady=(2, 0))
+            self.smooth_value_label.pack(anchor=tk.W, pady=(2, 5))
+            self.debug_button.pack(fill=tk.X, pady=(5, 0))
+    
+    def show_gradient_debug(self):
+        """Show gradient-based stacking debug window."""
+        images_to_debug = self.aligned_images if self.aligned_images else self.loaded_images
+        
+        if not images_to_debug:
+            messagebox.showwarning("Warning", "Please load images first.")
+            return
+        
+        # Limit to first 4 images for debugging to keep it manageable
+        debug_images = images_to_debug[:4]
+        debug_window = GradientStackingDebugWindow(self.root, debug_images)
     
     def align_images(self):
         """Align loaded images."""
@@ -704,25 +729,12 @@ class FocusStackerGUI:
                     raise ValueError(f"Unknown stacking method: {method}")
                 
                 if not progress.cancelled:
-                    progress_callback(0.95, "Stacking completed! Assessing quality...")
+                    progress_callback(1.0, "Stacking completed!")
                     
-                    # Quality assessment
-                    try:
-                        metrics = QualityAssessment.assess_stack_quality(images_to_stack, result)
-                        progress_callback(1.0, f"Complete! Quality improvement: {metrics['improvement_ratio']:.2f}x")
-                        
-                        # Store results
-                        self.stacked_image = result
-                        self.root.after(0, self.update_preview)
-                        self.root.after(0, lambda: self.display_quality_metrics(metrics))
-                        self.root.after(0, lambda: self.status_label.configure(text=f"Stacking complete! Quality: {metrics['improvement_ratio']:.2f}x improvement"))
-                        
-                    except Exception as e:
-                        progress_callback(1.0, "Stacking complete! (Quality assessment failed)")
-                        self.stacked_image = result
-                        self.root.after(0, self.update_preview)
-                        self.root.after(0, lambda: self.status_label.configure(text="Stacking complete!"))
-                        logger.warning(f"Quality assessment failed: {e}")
+                    # Store results
+                    self.stacked_image = result
+                    self.root.after(0, self.update_preview)
+                    self.root.after(0, lambda: self.status_label.configure(text="Stacking complete!"))
                 
             except Exception as e:
                 if not progress.cancelled:
@@ -734,23 +746,6 @@ class FocusStackerGUI:
                 self.root.after(0, progress.destroy)
         
         threading.Thread(target=stack_thread, daemon=True).start()
-    
-    def display_quality_metrics(self, metrics: dict):
-        """Display quality assessment metrics."""
-        self.quality_text.delete("1.0", tk.END)
-        
-        text = f"Quality Assessment:\n\n"
-        text += f"Stacked Focus Measure: {metrics['stacked_focus_measure']:.2f}\n"
-        text += f"Max Original Focus: {metrics['max_original_focus']:.2f}\n"
-        text += f"Improvement Ratio: {metrics['improvement_ratio']:.2f}x\n\n"
-        text += f"Mean Gradient: {metrics['mean_gradient']:.2f}\n"
-        text += f"Variance: {metrics['variance']:.2f}\n\n"
-        text += f"Individual Image Focus Measures:\n"
-        
-        for i, focus in enumerate(metrics['original_focus_measures']):
-            text += f"Image {i+1}: {focus:.2f}\n"
-        
-        self.quality_text.insert("1.0", text)
     
     def save_result(self):
         """Save the stacked result."""

@@ -1,6 +1,6 @@
 @echo off
 echo ========================================
-echo    Focus Stacker GUI Launcher
+echo    Image Stacking Tool Launcher
 echo ========================================
 echo.
 
@@ -57,7 +57,7 @@ if exist "requirements.txt" (
 
 echo.
 echo ========================================
-echo      Launching Focus Stacker GUI
+echo      Launching Image Stacking Tool
 echo ========================================
 echo.
 
