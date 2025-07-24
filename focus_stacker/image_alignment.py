@@ -22,6 +22,8 @@ class ImageAligner:
                         warp_mode: int = cv2.MOTION_TRANSLATION,
                         max_iterations: int = 1000,
                         termination_eps: float = 1e-6,
+                        use_proxy: bool = True,
+                        proxy_scale: float = 0.25,
                         progress_callback: Optional[Callable[[float, str], None]] = None) -> Tuple[List[np.ndarray], float]:
         """
         Align images using Enhanced Correlation Coefficient (ECC) algorithm.
@@ -32,6 +34,8 @@ class ImageAligner:
             warp_mode: Type of transformation (TRANSLATION, EUCLIDEAN, AFFINE, HOMOGRAPHY)
             max_iterations: Maximum iterations for ECC
             termination_eps: Termination threshold
+            use_proxy: Whether to use downscaled proxy images for faster alignment
+            proxy_scale: Scale factor for proxy images (0.1-1.0, smaller = faster)
             progress_callback: Optional callback for progress updates (progress, message)
             
         Returns:
@@ -43,13 +47,30 @@ class ImageAligner:
             raise ValueError("Invalid images or reference index")
         
         if progress_callback:
-            progress_callback(0.1, "Starting ECC alignment...")
+            alignment_type = f"ECC alignment ({'proxy-based' if use_proxy else 'full-resolution'})"
+            progress_callback(0.1, f"Starting {alignment_type}...")
         
         reference = images[reference_idx]
         if len(reference.shape) == 3:
             reference_gray = cv2.cvtColor(reference, cv2.COLOR_BGR2GRAY)
         else:
             reference_gray = reference
+        
+        # Create proxy images if requested
+        if use_proxy and proxy_scale < 1.0:
+            if progress_callback:
+                progress_callback(0.15, f"Creating proxy images (scale: {proxy_scale:.2f})...")
+            
+            # Create downscaled reference
+            proxy_height = int(reference_gray.shape[0] * proxy_scale)
+            proxy_width = int(reference_gray.shape[1] * proxy_scale)
+            reference_proxy = cv2.resize(reference_gray, (proxy_width, proxy_height), interpolation=cv2.INTER_AREA)
+            
+            # Scale factor for transforming proxy coordinates to full resolution
+            scale_factor = 1.0 / proxy_scale
+        else:
+            reference_proxy = reference_gray
+            scale_factor = 1.0
         
         aligned_images = [img.copy() for img in images]
         total_images = len(images) - 1  # Exclude reference image
@@ -78,22 +99,46 @@ class ImageAligner:
             else:
                 img_gray = img
             
+            # Create proxy image if using proxy-based alignment
+            if use_proxy and proxy_scale < 1.0:
+                img_proxy = cv2.resize(img_gray, (reference_proxy.shape[1], reference_proxy.shape[0]), 
+                                     interpolation=cv2.INTER_AREA)
+            else:
+                img_proxy = img_gray
+            
             if progress_callback:
                 progress = 0.2 + (processed_images / total_images) * 0.7
-                progress_callback(progress, f"Aligning image {i+1}/{len(images)} using ECC...")
+                alignment_method = "proxy ECC" if use_proxy and proxy_scale < 1.0 else "full ECC"
+                progress_callback(progress, f"Aligning image {i+1}/{len(images)} using {alignment_method}...")
             
             try:
-                # Find transformation
+                # Find transformation using proxy images
+                # NOTE: findTransformECC finds transformation from img_proxy TO reference_proxy
+                # We want to align img TO reference, so we swap the arguments
                 if warp_mode == cv2.MOTION_HOMOGRAPHY:
-                    _, warp_matrix = cv2.findTransformECC(
-                        reference_gray, img_gray, warp_matrix, warp_mode, criteria)
+                    _, proxy_warp_matrix = cv2.findTransformECC(
+                        img_proxy, reference_proxy, warp_matrix, warp_mode, criteria)
+                    
+                    # Scale transformation matrix for full resolution
+                    if use_proxy and proxy_scale < 1.0:
+                        full_warp_matrix = ImageAligner._scale_homography_matrix(proxy_warp_matrix, scale_factor)
+                    else:
+                        full_warp_matrix = proxy_warp_matrix
+                    
                     aligned = cv2.warpPerspective(
-                        img, warp_matrix, (img.shape[1], img.shape[0]))
+                        img, full_warp_matrix, (img.shape[1], img.shape[0]))
                 else:
-                    _, warp_matrix = cv2.findTransformECC(
-                        reference_gray, img_gray, warp_matrix, warp_mode, criteria)
+                    _, proxy_warp_matrix = cv2.findTransformECC(
+                        img_proxy, reference_proxy, warp_matrix, warp_mode, criteria)
+                    
+                    # Scale transformation matrix for full resolution
+                    if use_proxy and proxy_scale < 1.0:
+                        full_warp_matrix = ImageAligner._scale_affine_matrix(proxy_warp_matrix, scale_factor)
+                    else:
+                        full_warp_matrix = proxy_warp_matrix
+                    
                     aligned = cv2.warpAffine(
-                        img, warp_matrix, (img.shape[1], img.shape[0]))
+                        img, full_warp_matrix, (img.shape[1], img.shape[0]))
                 
                 aligned_images[i] = aligned
                 processed_images += 1
@@ -110,6 +155,34 @@ class ImageAligner:
             progress_callback(1.0, f"ECC alignment complete! Aligned {len(images)} images in {alignment_time:.2f} seconds")
         
         return aligned_images, alignment_time
+    
+    @staticmethod
+    def _scale_affine_matrix(matrix: np.ndarray, scale_factor: float) -> np.ndarray:
+        """Scale an affine transformation matrix from proxy to full resolution."""
+        scaled_matrix = matrix.copy()
+        # Scale translation components
+        scaled_matrix[0, 2] *= scale_factor
+        scaled_matrix[1, 2] *= scale_factor
+        return scaled_matrix
+    
+    @staticmethod
+    def _scale_homography_matrix(matrix: np.ndarray, scale_factor: float) -> np.ndarray:
+        """Scale a homography transformation matrix from proxy to full resolution."""
+        # Create scaling matrix
+        scale_matrix = np.array([
+            [scale_factor, 0, 0],
+            [0, scale_factor, 0],
+            [0, 0, 1]
+        ], dtype=np.float32)
+        
+        # Apply scaling: S * H * S^-1
+        inv_scale_matrix = np.array([
+            [1.0/scale_factor, 0, 0],
+            [0, 1.0/scale_factor, 0],
+            [0, 0, 1]
+        ], dtype=np.float32)
+        
+        return scale_matrix @ matrix @ inv_scale_matrix
     
     @staticmethod
     def align_images_feature_based(images: List[np.ndarray], 
@@ -280,10 +353,12 @@ class ImageAligner:
                 img_gray = img
             
             # Calculate phase correlation
+            # phaseCorrelate(img1, img2) returns shift to align img2 to img1
+            # We want to align img to reference, so: phaseCorrelate(reference, img)
             shift, _ = cv2.phaseCorrelate(reference_gray.astype(np.float32),
                                         img_gray.astype(np.float32))
             
-            # Create translation matrix
+            # Create translation matrix - shift is already in the correct direction
             M = np.float32([[1, 0, shift[0]], [0, 1, shift[1]]])
             
             # Apply translation
@@ -350,7 +425,9 @@ class ImageAligner:
             return images, time.time() - start_time
         
         elif method == 'ecc':
-            return ImageAligner.align_images_ecc(images, reference_idx, progress_callback=progress_callback)
+            return ImageAligner.align_images_ecc(images, reference_idx, 
+                                               use_proxy=True, proxy_scale=0.25, 
+                                               progress_callback=progress_callback)
         elif method == 'feature':
             return ImageAligner.align_images_feature_based(images, reference_idx, progress_callback=progress_callback)
         elif method == 'phase':

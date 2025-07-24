@@ -275,6 +275,16 @@ class FocusStackerGUI:
         self.align_method.pack(pady=5)
         self.align_method.set("Auto")
         
+        # Alignment optimization settings
+        align_opt_frame = ctk.CTkFrame(align_frame)
+        align_opt_frame.pack(fill=tk.X, pady=5)
+        
+        self.use_proxy_var = ctk.BooleanVar(value=True)
+        self.use_proxy_checkbox = ctk.CTkCheckBox(align_opt_frame, 
+                                                 text="Use fast proxy alignment (4x faster)", 
+                                                 variable=self.use_proxy_var)
+        self.use_proxy_checkbox.pack(anchor=tk.W, pady=2)
+        
         align_button = ctk.CTkButton(align_frame, text="Align Images", 
                                     command=self.align_images)
         align_button.pack(pady=5)
@@ -300,16 +310,53 @@ class FocusStackerGUI:
         # Pyramid levels
         self.pyramid_label = ctk.CTkLabel(self.param_frame, text="Pyramid Levels:")
         self.pyramid_label.pack(anchor=tk.W)
-        self.pyramid_levels = ctk.CTkSlider(self.param_frame, from_=3, to=8, number_of_steps=5)
+        self.pyramid_levels = ctk.CTkSlider(self.param_frame, from_=3, to=8, number_of_steps=5,
+                                          command=self.update_pyramid_value)
         self.pyramid_levels.pack(fill=tk.X, pady=2)
         self.pyramid_levels.set(5)
+        
+        # Pyramid levels value display
+        self.pyramid_value_label = ctk.CTkLabel(self.param_frame, text="Value: 5",
+                                              font=ctk.CTkFont(size=12, weight="bold"),
+                                              text_color="lightgreen")
+        self.pyramid_value_label.pack(anchor=tk.W, pady=(2, 5))
         
         # Sigma
         self.sigma_label = ctk.CTkLabel(self.param_frame, text="Gaussian Sigma:")
         self.sigma_label.pack(anchor=tk.W)
-        self.gaussian_sigma = ctk.CTkSlider(self.param_frame, from_=0.5, to=3.0, number_of_steps=25)
+        
+        # Sigma description
+        self.sigma_desc_label = ctk.CTkLabel(self.param_frame, 
+                                           text="(approx 0.5 to 2.0, recommended 1.0)",
+                                           font=ctk.CTkFont(size=11), 
+                                           text_color="gray60")
+        self.sigma_desc_label.pack(anchor=tk.W, pady=(0, 2))
+        
+        self.gaussian_sigma = ctk.CTkSlider(self.param_frame, from_=0.1, to=2.5, number_of_steps=48,
+                                          command=self.update_sigma_value)
         self.gaussian_sigma.pack(fill=tk.X, pady=2)
         self.gaussian_sigma.set(1.0)
+        
+        # Sigma value display
+        self.sigma_value_label = ctk.CTkLabel(self.param_frame, text="Value: 1.0",
+                                            font=ctk.CTkFont(size=12, weight="bold"),
+                                            text_color="lightblue")
+        self.sigma_value_label.pack(anchor=tk.W, pady=(2, 0))
+        
+        # Gradient smoothing controls (for Gradient-based method)
+        self.smooth_label = ctk.CTkLabel(self.param_frame, text="Smoothing Radius:")
+        self.smooth_desc_label = ctk.CTkLabel(self.param_frame, 
+                                            text="(0=sharp, 3-5=smooth, reduces noise)",
+                                            font=ctk.CTkFont(size=11), 
+                                            text_color="gray60")
+        self.smooth_radius = ctk.CTkSlider(self.param_frame, from_=0, to=10, number_of_steps=10,
+                                         command=self.update_smooth_value)
+        self.smooth_radius.set(3)
+        
+        # Smooth radius value display
+        self.smooth_value_label = ctk.CTkLabel(self.param_frame, text="Value: 3",
+                                             font=ctk.CTkFont(size=12, weight="bold"),
+                                             text_color="lightyellow")
         
         stack_button = ctk.CTkButton(stack_frame, text="Stack Images", 
                                     command=self.stack_images)
@@ -491,20 +538,47 @@ class FocusStackerGUI:
         """Reset preview zoom and pan."""
         self.preview_widget.reset_view()
     
+    def update_pyramid_value(self, value):
+        """Update the pyramid levels value display when slider changes."""
+        self.pyramid_value_label.configure(text=f"Value: {int(value)}")
+    
+    def update_sigma_value(self, value):
+        """Update the sigma value display when slider changes."""
+        self.sigma_value_label.configure(text=f"Value: {value:.2f}")
+    
+    def update_smooth_value(self, value):
+        """Update the smooth radius value display when slider changes."""
+        self.smooth_value_label.configure(text=f"Value: {int(value)}")
+    
     def on_stack_method_change(self, method):
         """Handle stacking method change to show/hide parameters."""
+        # Hide all parameters first
+        self.pyramid_label.pack_forget()
+        self.pyramid_levels.pack_forget()
+        self.pyramid_value_label.pack_forget()
+        self.sigma_label.pack_forget()
+        self.sigma_desc_label.pack_forget()
+        self.gaussian_sigma.pack_forget()
+        self.sigma_value_label.pack_forget()
+        self.smooth_label.pack_forget()
+        self.smooth_desc_label.pack_forget()
+        self.smooth_radius.pack_forget()
+        self.smooth_value_label.pack_forget()
+        
+        # Show relevant parameters
         if method == "Laplacian Pyramid":
-            # Show parameters
             self.pyramid_label.pack(anchor=tk.W)
             self.pyramid_levels.pack(fill=tk.X, pady=2)
+            self.pyramid_value_label.pack(anchor=tk.W, pady=(2, 5))
             self.sigma_label.pack(anchor=tk.W)
+            self.sigma_desc_label.pack(anchor=tk.W, pady=(0, 2))
             self.gaussian_sigma.pack(fill=tk.X, pady=2)
-        else:
-            # Hide parameters
-            self.pyramid_label.pack_forget()
-            self.pyramid_levels.pack_forget()
-            self.sigma_label.pack_forget()
-            self.gaussian_sigma.pack_forget()
+            self.sigma_value_label.pack(anchor=tk.W, pady=(2, 0))
+        elif method == "Gradient-based":
+            self.smooth_label.pack(anchor=tk.W)
+            self.smooth_desc_label.pack(anchor=tk.W, pady=(0, 2))
+            self.smooth_radius.pack(fill=tk.X, pady=2)
+            self.smooth_value_label.pack(anchor=tk.W, pady=(2, 0))
     
     def align_images(self):
         """Align loaded images."""
@@ -530,10 +604,16 @@ class FocusStackerGUI:
             try:
                 progress_callback(0.05, "Initializing alignment...")
                 
+                # Get proxy setting
+                use_proxy = self.use_proxy_var.get()
+                
                 if method == "auto":
                     aligned, align_time = ImageAligner.auto_align(self.loaded_images, progress_callback=progress_callback)
                 elif method == "ecc":
-                    aligned, align_time = ImageAligner.align_images_ecc(self.loaded_images, progress_callback=progress_callback)
+                    aligned, align_time = ImageAligner.align_images_ecc(self.loaded_images, 
+                                                                      use_proxy=use_proxy, 
+                                                                      proxy_scale=0.25,
+                                                                      progress_callback=progress_callback)
                 elif method == "feature_based":
                     aligned, align_time = ImageAligner.align_images_feature_based(self.loaded_images, progress_callback=progress_callback)
                 elif method == "phase_correlation":
@@ -544,7 +624,8 @@ class FocusStackerGUI:
                 
                 if not progress.cancelled:
                     self.aligned_images = aligned
-                    self.root.after(0, lambda: self.status_label.configure(text=f"Images aligned successfully in {align_time:.2f}s"))
+                    proxy_msg = " (using fast proxy)" if use_proxy and method == "ecc" else ""
+                    self.root.after(0, lambda: self.status_label.configure(text=f"Images aligned successfully in {align_time:.2f}s{proxy_msg}"))
                     self.root.after(0, self.update_preview)
                 
             except Exception as e:
@@ -579,6 +660,23 @@ class FocusStackerGUI:
             if not progress.cancelled:
                 progress.update_progress(prog_value, message)
         
+        def algorithm_progress_callback(message):
+            """Progress callback adapter for stacking algorithms (they only expect message)."""
+            # Estimate progress based on message content
+            prog_value = 0.1
+            if "Converting" in message:
+                prog_value = 0.2
+            elif "Computing" in message or "Building" in message:
+                prog_value = 0.4
+            elif "Processing" in message or "Selecting" in message:
+                prog_value = 0.6
+            elif "Adding" in message or "Reconstructing" in message:
+                prog_value = 0.8
+            elif "complete" in message.lower() or "finished" in message.lower():
+                prog_value = 0.9
+            
+            progress_callback(prog_value, message)
+        
         def stack_thread():
             try:
                 progress_callback(0.05, "Initializing focus stacking...")
@@ -592,13 +690,16 @@ class FocusStackerGUI:
                 
                 if method == "Laplacian Pyramid":
                     result = FocusStackingAlgorithms.laplacian_pyramid_stack(
-                        images_to_stack, levels=levels, sigma=sigma, progress_callback=progress_callback)
+                        images_to_stack, levels=levels, sigma=sigma, progress_callback=algorithm_progress_callback)
                 elif method == "Gradient-based":
-                    result = FocusStackingAlgorithms.gradient_based_stack(images_to_stack, progress_callback=progress_callback)
+                    # Get smoothing parameters
+                    smooth_radius = int(self.smooth_radius.get())
+                    result = FocusStackingAlgorithms.gradient_based_stack(
+                        images_to_stack, smooth_radius=smooth_radius, progress_callback=algorithm_progress_callback)
                 elif method == "Variance-based":
-                    result = FocusStackingAlgorithms.variance_based_stack(images_to_stack, progress_callback=progress_callback)
+                    result = FocusStackingAlgorithms.variance_based_stack(images_to_stack, progress_callback=algorithm_progress_callback)
                 elif method == "Simple Average":
-                    result = FocusStackingAlgorithms.average_stack(images_to_stack, progress_callback=progress_callback)
+                    result = FocusStackingAlgorithms.average_stack(images_to_stack, progress_callback=algorithm_progress_callback)
                 else:
                     raise ValueError(f"Unknown stacking method: {method}")
                 

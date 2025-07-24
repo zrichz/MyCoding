@@ -209,6 +209,8 @@ class FocusStackingAlgorithms:
     def gradient_based_stack(images: List[np.ndarray], 
                            kernel_size: int = 5,
                            threshold: float = 0.1,
+                           smooth_radius: int = 0,
+                           blend_sigma: float = 1.0,
                            progress_callback: Optional[Callable[[str], None]] = None) -> np.ndarray:
         """
         Gradient-based focus stacking using Sobel operators.
@@ -217,6 +219,9 @@ class FocusStackingAlgorithms:
             images: List of input images
             kernel_size: Size of Sobel kernel
             threshold: Threshold for gradient magnitude
+            smooth_radius: Radius for smoothing focus regions (0 = no smoothing, 5+ = smooth)
+            blend_sigma: Gaussian sigma for blending between images
+            progress_callback: Optional callback for progress updates
             
         Returns:
             Focus stacked image
@@ -229,7 +234,10 @@ class FocusStackingAlgorithms:
         
         # Calculate gradient magnitude for each image
         gradient_maps = []
-        for img in images:
+        for i, img in enumerate(images):
+            if progress_callback:
+                progress_callback(f"Computing gradients for image {i+1}/{len(images)}...")
+            
             if len(img.shape) == 3:
                 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             else:
@@ -251,19 +259,105 @@ class FocusStackingAlgorithms:
         gradient_stack = np.stack(gradient_maps, axis=-1)
         best_focus_indices = np.argmax(gradient_stack, axis=-1)
         
-        if progress_callback:
-            progress_callback("Combining images...")
-        
-        # Combine images
-        result = np.zeros_like(images[0])
-        for i, img in enumerate(images):
-            mask = (best_focus_indices == i)
-            if len(img.shape) == 3:
-                mask = np.stack([mask] * img.shape[2], axis=-1)
-            result = np.where(mask, img, result)
+        if smooth_radius > 0:
+            if progress_callback:
+                progress_callback(f"Smoothing focus regions (radius: {smooth_radius})...")
+            
+            # Create smooth weight maps instead of hard binary masks
+            return FocusStackingAlgorithms._gradient_smooth_blend(
+                images, gradient_maps, smooth_radius, blend_sigma, progress_callback)
+        else:
+            if progress_callback:
+                progress_callback("Combining images with hard selection...")
+            
+            # Original hard selection method
+            result = np.zeros_like(images[0])
+            for i, img in enumerate(images):
+                mask = (best_focus_indices == i)
+                if len(img.shape) == 3:
+                    mask = np.stack([mask] * img.shape[2], axis=-1)
+                result = np.where(mask, img, result)
         
         if progress_callback:
             progress_callback("Gradient-based stacking complete!")
+        
+        return result
+    
+    @staticmethod
+    def _gradient_smooth_blend(images: List[np.ndarray], 
+                              gradient_maps: List[np.ndarray],
+                              smooth_radius: int,
+                              blend_sigma: float,
+                              progress_callback: Optional[Callable[[str], None]] = None) -> np.ndarray:
+        """
+        Smooth blending for gradient-based stacking to reduce noise.
+        
+        Args:
+            images: List of input images
+            gradient_maps: Pre-computed gradient magnitude maps
+            smooth_radius: Radius for morphological smoothing
+            blend_sigma: Gaussian sigma for weight smoothing
+            progress_callback: Optional progress callback
+            
+        Returns:
+            Smoothly blended result
+        """
+        if progress_callback:
+            progress_callback("Creating smooth weight maps...")
+        
+        # Create normalized weight maps from gradient magnitudes
+        gradient_stack = np.stack(gradient_maps, axis=-1)
+        
+        # Add small epsilon to prevent division by zero
+        epsilon = 1e-6
+        weight_sum = np.sum(gradient_stack, axis=-1, keepdims=True) + epsilon
+        weights = gradient_stack / weight_sum
+        
+        # Smooth the weight maps to reduce hard transitions
+        if progress_callback:
+            progress_callback("Smoothing weight maps...")
+        
+        smooth_weights = []
+        for i in range(len(images)):
+            weight = weights[:, :, i]
+            
+            # Apply morphological operations to smooth regions
+            if smooth_radius > 0:
+                kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, 
+                                                 (smooth_radius*2+1, smooth_radius*2+1))
+                weight = cv2.morphologyEx(weight, cv2.MORPH_CLOSE, kernel)
+                weight = cv2.morphologyEx(weight, cv2.MORPH_OPEN, kernel)
+            
+            # Apply Gaussian smoothing for soft transitions
+            if blend_sigma > 0:
+                weight = cv2.GaussianBlur(weight, (0, 0), blend_sigma)
+            
+            smooth_weights.append(weight)
+        
+        # Re-normalize weights
+        if progress_callback:
+            progress_callback("Re-normalizing smooth weights...")
+        
+        smooth_weight_stack = np.stack(smooth_weights, axis=-1)
+        weight_sum = np.sum(smooth_weight_stack, axis=-1, keepdims=True) + epsilon
+        normalized_weights = smooth_weight_stack / weight_sum
+        
+        # Blend images using smooth weights
+        if progress_callback:
+            progress_callback("Blending images with smooth weights...")
+        
+        result = np.zeros_like(images[0], dtype=np.float64)
+        
+        for i, img in enumerate(images):
+            weight = normalized_weights[:, :, i]
+            if len(img.shape) == 3:
+                # Expand weight to match color channels
+                weight = np.stack([weight] * img.shape[2], axis=-1)
+            
+            result += img.astype(np.float64) * weight
+        
+        # Convert back to original data type
+        result = np.clip(result, 0, 255).astype(images[0].dtype)
         
         return result
     
