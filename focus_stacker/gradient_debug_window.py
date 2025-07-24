@@ -19,12 +19,21 @@ class GradientStackingDebugWindow(ctk.CTkToplevel):
         super().__init__(parent)
         
         self.title("Gradient Stacking Debug - Process Visualization")
-        self.geometry("840x920")  # Increased size for 400x400 images
-        self.resizable(False, False)
+        self.geometry("860x940")  # Slightly larger to accommodate layout
+        self.resizable(True, True)  # Allow resizing in case of layout issues
         
         # Center on parent
         self.transient(parent)
         self.grab_set()
+        
+        # Ensure window is focusable
+        self.focus_set()
+        self.lift()
+        
+        # Add keyboard navigation
+        self.bind("<Left>", lambda e: self.prev_step())
+        self.bind("<Right>", lambda e: self.next_step())
+        self.bind("<Key>", self.on_key_press)  # Debug key presses
         
         # Store images (downsample for display)
         self.original_images = images
@@ -89,15 +98,18 @@ class GradientStackingDebugWindow(ctk.CTkToplevel):
         button_frame.pack(fill=tk.X, padx=10, pady=5)
         
         self.prev_button = ctk.CTkButton(button_frame, text="◀ Previous", 
-                                        command=self.prev_step, width=100)
-        self.prev_button.pack(side=tk.LEFT, padx=5)
+                                        command=self.prev_step, width=120, height=35,
+                                        font=ctk.CTkFont(size=14, weight="bold"))
+        self.prev_button.pack(side=tk.LEFT, padx=10)
         
-        self.step_label = ctk.CTkLabel(button_frame, text="Image 1/4")
+        self.step_label = ctk.CTkLabel(button_frame, text="Image 1/4",
+                                      font=ctk.CTkFont(size=14, weight="bold"))
         self.step_label.pack(side=tk.LEFT, expand=True)
         
         self.next_button = ctk.CTkButton(button_frame, text="Next ▶", 
-                                        command=self.next_step, width=100)
-        self.next_button.pack(side=tk.RIGHT, padx=5)
+                                        command=self.next_step, width=120, height=35,
+                                        font=ctk.CTkFont(size=14, weight="bold"))
+        self.next_button.pack(side=tk.RIGHT, padx=10)
         
         # Info panel
         self.info_text = ctk.CTkTextbox(self, height=80)
@@ -186,36 +198,59 @@ class GradientStackingDebugWindow(ctk.CTkToplevel):
     
     def enable_navigation(self):
         """Enable navigation buttons."""
-        self.next_button.configure(state="normal")
         if len(self.display_images) > 1:
-            self.step_label.configure(text=f"Image 1/{len(self.display_images)}")
+            self.next_button.configure(state="normal")
+            self.prev_button.configure(state="disabled")  # Start with prev disabled
+        else:
+            self.next_button.configure(state="disabled")
+            self.prev_button.configure(state="disabled")
+        
+        self.step_label.configure(text=f"Image 1/{len(self.display_images)}")
     
     def prev_step(self):
         """Go to previous image."""
+        print(f"Previous clicked: current_step={self.current_step}, total={len(self.display_images)}")  # Debug
         if self.current_step > 0:
             self.current_step -= 1
             self.update_display()
+        else:
+            print("Already at first image")  # Debug
     
     def next_step(self):
         """Go to next image."""
+        print(f"Next clicked: current_step={self.current_step}, total={len(self.display_images)}")  # Debug
         if self.current_step < len(self.display_images) - 1:
             self.current_step += 1
             self.update_display()
+        else:
+            print("Already at last image")  # Debug
+    
+    def on_key_press(self, event):
+        """Debug key presses."""
+        print(f"Key pressed: {event.keysym}")
     
     def update_display(self):
         """Update the 2x2 grid display."""
         if not self.gradient_maps:
+            print("No gradient maps available")  # Debug
             return
         
         idx = self.current_step
         img = self.display_images[idx]
         
+        print(f"Updating display: image {idx + 1}/{len(self.display_images)}")  # Debug
+        
         # Update step label
         self.step_label.configure(text=f"Image {idx + 1}/{len(self.display_images)}")
         
-        # Update navigation buttons
-        self.prev_button.configure(state="normal" if idx > 0 else "disabled")
-        self.next_button.configure(state="normal" if idx < len(self.display_images) - 1 else "disabled")
+        # Update navigation buttons with proper state management
+        prev_state = "normal" if idx > 0 else "disabled"
+        next_state = "normal" if idx < len(self.display_images) - 1 else "disabled"
+        
+        self.prev_button.configure(state=prev_state)
+        self.next_button.configure(state=next_state)
+        
+        print(f"Button states: prev={prev_state}, next={next_state}")  # Debug
         
         # Prepare images for display
         display_data = [
