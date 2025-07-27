@@ -1,0 +1,18 @@
+2025-07-17 20:21:36,193 - image_alignment - WARNING - Insufficient matches for image 2: 2
+2025-07-17 20:21:36,238 - image_alignment - WARNING - Insufficient matches for image 3: 1
+2025-07-17 20:21:36,306 - image_alignment - WARNING - Insufficient matches for image 4: 2
+2025-07-17 20:21:36,369 - image_alignment - WARNING - Insufficient matches for image 5: 0
+2025-07-17 20:21:36,429 - image_alignment - WARNING - Insufficient matches for image 6: 3
+2025-07-17 20:21:36,489 - image_alignment - WARNING - Insufficient matches for image 7: 4
+2025-07-17 20:21:36,540 - image_alignment - WARNING - Insufficient matches for image 8: 1
+2025-07-17 20:21:36,606 - image_alignment - WARNING - Insufficient matches for image 9: 0
+2025-07-17 20:21:36,674 - image_alignment - WARNING - Insufficient matches for image 10: 0
+2025-07-17 20:21:36,736 - image_alignment - WARNING - Insufficient matches for image 11: 1
+2025-07-17 20:21:36,797 - image_alignment - WARNING - Insufficient matches for image 12: 0
+2025-07-17 20:21:36,858 - image_alignment - WARNING - Insufficient matches for image 13: 1
+2025-07-17 20:21:36,920 - image_alignment - WARNING - Insufficient matches for image 14: 1
+2025-07-17 20:21:36,982 - image_alignment - WARNING - Insufficient matches for image 15: 2
+2025-07-17 20:21:37,050 - image_alignment - WARNING - Insufficient matches for image 16: 0
+2025-07-17 20:21:37,107 - image_alignment - WARNING - Insufficient matches for image 17: 0
+2025-07-17 20:21:37,164 - image_alignment - WARNING - Insufficient matches for image 18: 1
+2025-07-20 17:23:23,419 - gui - ERROR - Stacking failed: FocusStackerGUI.stack_images.<locals>.progress_callback() missing 1 required positional argument: 'message'
