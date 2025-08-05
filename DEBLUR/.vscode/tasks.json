@@ -1,0 +1,70 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run DEBLUR Application",
+			"type": "shell",
+			"command": "/home/rich/MyCoding/DEBLUR/.venv/bin/python",
+			"args": [
+				"main.py",
+				"--gui"
+			],
+			"group": "build",
+			"isBackground": false,
+			"options": {
+				"env": {
+					"PYTHONPATH": "/home/rich/MyCoding/DEBLUR"
+				}
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Run Tests",
+			"type": "shell",
+			"command": "/home/rich/MyCoding/DEBLUR/.venv/bin/python",
+			"args": [
+				"tests/test_deblur.py"
+			],
+			"group": "test",
+			"isBackground": false,
+			"options": {
+				"env": {
+					"PYTHONPATH": "/home/rich/MyCoding/DEBLUR"
+				}
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Run Gaussian Example",
+			"type": "shell",
+			"command": "/home/rich/MyCoding/DEBLUR/.venv/bin/python",
+			"args": [
+				"examples/gaussian_example.py"
+			],
+			"group": "build",
+			"isBackground": false,
+			"options": {
+				"env": {
+					"PYTHONPATH": "/home/rich/MyCoding/DEBLUR"
+				}
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Run Motion Example",
+			"type": "shell",
+			"command": "/home/rich/MyCoding/DEBLUR/.venv/bin/python",
+			"args": [
+				"examples/motion_example.py"
+			],
+			"group": "build",
+			"isBackground": false,
+			"options": {
+				"env": {
+					"PYTHONPATH": "/home/rich/MyCoding/DEBLUR"
+				}
+			},
+			"problemMatcher": []
+		}
+	]
+}
