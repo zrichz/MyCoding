@@ -6,7 +6,7 @@ This script provides a graphical interface for expanding images vertically with 
 Key Features:
 - Load images via file dialog with thumbnail preview (max 800x800 display)
 - Expand images vertically by adding pixels at top and bottom edges
-- Configurable expansion sizes: 120px, 240px, or 360px on each side
+- Configurable expansion sizes: 112px, 224px, or 336px on each side
 - Progressive horizontal blur applied to expanded regions with selectable intensity:
   * Blur options: 20px, 40px, 80px, or 160px maximum
   * Linear gradient from 0 blur at original edge to maximum at outermost expansion
@@ -41,7 +41,7 @@ class ImageExpander:
         
         # Default settings
         self.blur_amount = tk.IntVar(value=20)
-        self.expansion_size = tk.IntVar(value=120)
+        self.expansion_size = tk.IntVar(value=112)
         self.luminance_drop = tk.IntVar(value=0)
         
         self.setup_gui()
@@ -79,11 +79,11 @@ class ImageExpander:
                                        font=("Arial", 10, "bold"))
         expansion_frame.pack(side=tk.LEFT, padx=(0, 20))
         
-        tk.Radiobutton(expansion_frame, text="120px", variable=self.expansion_size, value=120,
+        tk.Radiobutton(expansion_frame, text="112px", variable=self.expansion_size, value=112,
                       font=("Arial", 9)).pack(anchor='w', padx=10, pady=2)
-        tk.Radiobutton(expansion_frame, text="240px", variable=self.expansion_size, value=240,
+        tk.Radiobutton(expansion_frame, text="224px", variable=self.expansion_size, value=224,
                       font=("Arial", 9)).pack(anchor='w', padx=10, pady=2)
-        tk.Radiobutton(expansion_frame, text="360px", variable=self.expansion_size, value=360,
+        tk.Radiobutton(expansion_frame, text="336px", variable=self.expansion_size, value=336,
                       font=("Arial", 9)).pack(anchor='w', padx=10, pady=2)
         
         # Luminance drop selection

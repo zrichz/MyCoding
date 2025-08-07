@@ -1,0 +1,1 @@
+Configurable expansion sizes: 112px, 224px, or 336px on each side
