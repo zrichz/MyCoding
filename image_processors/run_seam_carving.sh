@@ -1,9 +1,10 @@
 #!/bin/bash
 
-# Seam Carving Width Reducer - Easy Launch Script
+# Seam Carving Width Adjuster - Easy Launch Script
 # This shell script activates the virtual environment and runs the GUI application
+# Supports both width reduction (50-99%) and expansion (100-150%)
 
-echo "Starting Seam Carving Width Reducer..."
+echo "Starting Seam Carving Width Adjuster..."
 echo
 
 # Check if virtual environment exists
@@ -32,7 +33,7 @@ fi
 echo "Activating virtual environment..."
 source .venv/bin/activate
 
-echo "Running Seam Carving Width Reducer GUI..."
+echo "Running Seam Carving Width Adjuster GUI..."
 echo
 python seam_carving_width_reducer.py
 

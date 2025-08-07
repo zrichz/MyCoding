@@ -1,8 +1,9 @@
 @echo off
-REM Seam Carving Width Reducer - Easy Launch Script
+REM Seam Carving Width Adjuster - Easy Launch Script
 REM This batch file activates the virtual environment and runs the GUI application
+REM Supports both width reduction (50-99%) and expansion (100-150%)
 
-echo Starting Seam Carving Width Reducer...
+echo Starting Seam Carving Width Adjuster...
 echo.
 
 REM Check if virtual environment exists
@@ -31,7 +32,7 @@ REM Activate virtual environment and run the application
 echo Activating virtual environment...
 call .venv\Scripts\activate.bat
 
-echo Running Seam Carving Width Reducer GUI...
+echo Running Seam Carving Width Adjuster GUI...
 echo.
 python seam_carving_width_reducer.py
 

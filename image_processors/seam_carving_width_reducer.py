@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-Seam Carving Width Reducer
-A GUI application that reduces image width using seam carving algorithm
+Seam Carving Width Adjuster
+A GUI application that adjusts image width using seam carving algorithm
 applied to the first and last 25% of the image width.
+Supports both reduction (50-99%) and expansion (100-150%).
 """
 
 import tkinter as tk
@@ -17,7 +18,7 @@ from pathlib import Path
 class SeamCarvingApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Seam Carving Width Reducer")
+        self.root.title("Seam Carving Width Adjuster")
         self.root.geometry("800x600")
         
         self.original_image = None
@@ -44,7 +45,7 @@ class SeamCarvingApp:
         ttk.Button(main_frame, text="Browse", command=self.browse_image).grid(row=0, column=1, sticky=tk.W, padx=(10, 0))
         
         # Percentage input
-        ttk.Label(main_frame, text="Width Reduction (50-99%):").grid(row=1, column=0, sticky=tk.W, pady=5)
+        ttk.Label(main_frame, text="Width Adjustment (50-150%):").grid(row=1, column=0, sticky=tk.W, pady=5)
         self.percentage_var = tk.StringVar(value="70")
         percentage_frame = ttk.Frame(main_frame)
         percentage_frame.grid(row=1, column=1, sticky=tk.W, padx=(10, 0))
@@ -127,10 +128,10 @@ class SeamCarvingApp:
         """Validate the percentage input"""
         try:
             percentage = float(self.percentage_var.get())
-            if 50 <= percentage <= 99:
+            if 50 <= percentage <= 150:
                 return percentage
             else:
-                messagebox.showerror("Invalid Input", "Percentage must be between 50 and 99")
+                messagebox.showerror("Invalid Input", "Percentage must be between 50 and 150")
                 return None
         except ValueError:
             messagebox.showerror("Invalid Input", "Please enter a valid number")
@@ -208,32 +209,132 @@ class SeamCarvingApp:
         
         return result
     
-    def seam_carve_region(self, image, start_col, end_col, seams_to_remove):
+    def seam_carve_region(self, image, start_col, end_col, seams_to_process, is_expansion=False):
         """Apply seam carving to a specific region of the image"""
-        if seams_to_remove <= 0:
-            return image
+        if seams_to_process <= 0:
+            return image[:, start_col:end_col]
         
         # Extract the region
         region = image[:, start_col:end_col].copy()
         
-        for seam_idx in range(seams_to_remove):
-            # Calculate energy for current region
-            energy = self.energy_function(region)
+        if is_expansion:
+            # For expansion, we need to track seam positions to avoid duplicates
+            inserted_seams = []
             
-            # Find minimum energy seam
-            seam = self.find_vertical_seam(energy)
-            
-            # Remove the seam
-            region = self.remove_vertical_seam(region, seam)
-            
-            # Update progress
-            progress = ((seam_idx + 1) / seams_to_remove) * 50  # 50% for each region
-            if start_col > 0:  # Second region
-                progress += 50
-            self.progress_var.set(progress)
-            self.root.update_idletasks()
+            for seam_idx in range(seams_to_process):
+                # Calculate energy for current region
+                energy = self.energy_function(region)
+                
+                # Find minimum energy seam
+                seam = self.find_vertical_seam(energy)
+                
+                # Adjust seam position to avoid previously inserted seams
+                # Find the best seam that's not too close to existing ones
+                attempts = 0
+                while attempts < 10:  # Limit attempts to avoid infinite loop
+                    too_close = False
+                    for inserted_seam in inserted_seams:
+                        # Check if this seam is too close to a previously inserted one
+                        if any(abs(seam[i] - inserted_seam[i]) < 2 for i in range(len(seam))):
+                            too_close = True
+                            break
+                    
+                    if not too_close:
+                        break
+                    
+                    # If too close, modify the energy to discourage this seam
+                    for i in range(len(seam)):
+                        if seam[i] > 0:
+                            energy[i, seam[i]-1] += 1000
+                        if seam[i] < energy.shape[1] - 1:
+                            energy[i, seam[i]+1] += 1000
+                        energy[i, seam[i]] += 1000
+                    
+                    seam = self.find_vertical_seam(energy)
+                    attempts += 1
+                
+                # Insert the seam
+                region = self.insert_vertical_seam(region, seam)
+                
+                # Adjust all previously inserted seam positions
+                inserted_seams = self.adjust_seam_positions(inserted_seams, seam)
+                inserted_seams.append(seam)
+                
+                # Update progress
+                progress = ((seam_idx + 1) / seams_to_process) * 50  # 50% for each region
+                if start_col > 0:  # Second region
+                    progress += 50
+                self.progress_var.set(progress)
+                self.root.update_idletasks()
+        else:
+            # For reduction, use the original algorithm
+            for seam_idx in range(seams_to_process):
+                # Calculate energy for current region
+                energy = self.energy_function(region)
+                
+                # Find minimum energy seam
+                seam = self.find_vertical_seam(energy)
+                
+                # Remove the seam
+                region = self.remove_vertical_seam(region, seam)
+                
+                # Update progress
+                progress = ((seam_idx + 1) / seams_to_process) * 50  # 50% for each region
+                if start_col > 0:  # Second region
+                    progress += 50
+                self.progress_var.set(progress)
+                self.root.update_idletasks()
         
         return region
+    
+    def insert_vertical_seam(self, image, seam):
+        """Insert a vertical seam into the image by averaging adjacent pixels"""
+        rows, cols, channels = image.shape
+        result = np.zeros((rows, cols + 1, channels), dtype=image.dtype)
+        
+        for i in range(rows):
+            j = seam[i]
+            
+            # Copy pixels before seam
+            result[i, :j] = image[i, :j]
+            
+            # Insert new pixel as average of seam pixel and adjacent pixels
+            if j == 0:
+                # At left edge, duplicate the seam pixel
+                result[i, j] = image[i, j]
+            elif j == cols - 1:
+                # At right edge, duplicate the seam pixel
+                result[i, j] = image[i, j]
+            else:
+                # Average the seam pixel with its neighbors
+                left_pixel = image[i, j-1] if j > 0 else image[i, j]
+                right_pixel = image[i, j+1] if j < cols - 1 else image[i, j]
+                result[i, j] = ((left_pixel.astype(np.float32) + 
+                               image[i, j].astype(np.float32) + 
+                               right_pixel.astype(np.float32)) / 3).astype(image.dtype)
+            
+            # Insert the original seam pixel
+            result[i, j+1] = image[i, j]
+            
+            # Copy pixels after seam
+            result[i, j+2:] = image[i, j+1:]
+        
+        return result
+    
+    def adjust_seam_positions(self, seams, new_seam):
+        """Adjust previously found seam positions when a new seam is inserted"""
+        adjusted_seams = []
+        for old_seam in seams:
+            adjusted_seam = []
+            for i, (old_pos, new_pos) in enumerate(zip(old_seam, new_seam)):
+                # If the new seam is inserted at or before the old position,
+                # shift the old seam position to the right
+                if new_pos <= old_pos:
+                    adjusted_seam.append(old_pos + 1)
+                else:
+                    adjusted_seam.append(old_pos)
+            adjusted_seams.append(adjusted_seam)
+        return adjusted_seams
     
     def process_image(self):
         """Process the image with seam carving"""
@@ -255,28 +356,39 @@ class SeamCarvingApp:
             # Calculate dimensions
             height, width, channels = image_array.shape
             target_width = int(width * percentage / 100)
-            seams_to_remove = width - target_width
+            
+            # Determine if we're expanding or reducing
+            is_expansion = percentage > 100
+            seams_to_process = abs(width - target_width)
             
             # Calculate region boundaries (first 25% and last 25%)
             first_quarter = width // 4
             last_quarter_start = width - first_quarter
             
             # Split seams between two regions
-            seams_first_region = seams_to_remove // 2
-            seams_last_region = seams_to_remove - seams_first_region
+            seams_first_region = seams_to_process // 2
+            seams_last_region = seams_to_process - seams_first_region
             
-            self.update_status("Processing first 25% of image...")
+            if is_expansion:
+                self.update_status("Expanding first 25% of image...")
+                operation = "Expanding"
+            else:
+                self.update_status("Reducing first 25% of image...")
+                operation = "Reducing"
             
             # Process first 25%
             first_region = self.seam_carve_region(
-                image_array, 0, first_quarter, seams_first_region
+                image_array, 0, first_quarter, seams_first_region, is_expansion
             )
             
-            self.update_status("Processing last 25% of image...")
+            if is_expansion:
+                self.update_status("Expanding last 25% of image...")
+            else:
+                self.update_status("Reducing last 25% of image...")
             
             # Process last 25%
             last_region = self.seam_carve_region(
-                image_array, last_quarter_start, width, seams_last_region
+                image_array, last_quarter_start, width, seams_last_region, is_expansion
             )
             
             # Combine regions
@@ -289,27 +401,34 @@ class SeamCarvingApp:
             self.processed_image = Image.fromarray(result.astype(np.uint8))
             
             # Save the image
-            self.save_processed_image()
+            self.save_processed_image(is_expansion)
             
             # Display the result
             self.display_image(self.processed_image)
             
             self.progress_var.set(100)
-            self.update_status(f"Complete! Reduced from {width}px to {result.shape[1]}px width")
+            
+            if is_expansion:
+                self.update_status(f"Complete! Expanded from {width}px to {result.shape[1]}px width")
+            else:
+                self.update_status(f"Complete! Reduced from {width}px to {result.shape[1]}px width")
             
         except Exception as e:
             messagebox.showerror("Error", f"Processing failed: {str(e)}")
             self.progress_var.set(0)
             self.update_status("Error occurred during processing")
     
-    def save_processed_image(self):
-        """Save the processed image with _reduced_width suffix"""
+    def save_processed_image(self, is_expansion=False):
+        """Save the processed image with appropriate suffix"""
         if self.processed_image is None or self.image_path is None:
             return
         
         # Create output filename
         path_obj = Path(self.image_path)
-        output_filename = f"{path_obj.stem}_reduced_width{path_obj.suffix}"
+        if is_expansion:
+            output_filename = f"{path_obj.stem}_expanded_width{path_obj.suffix}"
+        else:
+            output_filename = f"{path_obj.stem}_reduced_width{path_obj.suffix}"
         output_path = path_obj.parent / output_filename
         
         # Save the image
