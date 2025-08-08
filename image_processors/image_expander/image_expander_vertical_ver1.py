@@ -1,22 +1,18 @@
 """
-Image Auto-Expander - GUI Application
+Image Auto-Expander - Batch Processing GUI Application
 
-This script provides a graphical interface for automatically expanding images to a fixed 720x1600 pixel dimension.
+This script provides a graphical interface for batch processing images to a fixed 720x1600 pixel dimension.
 
 Key Features:
-- Load images via file dialog with thumbnail preview (max 800x800 display)
-- Automatically expand images to exactly 720x1600 pixels (width x height)
+- Select directory containing images for batch processing
+- Automatically expand all images to exactly 720x1600 pixels (width x height)
 - Intelligent expansion: only expands dimensions that are smaller than target
-- Progressive horizontal blur applied to expanded regions with selectable intensity:
-  * Blur options: 20px, 40px, 80px, or 160px maximum
-  * Linear gradient from 0 blur at original edge to maximum at outermost expansion
-- Progressive luminance reduction (darkening) for natural fade effect:
-  * Luminance drop options: 0%, 25%, 50%, 75%, or 100%
-  * Linear gradient from original brightness to maximum reduction
+- Fixed 160px maximum blur applied to expanded regions
+- Fixed 50% luminance reduction (darkening) for natural fade effect
 - Dual-axis expansion: applies effects to both horizontal and vertical expansions
-- Real-time preview of processed image
-- Save results in common image formats (PNG, JPEG)
-- Status feedback showing expansion details and processing results
+- Batch processing with progress feedback
+- Saves results with "_final" suffix in "processed" subdirectory
+- Supports common image formats (PNG, JPEG, BMP, TIFF)
 
 Technical Implementation:
 - Uses scipy.ndimage for directional blur to preserve colors
@@ -28,26 +24,26 @@ Technical Implementation:
 
 from PIL import Image, ImageTk
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, ttk
 import numpy as np
 from scipy import ndimage
+import os
 
 class ImageExpander:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Image Auto-Expander (720x1600)")
-        self.root.geometry("900x750")
+        self.root.title("Image Auto-Expander - Batch Processor (720x1600)")
+        self.root.geometry("900x600")
         
-        self.original_image = None
-        self.processed_image = None
+        self.input_directory = None
         
         # Target dimensions
         self.target_width = 720
         self.target_height = 1600
         
-        # Default settings
-        self.blur_amount = tk.IntVar(value=20)
-        self.luminance_drop = tk.IntVar(value=0)
+        # Fixed settings
+        self.blur_amount = 160
+        self.luminance_drop = 50
         
         self.setup_gui()
     
@@ -57,104 +53,175 @@ class ImageExpander:
         main_frame.pack(expand=True, fill='both')
         
         # Title
-        title_label = tk.Label(main_frame, text="Image Auto-Expander (720x1600)", 
+        title_label = tk.Label(main_frame, text="Image Auto-Expander - Batch Processor (720x1600)", 
                               font=("Arial", 14, "bold"))
         title_label.pack(pady=(0, 20))
         
-        # Settings frame
-        settings_frame = tk.Frame(main_frame)
-        settings_frame.pack(pady=(0, 20))
-        
-        # Blur amount selection
-        blur_frame = tk.LabelFrame(settings_frame, text="Blur Amount (pixels)", 
+        # Settings info frame
+        info_frame = tk.LabelFrame(main_frame, text="Processing Settings", 
                                   font=("Arial", 10, "bold"))
-        blur_frame.pack(side=tk.LEFT, padx=(0, 20))
+        info_frame.pack(pady=(0, 20), fill='x')
         
-        tk.Radiobutton(blur_frame, text="20px", variable=self.blur_amount, value=20,
-                      font=("Arial", 9)).pack(anchor='w', padx=10, pady=2)
-        tk.Radiobutton(blur_frame, text="40px", variable=self.blur_amount, value=40,
-                      font=("Arial", 9)).pack(anchor='w', padx=10, pady=2)
-        tk.Radiobutton(blur_frame, text="80px", variable=self.blur_amount, value=80,
-                      font=("Arial", 9)).pack(anchor='w', padx=10, pady=2)
-        tk.Radiobutton(blur_frame, text="160px", variable=self.blur_amount, value=160,
-                      font=("Arial", 9)).pack(anchor='w', padx=10, pady=2)
-        
-        # Luminance drop selection
-        luminance_frame = tk.LabelFrame(settings_frame, text="Luminance Drop (%)", 
-                                       font=("Arial", 10, "bold"))
-        luminance_frame.pack(side=tk.LEFT)
-        
-        tk.Radiobutton(luminance_frame, text="0%", variable=self.luminance_drop, value=0,
-                      font=("Arial", 9)).pack(anchor='w', padx=10, pady=2)
-        tk.Radiobutton(luminance_frame, text="25%", variable=self.luminance_drop, value=25,
-                      font=("Arial", 9)).pack(anchor='w', padx=10, pady=2)
-        tk.Radiobutton(luminance_frame, text="50%", variable=self.luminance_drop, value=50,
-                      font=("Arial", 9)).pack(anchor='w', padx=10, pady=2)
-        tk.Radiobutton(luminance_frame, text="75%", variable=self.luminance_drop, value=75,
-                      font=("Arial", 9)).pack(anchor='w', padx=10, pady=2)
-        tk.Radiobutton(luminance_frame, text="100%", variable=self.luminance_drop, value=100,
-                      font=("Arial", 9)).pack(anchor='w', padx=10, pady=2)
+        settings_text = f"Fixed Settings: 160px blur, 50% luminance reduction\nTarget: 720x1600 pixels"
+        tk.Label(info_frame, text=settings_text, 
+                font=("Arial", 9), justify='center').pack(pady=10)
         
         # Button frame
         button_frame = tk.Frame(main_frame)
         button_frame.pack(pady=(0, 20))
         
-        # Load image button
-        load_button = tk.Button(button_frame, text="Load Image", 
-                               command=self.load_image, bg="#4CAF50", fg="white",
-                               font=("Arial", 10), padx=20, pady=10)
-        load_button.pack(side=tk.LEFT, padx=(0, 10))
+        # Select directory button
+        select_button = tk.Button(button_frame, text="Select Image Directory", 
+                                 command=self.select_directory, bg="#4CAF50", fg="white",
+                                 font=("Arial", 10), padx=20, pady=10)
+        select_button.pack(side=tk.LEFT, padx=(0, 10))
         
         # Process button
-        self.process_button = tk.Button(button_frame, text="Expand Image", 
-                                       command=self.process_image, bg="#2196F3", fg="white",
+        self.process_button = tk.Button(button_frame, text="Process All Images", 
+                                       command=self.process_all_images, bg="#2196F3", fg="white",
                                        font=("Arial", 10), padx=20, pady=10, state=tk.DISABLED)
-        self.process_button.pack(side=tk.LEFT, padx=(0, 10))
+        self.process_button.pack(side=tk.LEFT)
         
-        # Save button
-        self.save_button = tk.Button(button_frame, text="Save Result", 
-                                    command=self.save_image, bg="#FF9800", fg="white",
-                                    font=("Arial", 10), padx=20, pady=10, state=tk.DISABLED)
-        self.save_button.pack(side=tk.LEFT)
+        # Progress frame
+        progress_frame = tk.LabelFrame(main_frame, text="Progress", 
+                                      font=("Arial", 10, "bold"))
+        progress_frame.pack(pady=(0, 20), fill='x')
         
-        # Image display frame
-        self.image_frame = tk.Frame(main_frame, bg="lightgray", relief=tk.SUNKEN, bd=2)
-        self.image_frame.pack(expand=True, fill='both')
+        # Progress bar
+        self.progress_var = tk.DoubleVar()
+        self.progress_bar = ttk.Progressbar(progress_frame, variable=self.progress_var, 
+                                           maximum=100, length=400)
+        self.progress_bar.pack(pady=10)
         
-        # Image label
-        self.image_label = tk.Label(self.image_frame, text="No image loaded", 
-                                   bg="lightgray", fg="gray", font=("Arial", 12))
-        self.image_label.pack(expand=True)
+        # Progress label
+        self.progress_label = tk.Label(progress_frame, text="No directory selected", 
+                                      font=("Arial", 9))
+        self.progress_label.pack()
         
-        # Status label
-        self.status_label = tk.Label(main_frame, text="Ready", 
-                                    font=("Arial", 9), fg="gray")
-        self.status_label.pack(pady=(10, 0))
+        # Status frame
+        status_frame = tk.Frame(main_frame)
+        status_frame.pack(expand=True, fill='both')
+        
+        # Status text area
+        self.status_text = tk.Text(status_frame, height=15, wrap=tk.WORD,
+                                  font=("Consolas", 9))
+        scrollbar = ttk.Scrollbar(status_frame, orient=tk.VERTICAL, command=self.status_text.yview)
+        self.status_text.configure(yscrollcommand=scrollbar.set)
+        
+        self.status_text.pack(side=tk.LEFT, expand=True, fill='both')
+        scrollbar.pack(side=tk.RIGHT, fill='y')
+        
+        # Initial status
+        self.log_message("Ready to process images. Select a directory to begin.")
     
-    def load_image(self):
-        file_path = filedialog.askopenfilename(
-            title="Select Image",
-            filetypes=[("Image files", "*.jpg *.jpeg *.png *.bmp *.tiff")]
-        )
+    def log_message(self, message):
+        """Add message to status log"""
+        self.status_text.insert(tk.END, f"{message}\n")
+        self.status_text.see(tk.END)
+        self.root.update()
+    
+    def select_directory(self):
+        """Select input directory containing images"""
+        directory = filedialog.askdirectory(title="Select Directory Containing Images")
         
-        if file_path:
-            try:
-                self.original_image = Image.open(file_path)
-                self.display_image(self.original_image)
+        if directory:
+            self.input_directory = directory
+            # Count image files
+            image_files = self.get_image_files(directory)
+            count = len(image_files)
+            
+            self.log_message(f"Selected directory: {directory}")
+            self.log_message(f"Found {count} image files")
+            self.progress_label.config(text=f"Directory selected: {count} images found")
+            
+            if count > 0:
                 self.process_button.config(state=tk.NORMAL)
-                self.status_label.config(text=f"Loaded: {file_path}")
-            except Exception as e:
-                messagebox.showerror("Error", f"Failed to load image: {e}")
+            else:
+                self.process_button.config(state=tk.DISABLED)
+                messagebox.showwarning("No Images", "No supported image files found in the selected directory.")
     
-    def display_image(self, image):
-        # Create thumbnail for display (max 800x800)
-        display_image = image.copy()
-        display_image.thumbnail((800, 800), Image.Resampling.LANCZOS)
+    def get_image_files(self, directory):
+        """Get list of supported image files in directory"""
+        supported_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif'}
+        image_files = []
         
-        # Convert to PhotoImage for tkinter
-        photo = ImageTk.PhotoImage(display_image)
-        self.image_label.config(image=photo, text="")
-        self.image_label.image = photo  # Keep a reference
+        for filename in os.listdir(directory):
+            _, ext = os.path.splitext(filename.lower())
+            if ext in supported_extensions:
+                image_files.append(filename)
+        
+        return sorted(image_files)
+    
+    def process_all_images(self):
+        """Process all images in the selected directory"""
+        if not self.input_directory:
+            return
+        
+        try:
+            # Disable button during processing
+            self.process_button.config(state=tk.DISABLED)
+            
+            # Get image files
+            image_files = self.get_image_files(self.input_directory)
+            total_files = len(image_files)
+            
+            if total_files == 0:
+                self.log_message("No image files to process")
+                return
+            
+            # Create output directory
+            output_dir = os.path.join(self.input_directory, "processed")
+            os.makedirs(output_dir, exist_ok=True)
+            self.log_message(f"Created output directory: {output_dir}")
+            
+            # Process each image
+            successful = 0
+            failed = 0
+            
+            for i, filename in enumerate(image_files):
+                try:
+                    # Update progress
+                    progress = (i / total_files) * 100
+                    self.progress_var.set(progress)
+                    self.progress_label.config(text=f"Processing {i+1}/{total_files}: {filename}")
+                    
+                    # Process the image
+                    input_path = os.path.join(self.input_directory, filename)
+                    name, ext = os.path.splitext(filename)
+                    output_filename = f"{name}_final{ext}"
+                    output_path = os.path.join(output_dir, output_filename)
+                    
+                    if self.process_single_image(input_path, output_path):
+                        successful += 1
+                        self.log_message(f"✓ Processed: {filename} -> {output_filename}")
+                    else:
+                        failed += 1
+                        self.log_message(f"✗ Failed: {filename}")
+                        
+                except Exception as e:
+                    failed += 1
+                    self.log_message(f"✗ Error processing {filename}: {str(e)}")
+            
+            # Complete
+            self.progress_var.set(100)
+            self.progress_label.config(text=f"Complete: {successful} processed, {failed} failed")
+            self.log_message(f"\nBatch processing complete!")
+            self.log_message(f"Successfully processed: {successful} images")
+            self.log_message(f"Failed: {failed} images")
+            self.log_message(f"Output directory: {output_dir}")
+            
+            if successful > 0:
+                messagebox.showinfo("Processing Complete", 
+                                   f"Successfully processed {successful} images!\n"
+                                   f"Output saved to: {output_dir}")
+            
+        except Exception as e:
+            self.log_message(f"Error during batch processing: {str(e)}")
+            messagebox.showerror("Error", f"Batch processing failed: {str(e)}")
+        
+        finally:
+            # Re-enable button
+            self.process_button.config(state=tk.NORMAL)
     
     def apply_horizontal_blur(self, line_array, blur_amount):
         """Apply horizontal-only blur to preserve colors"""
@@ -240,21 +307,19 @@ class ImageExpander:
         
         return np.clip(reduced, 0, 255).astype(np.uint8)
     
-    def process_image(self):
-        if not self.original_image:
-            return
-        
+    def process_single_image(self, input_path, output_path):
+        """Process a single image file"""
         try:
-            self.status_label.config(text="Processing image...")
-            self.root.update()
+            # Load image
+            original_image = Image.open(input_path)
             
             # Convert image to numpy array
-            img_array = np.array(self.original_image)
+            img_array = np.array(original_image)
             orig_height, orig_width = img_array.shape[:2]
             
-            # Get selected settings
-            max_blur = self.blur_amount.get()
-            max_luminance_drop = self.luminance_drop.get()
+            # Use fixed settings
+            max_blur = self.blur_amount
+            max_luminance_drop = self.luminance_drop
             
             # Calculate expansion needed
             width_expansion = max(0, self.target_width - orig_width)
@@ -336,46 +401,16 @@ class ImageExpander:
                     expanded_array[:, x_end + i] = final_column
             
             # Convert back to PIL Image
-            self.processed_image = Image.fromarray(expanded_array.astype('uint8'))
+            processed_image = Image.fromarray(expanded_array.astype('uint8'))
             
-            # Display the result
-            self.display_image(self.processed_image)
-            self.save_button.config(state=tk.NORMAL)
+            # Save the processed image
+            processed_image.save(output_path)
             
-            # Create status message
-            expansion_info = []
-            if width_expansion > 0:
-                expansion_info.append(f"width +{width_expansion}px")
-            if height_expansion > 0:
-                expansion_info.append(f"height +{height_expansion}px")
-            
-            if expansion_info:
-                expansion_text = ", ".join(expansion_info)
-                self.status_label.config(text=f"Image expanded to 720x1600! ({expansion_text}, {max_blur}px max blur, {max_luminance_drop}% luminance drop)")
-            else:
-                self.status_label.config(text=f"Image already 720x1600! ({max_blur}px blur setting, {max_luminance_drop}% luminance setting)")
+            return True
             
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to process image: {e}")
-            self.status_label.config(text="Error processing image")
-    
-    def save_image(self):
-        if not self.processed_image:
-            return
-        
-        file_path = filedialog.asksaveasfilename(
-            title="Save Expanded Image",
-            defaultextension=".png",
-            filetypes=[("PNG files", "*.png"), ("JPEG files", "*.jpg"), ("All files", "*.*")]
-        )
-        
-        if file_path:
-            try:
-                self.processed_image.save(file_path)
-                self.status_label.config(text=f"Saved: {file_path}")
-                messagebox.showinfo("Success", "Image saved successfully!")
-            except Exception as e:
-                messagebox.showerror("Error", f"Failed to save image: {e}")
+            print(f"Error processing {input_path}: {e}")
+            return False
     
     def run(self):
         self.root.mainloop()
