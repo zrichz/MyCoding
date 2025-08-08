@@ -7,12 +7,12 @@ echo Starting Seam Carving Width Adjuster...
 echo.
 
 REM Check if virtual environment exists
-if not exist ".venv\Scripts\activate.bat" (
+if not exist "..\\.venv\Scripts\activate.bat" (
     echo ERROR: Virtual environment not found!
-    echo Please make sure the .venv folder exists in this directory.
+    echo Please make sure the .venv folder exists in the parent directory.
     echo You may need to create it first by running:
-    echo   python -m venv .venv
-    echo   .venv\Scripts\activate.bat
+    echo   python -m venv ..\.venv
+    echo   ..\.venv\Scripts\activate.bat
     echo   pip install -r seam_carving_requirements.txt
     echo.
     pause
@@ -30,7 +30,7 @@ if not exist "seam_carving_width_reducer.py" (
 
 REM Activate virtual environment and run the application
 echo Activating virtual environment...
-call .venv\Scripts\activate.bat
+call ..\\.venv\Scripts\activate.bat
 
 echo Running Seam Carving Width Adjuster GUI...
 echo.
