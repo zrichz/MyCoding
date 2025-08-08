@@ -1,0 +1,11 @@
+image resizing rules (pseudocode):
+
+if current image width >720px:
+	reduce width to 720px whilst maintaining image aspect ratio
+if current image height >1600px:
+	reduce height to 1600px whilst maintaining image aspect ratio
+if (current width <720px and current height < (20/9) * current width)
+	increase width to 720px whilst maintaining image aspect ratio
+if (current height <1600px and current width < (9/20) * current height)
+	increase width to 720px whilst maintaining image aspect ratio
+

@@ -1,6 +1,9 @@
-# Interactive Image Cropper
+# Interac- **💾 Full Resolution**: Crops are applied to original high-resolution images
+- **📐 Automatic Resizing**: Applies intelligent resizing rules before saving
+- **📝 Smart Filenames**: Adds final dimensions to filenames (e.g., `photo_720x1280.jpg`)
+- **📂 Auto Organization**: Saves cropped images to "cropped" subdirectorye Image Cropper
 
-A Python GUI application for batch cropping images with interactive selection. Users can visually select crop areas on thumbnail previews, and the crops are applied to full-resolution original images.
+A Python GUI application for batch cropping images with interactive selection and automatic resizing. Users can visually select crop areas on thumbnail previews, and the crops are applied to full-resolution original images with intelligent resizing rules.
 
 ## Features
 
@@ -8,10 +11,22 @@ A Python GUI application for batch cropping images with interactive selection. U
 - **📁 Batch Processing**: Process entire directories of images sequentially  
 - **🔍 Smart Thumbnails**: Display images at max 800x800 while preserving aspect ratio
 - **💾 Full Resolution**: Crops are applied to original high-resolution images
-- **📂 Auto Organization**: Saves cropped images to "cropped" subdirectory
+- **� Automatic Resizing**: Applies intelligent resizing rules before saving
+- **�📂 Auto Organization**: Saves cropped images to "cropped" subdirectory
 - **⏭️ Easy Navigation**: Previous/Next/Skip buttons for workflow control
 - **🔄 Conflict Handling**: Automatic filename conflict resolution
 - **📊 Progress Tracking**: Shows current image and total count
+
+## Image Resizing Rules
+
+Before saving each cropped image, the following resizing rules are automatically applied to ensure optimal dimensions:
+
+1. **Width Constraint**: If width > 720px → reduce to 720px maintaining aspect ratio
+2. **Height Constraint**: If height > 1600px → reduce to 1600px maintaining aspect ratio  
+3. **Minimum Width Rule**: If width < 720px and height < (20/9) × width → increase width to 720px
+4. **Aspect Ratio Rule**: If height < 1600px and width < (9/20) × height → increase width to 720px
+
+These rules ensure images are optimally sized while maintaining quality and aspect ratios. The final image will always respect the maximum constraints (≤720px width, ≤1600px height).
 
 ## Requirements
 
@@ -80,6 +95,9 @@ pip install Pillow
 - Creates "cropped" subdirectory automatically
 - Handles filename conflicts with automatic numbering
 - Preserves original image format and quality
+- **Filename Format**: Adds final dimensions to filenames
+  - Example: `photo.jpg` → `photo_720x1280.jpg`
+  - Conflicts resolved as: `photo_720x1280_crop_1.jpg`, `photo_720x1280_crop_2.jpg`, etc.
 
 ## Interface Controls
 

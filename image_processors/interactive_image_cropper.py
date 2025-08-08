@@ -409,26 +409,40 @@ class ImageCropper:
             # Crop the original image
             cropped_image = self.current_image.crop((left, top, right, bottom))
             
+            # Apply resizing rules before saving
+            cropped_image = self.apply_resizing_rules(cropped_image)
+            
             # Create cropped subdirectory if it doesn't exist
             cropped_dir = self.image_directory / "cropped"
             cropped_dir.mkdir(exist_ok=True)
             
-            # Save cropped image
+            # Save cropped image with dimensions in filename
             current_file = self.image_files[self.current_index]
-            output_path = cropped_dir / current_file.name
+            original_stem = current_file.stem
+            original_suffix = current_file.suffix
+            
+            # Add dimensions to filename
+            dimensions_suffix = f"_{cropped_image.width}x{cropped_image.height}"
+            new_filename = f"{original_stem}{dimensions_suffix}{original_suffix}"
+            output_path = cropped_dir / new_filename
             
             # Handle file conflicts
             counter = 1
-            original_path = output_path
+            base_output_path = output_path
             while output_path.exists():
-                stem = original_path.stem
-                suffix = original_path.suffix
-                output_path = cropped_dir / f"{stem}_crop_{counter}{suffix}"
+                new_filename = f"{original_stem}{dimensions_suffix}_crop_{counter}{original_suffix}"
+                output_path = cropped_dir / new_filename
                 counter += 1
             
             cropped_image.save(output_path)
             
-            self.status_var.set(f"Saved: {output_path.name}")
+            # Update status with resize information
+            if hasattr(self, '_resize_applied') and self._resize_applied:
+                status_msg = f"Saved: {output_path.name} (resized from {self._original_size[0]}×{self._original_size[1]} to {self._final_size[0]}×{self._final_size[1]})"
+            else:
+                status_msg = f"Saved: {output_path.name}"
+            
+            self.status_var.set(status_msg)
             
             # Move to next image
             self.next_image()
@@ -436,6 +450,79 @@ class ImageCropper:
         except Exception as e:
             messagebox.showerror("Error", f"Failed to crop and save image: {str(e)}")
     
+    def apply_resizing_rules(self, image):
+        """
+        Apply image resizing rules before saving:
+        - If width > 720px: reduce to 720px maintaining aspect ratio
+        - If height > 1600px: reduce to 1600px maintaining aspect ratio  
+        - If width < 720px and height < (20/9) * width: increase width to 720px
+        - If height < 1600px and width < (9/20) * height: increase width to 720px
+        
+        Final check ensures no dimension exceeds maximum limits.
+        """
+        original_width = image.width
+        original_height = image.height
+        current_width = image.width
+        current_height = image.height
+        resized = False
+        
+        # Rule 1: If width > 720px, reduce to 720px maintaining aspect ratio
+        if current_width > 720:
+            new_width = 720
+            new_height = int((new_width * current_height) / current_width)
+            image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            current_width, current_height = new_width, new_height
+            resized = True
+        
+        # Rule 2: If height > 1600px, reduce to 1600px maintaining aspect ratio
+        if current_height > 1600:
+            new_height = 1600
+            new_width = int((new_height * current_width) / current_height)
+            image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            current_width, current_height = new_width, new_height
+            resized = True
+        
+        # Rule 3: If width < 720px and height < (20/9) * width, increase width to 720px
+        if current_width < 720 and current_height < (20/9) * current_width:
+            new_width = 720
+            new_height = int((new_width * current_height) / current_width)
+            image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            current_width, current_height = new_width, new_height
+            resized = True
+        
+        # Rule 4: If height < 1600px and width < (9/20) * height, increase width to 720px
+        elif current_height < 1600 and current_width < (9/20) * current_height:
+            new_width = 720
+            new_height = int((new_width * current_height) / current_width)
+            image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            current_width, current_height = new_width, new_height
+            resized = True
+        
+        # Final constraint check: ensure no dimension exceeds limits
+        final_width = image.width
+        final_height = image.height
+        
+        # If width still > 720px, reduce it
+        if final_width > 720:
+            new_width = 720
+            new_height = int((new_width * final_height) / final_width)
+            image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            resized = True
+        
+        # If height still > 1600px, reduce it
+        if image.height > 1600:
+            new_height = 1600
+            new_width = int((new_height * image.width) / image.height)
+            image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            resized = True
+        
+        # Store resize info for status message
+        self._resize_applied = resized
+        self._original_size = (original_width, original_height)
+        self._final_size = (image.width, image.height)
+        
+        return image
+
     def has_valid_crop_selection(self):
         """Check if there's a valid crop selection"""
         return (self.crop_start_x is not None and self.crop_start_y is not None and

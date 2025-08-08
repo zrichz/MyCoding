@@ -69,8 +69,24 @@ The application includes 5 test images in the `test_images/` directory:
 - test_small.jpg
 - test_square.jpg
 
-## Status: ✅ FULLY RESOLVED
+## Status: ✅ FULLY RESOLVED + ENHANCED
 - Thumbnails display correctly (single, centered image)
 - Click and drag crop selection works perfectly
 - All interactive features are functional
-- Application is ready for production use
+- **NEW**: Automatic image resizing rules applied before saving
+- Application is ready for production use with enhanced functionality
+
+## Recent Enhancement: Image Resizing Rules + Smart Filenames
+
+Added automatic image resizing functionality that applies the following rules before saving cropped images:
+
+1. **Width > 720px**: Reduce to 720px maintaining aspect ratio
+2. **Height > 1600px**: Reduce to 1600px maintaining aspect ratio  
+3. **Width < 720px and height < (20/9) × width**: Increase width to 720px
+4. **Height < 1600px and width < (9/20) × height**: Increase width to 720px
+
+**NEW**: Smart filename generation now includes final dimensions:
+- Original: `photo.jpg` → Saved as: `photo_720x1280.jpg`
+- Conflicts handled: `photo_720x1280_crop_1.jpg`, `photo_720x1280_crop_2.jpg`
+
+The final images always respect maximum constraints (≤720px width, ≤1600px height) while maintaining optimal quality and aspect ratios.
