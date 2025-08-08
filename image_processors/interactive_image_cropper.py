@@ -199,32 +199,16 @@ class ImageCropper:
         # Convert to PhotoImage
         self.photo = ImageTk.PhotoImage(self.current_thumbnail)
         
-        # Try immediate placement first
-        self._place_image_immediately()
-        
-        # Also schedule placement after idle for proper centering
+        # Schedule placement after idle for proper centering
         self.root.after_idle(self._place_image_on_canvas)
-    
-    def _place_image_immediately(self):
-        """Place image immediately with default positioning"""
-        if not self.current_thumbnail or not self.photo:
-            return
-            
-        # Use default positioning
-        x, y = 10, 10
-        self.image_x_offset = x
-        self.image_y_offset = y
-        
-        # Create the image on canvas
-        image_id = self.canvas.create_image(x, y, anchor="nw", image=self.photo, tags="image")
-        
-        # Update canvas
-        self.canvas.update()
     
     def _place_image_on_canvas(self):
         """Helper method to place image on canvas after it's properly sized"""
         if not self.current_thumbnail or not self.photo:
             return
+            
+        # Clear any existing images first
+        self.canvas.delete("image")
             
         # Get actual canvas size
         self.canvas.update_idletasks()  # Ensure canvas is properly updated
@@ -285,24 +269,36 @@ class ImageCropper:
         if not self.current_thumbnail:
             return
             
-        # Check if click is within image bounds
+        # Get click coordinates
         x, y = event.x, event.y
-        if (hasattr(self, 'image_x_offset') and hasattr(self, 'image_y_offset') and
-            self.image_x_offset <= x <= self.image_x_offset + self.current_thumbnail.width and
+        
+        # Check if click is within image bounds
+        if (self.image_x_offset <= x <= self.image_x_offset + self.current_thumbnail.width and
             self.image_y_offset <= y <= self.image_y_offset + self.current_thumbnail.height):
             
             self.is_selecting = True
             self.crop_start_x = x
             self.crop_start_y = y
-            self.clear_crop_selection()
+            
+            # Clear any existing crop selection
+            if self.crop_rectangle:
+                self.canvas.delete(self.crop_rectangle)
+                self.crop_rectangle = None
     
     def update_crop_selection(self, event):
         """Update crop selection rectangle"""
         if not self.is_selecting or not self.current_thumbnail:
             return
             
-        self.crop_end_x = event.x
-        self.crop_end_y = event.y
+        # Get current mouse position
+        x, y = event.x, event.y
+        
+        # Constrain to image bounds
+        x = max(self.image_x_offset, min(x, self.image_x_offset + self.current_thumbnail.width))
+        y = max(self.image_y_offset, min(y, self.image_y_offset + self.current_thumbnail.height))
+        
+        self.crop_end_x = x
+        self.crop_end_y = y
         
         # Ensure we have valid start coordinates
         if self.crop_start_x is None or self.crop_start_y is None:
@@ -324,20 +320,27 @@ class ImageCropper:
     
     def end_crop_selection(self, event):
         """End crop selection"""
-        if not self.is_selecting:
+        if not self.is_selecting or not self.current_thumbnail:
             return
             
         self.is_selecting = False
-        self.crop_end_x = event.x
-        self.crop_end_y = event.y
+        
+        # Get final coordinates, constrained to image bounds
+        x = max(self.image_x_offset, min(event.x, self.image_x_offset + self.current_thumbnail.width))
+        y = max(self.image_y_offset, min(event.y, self.image_y_offset + self.current_thumbnail.height))
+        
+        self.crop_end_x = x
+        self.crop_end_y = y
         
         # Ensure we have valid coordinates
         if (self.crop_start_x is not None and self.crop_start_y is not None and
             self.crop_end_x is not None and self.crop_end_y is not None):
             
-            # Ensure valid selection size
-            if (abs(self.crop_end_x - self.crop_start_x) > 10 and 
-                abs(self.crop_end_y - self.crop_start_y) > 10):
+            # Ensure valid selection size (at least 10x10 pixels)
+            width = abs(self.crop_end_x - self.crop_start_x)
+            height = abs(self.crop_end_y - self.crop_start_y)
+            
+            if width > 10 and height > 10:
                 self.crop_button.config(state="normal")
                 self.clear_button.config(state="normal")
             else:

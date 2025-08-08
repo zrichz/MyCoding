@@ -1,32 +1,53 @@
 # Image Thumbnail Display Issue - RESOLVED ✅
 
-## Problem
-The Interactive Image Cropper GUI was not displaying image thumbnails due to a missing dependency.
+## Problems Solved
+1. **Missing ImageTk Module**: The Interactive Image Cropper GUI was not displaying image thumbnails due to a missing dependency.
+2. **Duplicate Thumbnails**: Images were appearing twice (once at left, once centered) due to multiple image placement calls.
+3. **Non-functional Click and Drag**: Crop selection was not working properly due to coordinate handling issues.
 
-## Root Cause
-The `ImageTk` module from PIL (Python Imaging Library) was not installed on the Linux system. This module is required for displaying images in tkinter applications.
+## Root Causes & Solutions
 
-## Solution
-Installed the required package:
+### 1. Missing ImageTk Module
+**Problem**: `ImportError: cannot import name 'ImageTk' from 'PIL'`
+**Solution**: 
 ```bash
 sudo apt update
 sudo apt install python3-pil.imagetk -y
 ```
 
-## What Was Fixed
-1. **Missing ImageTk Module**: The main issue was `ImportError: cannot import name 'ImageTk' from 'PIL'`
-2. **Image Display**: Thumbnails now properly appear in the GUI canvas
-3. **Code Cleanup**: Removed debug print statements while keeping error handling
-4. **Testing**: All test scripts now pass successfully
+### 2. Duplicate Image Display
+**Problem**: Both `_place_image_immediately()` and `_place_image_on_canvas()` were creating images
+**Solution**: 
+- Removed `_place_image_immediately()` method
+- Added `self.canvas.delete("image")` before creating new images
+- Use only `_place_image_on_canvas()` for proper centering
 
-## Verification
-Run these commands to verify everything works:
+### 3. Crop Selection Issues
+**Problem**: Click and drag selection was not working due to coordinate bounds checking
+**Solution**:
+- Improved coordinate validation in crop selection methods
+- Added proper image bounds checking
+- Enhanced mouse event handling with coordinate constraints
+- Added safety checks for None values
+
+## What Was Fixed
+1. ✅ **ImageTk Module**: Now properly installed and working
+2. ✅ **Single Image Display**: Thumbnails now appear only once, properly centered
+3. ✅ **Crop Selection**: Click and drag now works correctly with visual feedback
+4. ✅ **Coordinate Handling**: Proper bounds checking and validation
+5. ✅ **Error Handling**: Improved safety checks throughout the code
+
+## Verification Tests
+All these tests now pass:
 
 ```bash
-# Test the application components
+# Test basic functionality
 python3 test_cropper_startup.py
 python3 test_thumbnail_display.py
 python3 verify_cropper.py
+
+# Test crop selection specifically
+python3 test_crop_selection.py
 
 # Run the main application
 python3 interactive_image_cropper.py
@@ -35,9 +56,10 @@ python3 interactive_image_cropper.py
 ## Usage Instructions
 1. Run `python3 interactive_image_cropper.py`
 2. Click "Browse" to select the `test_images` directory
-3. Thumbnails should now appear in the canvas
-4. Click and drag to select crop area
+3. Thumbnails will appear centered in the canvas
+4. Click and drag on the image to select crop area (red rectangle appears)
 5. Click "Crop & Save" to save the cropped image to the "cropped" subdirectory
+6. Use "Previous"/"Next" to navigate between images
 
 ## Test Images
 The application includes 5 test images in the `test_images/` directory:
@@ -47,5 +69,8 @@ The application includes 5 test images in the `test_images/` directory:
 - test_small.jpg
 - test_square.jpg
 
-## Status: ✅ RESOLVED
-The thumbnail display issue has been completely resolved. Images now appear correctly in the GUI.
+## Status: ✅ FULLY RESOLVED
+- Thumbnails display correctly (single, centered image)
+- Click and drag crop selection works perfectly
+- All interactive features are functional
+- Application is ready for production use
