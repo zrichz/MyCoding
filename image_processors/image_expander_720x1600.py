@@ -11,7 +11,8 @@ Key Features:
 - Fixed 50% luminance reduction (darkening) for natural fade effect
 - Dual-axis expansion: applies effects to both horizontal and vertical expansions
 - Batch processing with progress feedback
-- Saves results with "_final" suffix in "processed" subdirectory
+- Saves results with timestamp-based naming: YYYYMMDDHHMMSS_nnn_720x1600.ext
+- Automatic conflict resolution with incremented counter (001, 002, 003, etc.)
 - Supports common image formats (PNG, JPEG, BMP, TIFF)
 
 Technical Implementation:
@@ -19,6 +20,7 @@ Technical Implementation:
 - Combines blur and luminance effects for realistic expansion transitions
 - Maintains original image quality and color fidelity
 - Centers original image within the expanded canvas
+- Generates unique timestamped filenames with conflict resolution
 """
 
 
@@ -28,6 +30,15 @@ from tkinter import filedialog, messagebox, ttk
 import numpy as np
 from scipy import ndimage
 import os
+from datetime import datetime
+
+# Ensure numpy is properly imported
+try:
+    import numpy as np
+except ImportError:
+    print("NumPy is required but not installed. Please install it using: pip install numpy")
+    exit(1)
+from datetime import datetime
 
 class ImageExpander:
     def __init__(self):
@@ -188,8 +199,9 @@ class ImageExpander:
                     # Process the image
                     input_path = os.path.join(self.input_directory, filename)
                     name, ext = os.path.splitext(filename)
-                    output_filename = f"{name}_final{ext}"
-                    output_path = os.path.join(output_dir, output_filename)
+                    
+                    # Use new timestamp-based filename schema
+                    output_filename, output_path = self.generate_timestamp_filename(output_dir, ext)
                     
                     if self.process_single_image(input_path, output_path):
                         successful += 1
@@ -222,6 +234,32 @@ class ImageExpander:
         finally:
             # Re-enable button
             self.process_button.config(state=tk.NORMAL)
+    
+    def generate_timestamp_filename(self, output_dir, ext):
+        """Generate a timestamp-based filename with conflict resolution"""
+        # Get current timestamp
+        now = datetime.now()
+        timestamp = now.strftime("%Y%m%d%H%M%S")
+        
+        # Start with counter 001
+        counter = 1
+        
+        while True:
+            # Format counter as 3-digit number
+            counter_str = f"{counter:03d}"
+            filename = f"{timestamp}_{counter_str}_720x1600{ext}"
+            output_path = os.path.join(output_dir, filename)
+            
+            # Check if file exists
+            if not os.path.exists(output_path):
+                return filename, output_path
+            
+            # Increment counter and try again
+            counter += 1
+            
+            # Safety check to prevent infinite loop
+            if counter > 999:
+                raise Exception("Too many files with the same timestamp - cannot generate unique filename")
     
     def apply_horizontal_blur(self, line_array, blur_amount):
         """Apply horizontal-only blur to preserve colors"""

@@ -10,7 +10,9 @@ Tools for rotating images in various ways
 
 ### 📏 image_expander/
 Tools for expanding images with various effects
-- `image_expander_vertical_ver1.py` - Auto-expand images to 720x1600 with blur/luminance effects
+- `image_expander_720x1600.py` - Auto-expand images to 720x1600 with blur/luminance effects
+  - Uses timestamp-based filename schema: `YYYYMMDDHHMMSS_nnn_720x1600.ext`
+  - Automatic conflict resolution with incremented counter (001, 002, etc.)
 - `image_expander_cylindrical.py` - Cylindrical image expansion
 
 ### ✂️ image_cropper/
@@ -49,23 +51,25 @@ Test files for all image processing tools
 ## Quick Start
 
 ### Easy Launch Scripts
-For the most commonly used tool (Interactive Image Cropper), use the provided launcher scripts:
+For the most commonly used tools, use the provided launcher scripts:
 
-**Windows:**
+**Interactive Image Cropper:**
 ```cmd
-run_image_cropper.bat
+run_image_cropper.bat     # Windows
+./run_image_cropper.sh    # Linux/Mac
 ```
 
-**Linux/Mac:**
-```bash
-./run_image_cropper.sh
+**Image Expander 720x1600:**
+```cmd
+run_image_expander.bat    # Windows
+./run_image_expander.sh   # Linux/Mac
 ```
 
 These scripts will automatically:
 - Activate the virtual environment
 - Check for required dependencies
-- Install Pillow if needed
-- Launch the Interactive Image Cropper
+- Install missing packages (Pillow, numpy, scipy) if needed
+- Launch the selected application
 
 ### Manual Setup
 
@@ -91,7 +95,7 @@ pip install -r requirements.txt
 
 Run any tool from the main directory:
 ```cmd
-python image_expander\image_expander_vertical_ver1.py
+python image_expander\image_expander_720x1600.py
 python image_rotator\rotate_all_jpegs_in_dir_90CW.py
 python image_cropper\interactive_image_cropper.py
 ```
@@ -99,7 +103,7 @@ python image_cropper\interactive_image_cropper.py
 Or navigate to specific directories and run from there:
 ```cmd
 cd image_expander
-python image_expander_vertical_ver1.py
+python image_expander_720x1600.py
 ```
 
 ## Requirements
