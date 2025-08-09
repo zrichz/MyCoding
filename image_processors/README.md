@@ -46,16 +46,43 @@ Utility tools and documentation
 Test files for all image processing tools
 - Various test files for different functionalities
 
-## Setup
+## Quick Start
+
+### Easy Launch Scripts
+For the most commonly used tool (Interactive Image Cropper), use the provided launcher scripts:
+
+**Windows:**
+```cmd
+run_image_cropper.bat
+```
+
+**Linux/Mac:**
+```bash
+./run_image_cropper.sh
+```
+
+These scripts will automatically:
+- Activate the virtual environment
+- Check for required dependencies
+- Install Pillow if needed
+- Launch the Interactive Image Cropper
+
+### Manual Setup
 
 All tools share the same virtual environment located in `.venv/`
 
-### Activate Environment
+#### Activate Environment
+**Windows:**
 ```cmd
 .venv\Scripts\activate
 ```
 
-### Install Dependencies
+**Linux/Mac:**
+```bash
+source .venv/bin/activate
+```
+
+#### Install Dependencies
 ```cmd
 pip install -r requirements.txt
 ```

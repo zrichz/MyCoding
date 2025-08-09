@@ -7,7 +7,7 @@ A Python GUI application for batch cropping images with interactive selection an
 
 ## Features
 
-- **🖱️ Interactive Cropping**: Click and drag to select crop areas visually
+- **🖱️ Interactive Cropping**: Click and drag to select crop areas visually with enforced 9:20 minimum aspect ratio
 - **📁 Batch Processing**: Process entire directories of images sequentially  
 - **🔍 Smart Thumbnails**: Display images at max 800x800 while preserving aspect ratio
 - **💾 Full Resolution**: Crops are applied to original high-resolution images
@@ -16,6 +16,15 @@ A Python GUI application for batch cropping images with interactive selection an
 - **⏭️ Easy Navigation**: Previous/Next/Skip buttons for workflow control
 - **🔄 Conflict Handling**: Automatic filename conflict resolution
 - **📊 Progress Tracking**: Shows current image and total count
+
+## Crop Selection Constraints
+
+During the interactive crop selection process, the application enforces a **minimum 9:20 aspect ratio** (width:height). This means:
+
+- The crop rectangle width must be at least (9/20) × height
+- As you drag to select a crop area, the application automatically adjusts the dimensions to maintain this minimum aspect ratio
+- The constraint is applied both during dragging AND when the mouse button is released, ensuring consistent results
+- This constraint ensures that cropped images will work well with the subsequent resizing rules
 
 ## Image Resizing Rules
 
