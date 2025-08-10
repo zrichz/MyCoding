@@ -102,6 +102,13 @@ Filters and visual effects
 
 ### 🛠️ utilities/
 Utility tools and documentation
+- `phrase_generator.py` - **Human Situation Phrase Generator**
+  - 🎲 **Random Phrase Generation**: Creates diverse human situation descriptions
+  - 🧩 **Modular Building Blocks**: Uses verbs, adjectives, nouns, and connecting words
+  - 🎛️ **GUI Interface**: Easy-to-use tkinter interface with customizable options
+  - 💾 **Save Functionality**: Export generated phrases to text files
+  - 📊 **Batch Generation**: Create 1-50 phrases at once
+  - 🔤 **Smart Grammar**: Intelligent article selection (a/an) and capitalization
 - `tempCodeRunnerFile.py` - Temporary code runner
 - `image resizing rules.txt` - Image resizing guidelines
 - `THUMBNAIL_FIX_SUMMARY.md` - Thumbnail fixes documentation
@@ -176,6 +183,41 @@ The Seam Carving tool uses content-aware algorithms to intelligently reduce imag
 - Processing time scales with image size and reduction amount
 - Preserves important vertical structures in the center
 
+### Human Situation Phrase Generator - Creative Text Tool
+
+The Phrase Generator creates diverse, realistic human situation descriptions using modular building blocks for creative writing, brainstorming, or entertainment.
+
+**Detailed Process:**
+1. **Launch**: Run `run_phrase_generator.bat` (Windows) or `./run_phrase_generator.sh` (Linux/Mac)
+2. **Set Count**: Choose number of phrases to generate (1-50)
+3. **Generate**: Click "Generate Phrases" for multiple or "Generate One" for single phrases
+4. **Review**: Browse generated phrases in the scrollable text area
+5. **Save**: Use "Save to File" to export phrases with timestamp
+
+**Building Block Categories:**
+- **Action Verbs**: driving, cooking, building, painting, exploring, etc.
+- **Being Verbs**: being, becoming, appearing, feeling, etc.
+- **Mood Adjectives**: happy, excited, calm, adventurous, focused, etc.
+- **Descriptive Adjectives**: beautiful, complex, colorful, ancient, etc.
+- **Object Nouns**: tractor, bicycle, guitar, computer, mountain, etc.
+- **Food Nouns**: meal, soup, coffee, pizza, chocolate, etc.
+- **Activity Nouns**: lesson, performance, game, adventure, etc.
+- **Place Nouns**: home, park, restaurant, mountains, etc.
+- **Connecting Words**: prepositions, articles, conjunctions, manner adverbs
+- **Weather Conditions**: sunny, rainy, cloudy, windy, stormy, etc.
+
+**Example Generated Phrases:**
+- "Carefully driving a rustic tractor through the countryside"
+- "Enthusiastically cooking a delicious meal in a modern kitchen"
+- "Peacefully reading an ancient book beside a quiet river"
+- "Boldly climbing a massive mountain during a sunny day"
+
+**Technical Features:**
+- **Smart Grammar**: Automatic a/an article selection based on vowel sounds
+- **Template System**: Multiple sentence structures for variety
+- **Duplicate Prevention**: Ensures unique phrases in batch generation
+- **File Export**: Saves with timestamps and formatting
+
 ## Quick Start
 
 ### Easy Launch Scripts
@@ -209,6 +251,12 @@ run_optical_flow.bat      # Windows
 ```cmd
 run_seam_carving.bat      # Windows
 ./run_seam_carving.sh     # Linux/Mac
+```
+
+**Phrase Generator:**
+```cmd
+run_phrase_generator.bat  # Windows
+./run_phrase_generator.sh # Linux/Mac
 ```
 
 These scripts will automatically:
