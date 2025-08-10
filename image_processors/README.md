@@ -27,6 +27,14 @@ Advanced seam carving image resizing
 - `demo_seam_carving.py` - Seam carving demonstration
 - `seam_carving_width_reducer.py` - Width reduction via seam carving
 
+### 🎥 video_optical_flow_openCV/
+Video analysis and optical flow visualization
+- `optical_flow_visualizer.py` - Dense optical flow visualization with GUI controls
+  - Color-coded motion direction visualization
+  - Adjustable flow density, line thickness, and motion threshold
+  - Supports multiple video formats (MP4, AVI, MOV, etc.)
+  - Real-time processing progress with status updates
+
 ### 🔄 batch_processors/
 Tools for batch processing multiple images
 - `create_test_images.py` - Generate test images
