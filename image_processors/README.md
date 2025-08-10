@@ -214,7 +214,7 @@ run_seam_carving.bat      # Windows
 These scripts will automatically:
 - Activate the virtual environment
 - Check for required dependencies
-- Install missing packages (Pillow, numpy, scipy) if needed
+- Install missing packages if needed
 - Launch the selected application
 
 ### Manual Setup
@@ -254,12 +254,30 @@ python image_expander_720x1600.py
 
 ## Requirements
 
+### System Requirements
 - Python 3.10+
-- PIL/Pillow
-- NumPy
-- SciPy
-- Tkinter (usually included with Python)
-- OpenCV (for some tools)
+- Virtual environment support
+
+### Python Packages
+All required packages are listed in `requirements.txt`:
+
+- **Pillow** (11.3.0) - Python Imaging Library for all image processing operations
+- **numpy** (2.2.6) - Array operations and mathematical functions
+- **scipy** (1.15.3) - Scientific computing (used for image filtering and blur effects)
+- **opencv-python** (4.12.0.88) - Computer vision library (seam carving, optical flow)
+- **scikit-image** (0.25.2) - Scientific image processing (CLAHE, color space conversions)
+
+### Standard Library Modules
+These are included with Python and don't need separate installation:
+- tkinter (GUI framework)
+- os, sys, datetime, pathlib, threading, tempfile
+- math, re, subprocess, argparse
+
+### Installation
+Install all dependencies using:
+```cmd
+pip install -r requirements.txt
+```
 
 ## Troubleshooting & Tips
 
