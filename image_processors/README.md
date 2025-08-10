@@ -16,16 +16,62 @@ Tools for expanding images with various effects
 - `image_expander_cylindrical.py` - Cylindrical image expansion
 
 ### ✂️ image_cropper/
-Tools for cropping and selecting image regions
-- `interactive_image_cropper.py` - Interactive GUI cropping tool
+Interactive tools for cropping and selecting image regions with batch processing capabilities
+
+**Main Tool:**
+- `interactive_image_cropper.py` - **Interactive GUI Batch Cropper**
+  - 🖱️ **Interactive Cropping**: Click and drag to select crop areas visually
+  - 📁 **Batch Processing**: Process entire directories of images sequentially  
+  - 🔍 **Smart Thumbnails**: Display images at max 800x800 while preserving aspect ratio
+  - 💾 **Full Resolution**: Crops are applied to original high-resolution images
+  - 📐 **Automatic Resizing**: Applies intelligent resizing rules before saving
+  - 📝 **Smart Filenames**: Adds final dimensions to filenames (e.g., `photo_720x1280.jpg`)
+  - 📂 **Auto Organization**: Saves cropped images to "cropped" subdirectory
+  - ⏭️ **Easy Navigation**: Previous/Next/Skip buttons for workflow control
+  - 🔄 **Conflict Handling**: Automatic filename conflict resolution
+
+**Additional Tools:**
 - `click2crop_images.py` - Click-to-crop functionality
 - `image_gridder_chopper_saver.py` - Grid-based image chopping
 - `verify_cropper.py` - Cropping verification tool
 
+**Image Resizing Rules Applied Automatically:**
+1. **Width Constraint**: If width > 720px → reduce to 720px maintaining aspect ratio
+2. **Height Constraint**: If height > 1600px → reduce to 1600px maintaining aspect ratio  
+3. **Minimum Width Rule**: If width < 720px and height < (20/9) × width → increase width to 720px
+4. **Aspect Ratio Rule**: If height < 1600px and width < (9/20) × height → increase width to 720px
+
+**Supported Formats:** JPG, JPEG, PNG, BMP, TIFF, TIF, GIF
+
 ### 🎯 seam_carving/
-Advanced seam carving image resizing
+Advanced seam carving image resizing using content-aware algorithms
+
+**Main Tool:**
+- `seam_carving_width_reducer.py` - **GUI Width Reduction Tool**
+  - 🎯 **Selective Seam Carving**: Applies algorithm only to outer 50% of image (first and last 25%)
+  - 🔧 **Configurable Reduction**: User can specify reduction percentage (50-99%)
+  - 🖥️ **GUI Interface**: Easy-to-use tkinter-based interface
+  - 💾 **Auto-save**: Processed images automatically saved with "_reduced_width" suffix
+  - 📊 **Progress Tracking**: Real-time progress bar and status updates
+  - 🎨 **Content-Aware**: Preserves important middle content while reducing sides
+
+**Additional Tools:**
 - `demo_seam_carving.py` - Seam carving demonstration
-- `seam_carving_width_reducer.py` - Width reduction via seam carving
+
+**How Seam Carving Works:**
+1. **Energy Calculation**: Uses gradient magnitude to identify important image features
+2. **Seam Detection**: Finds minimum-energy vertical paths through the image
+3. **Seam Removal**: Removes low-energy seams to reduce width
+4. **Selective Application**: Only processes first 25% and last 25% of image width
+
+**Example:** For a 1000px wide image with 70% reduction:
+- Target width: 700 pixels (300 pixels removed)
+- First 250 pixels: ~150 seams removed
+- Middle 500 pixels: unchanged
+- Last 250 pixels: ~150 seams removed
+
+**Supported Formats:** JPG, JPEG, PNG, BMP, TIFF
+**Dependencies:** OpenCV, NumPy, Pillow
 
 ### 🎥 video_optical_flow_openCV/
 Video analysis and optical flow visualization
@@ -34,6 +80,14 @@ Video analysis and optical flow visualization
   - Adjustable flow density, line thickness, and motion threshold
   - Supports multiple video formats (MP4, AVI, MOV, etc.)
   - Real-time processing progress with status updates
+
+### 🌊 GrayScott_filter/
+Gray-Scott diffusion filtering for artistic image processing
+- `GrayScott_filter.py` - GUI application for Gray-Scott diffusion processing
+  - Iterative sharpening and blurring operations
+  - Automatic grayscale conversion and image resizing
+  - Customizable iteration count for different effects
+  - Supports common image formats (PNG, JPEG, etc.)
 
 ### 🔄 batch_processors/
 Tools for batch processing multiple images
@@ -56,6 +110,72 @@ Utility tools and documentation
 Test files for all image processing tools
 - Various test files for different functionalities
 
+## Detailed Tool Guides
+
+### Interactive Image Cropper - Complete Workflow
+
+The Interactive Image Cropper is a powerful batch processing tool that allows you to visually select crop areas on thumbnails and apply them to full-resolution images.
+
+**Step-by-Step Usage:**
+1. **Launch**: Run `run_image_cropper.bat` (Windows) or `./run_image_cropper.sh` (Linux/Mac)
+2. **Select Directory**: Click "Browse" to choose a folder containing images
+3. **Crop Images**:
+   - Click and drag on the thumbnail to select crop area
+   - Click "Crop & Save" to apply to full-resolution image
+   - Use "Next" to move to the next image
+   - Use "Skip" to skip an image without cropping
+4. **Find Results**: Cropped images are saved in the "cropped" subdirectory
+
+**Interface Controls:**
+| Button | Function |
+|--------|----------|
+| **Browse** | Select directory containing images |
+| **Previous** | Go to previous image |
+| **Crop & Save** | Apply crop to full-resolution image and save |
+| **Skip** | Move to next image without cropping |
+| **Next** | Move to next image |
+| **Clear Selection** | Remove current crop selection |
+
+**File Organization:**
+```
+Your Image Directory/
+├── image1.jpg
+├── image2.png
+├── image3.jpg
+└── cropped/           # Auto-created
+    ├── image1_720x1280.jpg     # Cropped versions with dimensions
+    ├── image2_720x1280.png
+    └── image3_720x1280_crop_1.jpg  # Conflict resolution
+```
+
+**Technical Features:**
+- **Coordinate Mapping**: Thumbnail coordinates automatically scaled to original image dimensions
+- **Memory Management**: Only current image loaded in memory for efficiency
+- **Error Handling**: Graceful handling of unsupported or corrupted files
+
+### Seam Carving Width Reducer - Advanced Usage
+
+The Seam Carving tool uses content-aware algorithms to intelligently reduce image width while preserving important central content.
+
+**Detailed Process:**
+1. **Launch**: Run `run_seam_carving.bat` (Windows) or `./run_seam_carving.sh` (Linux/Mac)
+2. **Select Image**: Click "Browse" to select an image file
+3. **Set Reduction**: Enter percentage between 50-99% for width reduction
+4. **Process**: Click "Process Image" to apply seam carving
+5. **Result**: Processed image displayed and auto-saved with "_reduced_width" suffix
+
+**Algorithm Details:**
+- **Energy Function**: Calculates gradient magnitude to identify image importance
+- **Dynamic Programming**: Finds optimal seam paths with minimum energy
+- **Selective Processing**: Only affects outer edges (first/last 25% of width)
+- **Content Preservation**: Middle 50% of image remains untouched
+
+**Best Practices:**
+- Works best with images having less important content on the sides
+- Ideal for landscape photos, banners, or wide-format images
+- Processing time scales with image size and reduction amount
+- Preserves important vertical structures in the center
+
 ## Quick Start
 
 ### Easy Launch Scripts
@@ -71,6 +191,24 @@ run_image_cropper.bat     # Windows
 ```cmd
 run_image_expander.bat    # Windows
 ./run_image_expander.sh   # Linux/Mac
+```
+
+**Gray-Scott Filter:**
+```cmd
+run_grayscott_filter.bat  # Windows
+./run_grayscott_filter.sh # Linux/Mac
+```
+
+**Video Optical Flow:**
+```cmd
+run_optical_flow.bat      # Windows
+./run_optical_flow.sh     # Linux/Mac
+```
+
+**Seam Carving Width Reducer:**
+```cmd
+run_seam_carving.bat      # Windows
+./run_seam_carving.sh     # Linux/Mac
 ```
 
 These scripts will automatically:
@@ -122,6 +260,71 @@ python image_expander_720x1600.py
 - SciPy
 - Tkinter (usually included with Python)
 - OpenCV (for some tools)
+
+## Troubleshooting & Tips
+
+### Common Issues
+
+**"No images found" (Image Cropper)**
+- Check directory contains supported image formats
+- Verify file extensions are correct (.jpg, .png, etc.)
+- Ensure files are not corrupted
+
+**"Failed to load image"**
+- Image file may be corrupted
+- Use Skip button to continue with next image
+- Try opening the image in another program to verify
+
+**Crop selection not working**
+- Ensure you click and drag within the image area
+- Make selection large enough (minimum 10x10 pixels)
+- Clear selection and try again
+
+**Application won't start**
+- Verify Python and required packages are installed
+- Check virtual environment is activated
+- Run `pip install -r requirements.txt` to ensure dependencies
+
+**Seam carving takes too long**
+- Try smaller images or lower reduction percentages
+- Processing time scales with image dimensions
+- Close other applications to free up memory
+
+### Best Practices
+
+**Image Cropper:**
+1. **Image Quality**: Start with high-resolution images for best crop results
+2. **Crop Selection**: Make precise selections on thumbnails - they map accurately to originals
+3. **Aspect Ratios**: Consider the final use when selecting crop dimensions
+4. **Batch Workflow**: Use Skip liberally for unwanted images
+5. **File Naming**: Original filenames are preserved in cropped versions
+
+**Seam Carving:**
+1. **Image Selection**: Works best with images having less important content on sides
+2. **Reduction Amount**: Start with 60-70% reduction for best balance
+3. **Content Type**: Ideal for landscapes, banners, or wide-format images
+4. **Preview**: Check results before applying to multiple images
+
+**General Tips:**
+1. **Backup**: Always keep backups of original images
+2. **Testing**: Use `create_test_images.py` to generate test images for experimentation
+3. **Organization**: Tools automatically create output subdirectories
+4. **Formats**: Stick to common formats (JPG, PNG) for best compatibility
+
+### Performance Optimization
+
+- **Memory**: Close unused applications when processing large images
+- **Storage**: Ensure sufficient disk space for output images
+- **Batch Size**: Process images in smaller batches for very large collections
+- **Virtual Environment**: Use the shared `.venv` for consistent performance
+
+## Testing
+
+Generate test images for experimentation:
+```bash
+python batch_processors/create_test_images.py
+```
+This creates sample images in `test_images/` directory with various dimensions and patterns.
 
 ## Contributing
 

@@ -2,12 +2,12 @@ from tkinter import Tk, Label, Button, Entry, filedialog, Canvas, PhotoImage
 from PIL import Image, ImageTk, ImageFilter
 import utils
 
-class ImageProcessorApp:
+class GrayScottFilterApp:
     def __init__(self, master):
         self.master = master
-        master.title("Image Processor")
+        master.title("Gray-Scott Filter")
 
-        self.label = Label(master, text="Load...:")
+        self.label = Label(master, text="Load Image for Gray-Scott Processing:")
         self.label.pack()
 
         self.load_button = Button(master, text="Load Image", command=self.load_image)
@@ -71,5 +71,5 @@ class ImageProcessorApp:
 
 if __name__ == "__main__":
     root = Tk()
-    app = ImageProcessorApp(root)
+    app = GrayScottFilterApp(root)
     root.mainloop()
