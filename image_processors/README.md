@@ -244,17 +244,22 @@ The Phrase Generator creates diverse, realistic human situation descriptions usi
 3. `{verb_action}, {noun_activity}, {weather_condition} weather`
 
 **Example Generated Phrases:**
-- "Skillfully exercising, fruit, golden guitar"
-- "Energetic, discovering, boat, countryside"  
-- "Sitting, exhibition, snowy weather"
-- "Passionately painting, chocolate, ancient sculpture"
+- `"Skillfully exercising, fruit, golden guitar","Energetic, discovering, boat, countryside","Sitting, exhibition, snowy weather","Passionately painting, chocolate, ancient sculpture"`
+
+**Output Format:**
+- **Comma-separated**: All phrases in one continuous line
+- **Quoted phrases**: Each phrase wrapped in double quotes
+- **No numbering**: Clean format without line numbers or capitalization
+- **Easy parsing**: Format suitable for data processing or copying
 
 **Technical Features:**
 - **Simplified Structure**: No prepositions or articles for cleaner, more direct phrases
 - **Comma-Separated Format**: Clean, list-like phrase structure for easy parsing
+- **Quoted Output**: Each phrase wrapped in quotes, all on one line
 - **Streamlined Templates**: Three focused sentence patterns for consistent output
 - **Modular Design**: Organized word categories for reliable phrase generation
 - **Uniqueness Checking**: Prevents duplicate phrases in batch generation
+- **Easy Copying**: Single-line format perfect for data processing or transfer
 - **Duplicate Prevention**: Ensures unique phrases in batch generation
 - **File Export**: Saves with timestamps and formatting
 

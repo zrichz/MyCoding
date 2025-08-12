@@ -208,9 +208,11 @@ class PhraseGeneratorGUI:
             
             phrases = self.generator.generate_multiple_phrases(count)
             
+            # Format as comma-separated quoted phrases
+            formatted_output = ','.join(f'"{phrase}"' for phrase in phrases)
+            
             self.text_area.delete(1.0, tk.END)
-            for i, phrase in enumerate(phrases, 1):
-                self.text_area.insert(tk.END, f"{i:2d}. {phrase}\n")
+            self.text_area.insert(tk.END, formatted_output)
             
             self.status_var.set(f"Generated {len(phrases)} unique phrases")
             
@@ -223,11 +225,16 @@ class PhraseGeneratorGUI:
         try:
             phrase = self.generator.generate_phrase()
             
-            # Count existing lines
+            # Get existing content
             content = self.text_area.get(1.0, tk.END).strip()
-            line_count = len(content.split('\n')) if content else 0
             
-            self.text_area.insert(tk.END, f"{line_count + 1:2d}. {phrase}\n")
+            if content:
+                # Add comma and new phrase
+                self.text_area.insert(tk.END, f',"{phrase}"')
+            else:
+                # First phrase, no comma needed
+                self.text_area.insert(tk.END, f'"{phrase}"')
+                
             self.text_area.see(tk.END)
             
             self.status_var.set(f"Added new phrase: {phrase[:50]}...")
