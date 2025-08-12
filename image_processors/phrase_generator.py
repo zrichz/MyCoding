@@ -17,145 +17,94 @@ class PhraseGenerator:
     def __init__(self):
         # Building block dictionaries
         self.verbs_action = [
-            "driving", "cooking", "building", "painting", "writing", "reading", "singing", 
+            "cooking", "building", "painting", "writing", "reading", "standing", 
             "dancing", "running", "walking", "climbing", "swimming", "flying", "sailing",
-            "gardening", "teaching", "learning", "fixing", "cleaning", "organizing",
-            "creating", "designing", "crafting", "exploring", "discovering", "investigating",
-            "performing", "practicing", "training", "exercising", "meditating", "relaxing"
-        ]
-        
-        self.verbs_being = [
-            "being", "becoming", "remaining", "staying", "appearing", "seeming", "feeling",
-            "looking", "sounding", "acting", "proving", "turning", "growing", "getting"
+            "gardening", "teaching", "learning", "fixing", "cleaning", "sitting",
+            "snoozing", "designing", "crafting", "exploring", "discovering", "investigating",
+            "performing", "sleeping", "training", "exercising", "meditating", "relaxing"
         ]
         
         self.adjectives_mood = [
             "happy", "excited", "calm", "peaceful", "energetic", "tired", "focused",
-            "determined", "curious", "adventurous", "creative", "thoughtful", "confident",
-            "nervous", "relaxed", "enthusiastic", "patient", "careful", "bold", "gentle"
+            "determined", "curious", "adventurous", "creative", "confident",
+            "nervous", "annoyed", "enthusiastic"
         ]
         
         self.adjectives_descriptive = [
             "beautiful", "complex", "simple", "colorful", "ancient", "modern", "rustic",
-            "elegant", "sturdy", "delicate", "massive", "tiny", "smooth", "rough",
-            "bright", "dark", "loud", "quiet", "fast", "slow", "hot", "cold"
+            "elegant", "sturdy", "delicate", "massive", "tiny", "huge", "bright", "dark", "golden"
         ]
         
         self.nouns_objects = [
-            "tractor", "bicycle", "motorcycle", "boat", "airplane", "train", "car",
-            "computer", "camera", "guitar", "piano", "book", "painting", "sculpture",
-            "garden", "kitchen", "workshop", "studio", "library", "museum", "theater",
-            "mountain", "river", "forest", "beach", "desert", "city", "village"
+            "tractor", "bicycle", "motorcycle", "boat", "private jet", "train", "car",
+            "computer", "camera", "guitar", "piano", "toys", "book", "painting", "sculpture"
         ]
         
         self.nouns_food = [
             "meal", "soup", "bread", "cake", "pizza", "salad", "pasta", "curry",
-            "sandwich", "smoothie", "coffee", "tea", "wine", "cheese", "chocolate",
-            "fruit", "vegetables", "herbs", "spices", "sauce", "dessert"
+            "sandwich", "smoothie", "coffee", "tea", "wine", "chocolate",
+            "fruit", "vegetables", "flowers", "sauce", "dessert"
         ]
         
         self.nouns_activities = [
             "lesson", "presentation", "performance", "concert", "game", "sport", "race",
-            "competition", "exhibition", "workshop", "seminar", "meeting", "conversation",
-            "interview", "ceremony", "celebration", "festival", "party", "adventure"
+            "competition", "exhibition", "workshop", "lunch", "conversation",
+            "dinner", "ceremony", "celebration", "festival", "party", "adventure"
         ]
         
         self.nouns_places = [
             "home", "office", "school", "hospital", "park", "beach", "mountains",
             "countryside", "city center", "marketplace", "restaurant", "cafe", "gym",
-            "studio", "workshop", "laboratory", "library", "gallery", "theater"
+            "studio", "workshop", "laboratory", "bedroom", "gallery", "dressing room"
         ]
-        
-        self.prepositions = [
-            "in", "on", "at", "by", "near", "under", "over", "through", "around",
-            "beside", "behind", "in front of", "next to", "above", "below"
-        ]
-        
-        self.articles = ["a", "an", "the"]
-        
-        self.conjunctions = ["while", "as", "when", "after", "before", "during"]
         
         self.adverbs_manner = [
-            "carefully", "quickly", "slowly", "gently", "skillfully", "creatively",
-            "passionately", "enthusiastically", "patiently", "confidently", "gracefully",
-            "efficiently", "thoughtfully", "playfully", "seriously", "casually"
+            "provocatively", "quickly", "slowly", "gently", "skillfully", "creatively",
+            "passionately", "enthusiastically", "gracefully",
+            "playfully", "seriously", "casually"
         ]
         
         self.weather_conditions = [
-            "sunny", "rainy", "cloudy", "windy", "snowy", "foggy", "stormy",
-            "clear", "overcast", "humid", "dry", "cool", "warm", "freezing"
+            "sunny", "rainy", "cloudy", "windy", "snowy", "foggy", "stormy", "warm", "freezing"
         ]
         
-        # Phrase templates
+        # Phrase templates - Four diverse patterns
         self.templates = [
-            "{adverb_manner} {verb_action} {article} {adjective_descriptive} {noun_object}",
-            "{verb_action} {article} {noun_food} {preposition} {article} {adjective_descriptive} {noun_place}",
-            "{verb_being} {adjective_mood} {conjunction} {verb_action} {preposition} {article} {noun_place}",
-            "{verb_action} {article} {noun_activity} {preposition} {article} {noun_place}",
-            "{verb_action} {adverb_manner} {preposition} {article} {weather_condition} day",
-            "{adjective_mood} person {verb_action} {article} {adjective_descriptive} {noun_object}",
-            "{verb_action} {article} {noun_food} {conjunction} {verb_being} {adjective_mood}",
-            "{verb_action} {preposition} {article} {adjective_descriptive} {noun_place}",
-            "{verb_being} {adjective_mood} {conjunction} {verb_action} {article} {noun_activity}",
-            "{adverb_manner} {verb_action} {conjunction} the weather is {weather_condition}"
+            "{adverb_manner} {verb_action}, {noun_food}, {adjective_descriptive} {noun_object}",
+            "{adjective_mood}, {verb_action}, {noun_object}, {noun_place}",
+            "{verb_action}, {noun_activity}, {weather_condition} weather"
         ]
 
     def get_random_word(self, category):
         """Get a random word from the specified category"""
         category_map = {
             'verb_action': self.verbs_action,
-            'verb_being': self.verbs_being,
             'adjective_mood': self.adjectives_mood,
             'adjective_descriptive': self.adjectives_descriptive,
             'noun_object': self.nouns_objects,
             'noun_food': self.nouns_food,
             'noun_activity': self.nouns_activities,
             'noun_place': self.nouns_places,
-            'preposition': self.prepositions,
-            'article': self.articles,
-            'conjunction': self.conjunctions,
             'adverb_manner': self.adverbs_manner,
             'weather_condition': self.weather_conditions
         }
         
         return random.choice(category_map.get(category, ['unknown']))
 
-    def choose_article(self, next_word):
-        """Choose appropriate article (a/an) based on the next word"""
-        if next_word.lower().startswith(('a', 'e', 'i', 'o', 'u')):
-            return 'an'
-        return 'a'
-
     def generate_phrase(self):
         """Generate a random phrase using the templates and word categories"""
         template = random.choice(self.templates)
         
-        # First pass: replace non-article placeholders
+        # Replace all placeholders
         result = template
-        placeholders = ['verb_action', 'verb_being', 'adjective_mood', 'adjective_descriptive',
+        placeholders = ['verb_action', 'adjective_mood', 'adjective_descriptive',
                        'noun_object', 'noun_food', 'noun_activity', 'noun_place',
-                       'preposition', 'conjunction', 'adverb_manner',
-                       'weather_condition']
+                       'adverb_manner', 'weather_condition']
         
         for placeholder in placeholders:
             while f'{{{placeholder}}}' in result:
                 word = self.get_random_word(placeholder)
                 result = result.replace(f'{{{placeholder}}}', word, 1)
-        
-        # Second pass: handle articles intelligently
-        import re
-        article_pattern = r'\{article\}(\s+)(\w+)'
-        
-        def replace_article(match):
-            space = match.group(1)
-            next_word = match.group(2)
-            article = self.choose_article(next_word)
-            return f'{article}{space}{next_word}'
-        
-        result = re.sub(article_pattern, replace_article, result)
-        
-        # Clean up any remaining article placeholders
-        result = result.replace('{article}', 'a')
         
         # Capitalize first letter
         result = result[0].upper() + result[1:] if result else ""

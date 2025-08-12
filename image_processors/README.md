@@ -228,26 +228,33 @@ The Phrase Generator creates diverse, realistic human situation descriptions usi
 5. **Save**: Use "Save to File" to export phrases with timestamp
 
 **Building Block Categories:**
-- **Action Verbs**: driving, cooking, building, painting, exploring, etc.
-- **Being Verbs**: being, becoming, appearing, feeling, etc.
+- **Action Verbs**: cooking, building, painting, dancing, exploring, etc.
 - **Mood Adjectives**: happy, excited, calm, adventurous, focused, etc.
 - **Descriptive Adjectives**: beautiful, complex, colorful, ancient, etc.
 - **Object Nouns**: tractor, bicycle, guitar, computer, mountain, etc.
 - **Food Nouns**: meal, soup, coffee, pizza, chocolate, etc.
 - **Activity Nouns**: lesson, performance, game, adventure, etc.
 - **Place Nouns**: home, park, restaurant, mountains, etc.
-- **Connecting Words**: prepositions, articles, conjunctions, manner adverbs
+- **Manner Adverbs**: provocatively, skillfully, enthusiastically, gracefully, etc.
 - **Weather Conditions**: sunny, rainy, cloudy, windy, stormy, etc.
 
+**Three Streamlined Template Patterns:**
+1. `{adverb_manner} {verb_action}, {noun_food}, {adjective_descriptive} {noun_object}`
+2. `{adjective_mood}, {verb_action}, {noun_object}, {noun_place}`
+3. `{verb_action}, {noun_activity}, {weather_condition} weather`
+
 **Example Generated Phrases:**
-- "Carefully driving a rustic tractor through the countryside"
-- "Enthusiastically cooking a delicious meal in a modern kitchen"
-- "Peacefully reading an ancient book beside a quiet river"
-- "Boldly climbing a massive mountain during a sunny day"
+- "Skillfully exercising, fruit, golden guitar"
+- "Energetic, discovering, boat, countryside"  
+- "Sitting, exhibition, snowy weather"
+- "Passionately painting, chocolate, ancient sculpture"
 
 **Technical Features:**
-- **Smart Grammar**: Automatic a/an article selection based on vowel sounds
-- **Template System**: Multiple sentence structures for variety
+- **Simplified Structure**: No prepositions or articles for cleaner, more direct phrases
+- **Comma-Separated Format**: Clean, list-like phrase structure for easy parsing
+- **Streamlined Templates**: Three focused sentence patterns for consistent output
+- **Modular Design**: Organized word categories for reliable phrase generation
+- **Uniqueness Checking**: Prevents duplicate phrases in batch generation
 - **Duplicate Prevention**: Ensures unique phrases in batch generation
 - **File Export**: Saves with timestamps and formatting
 
