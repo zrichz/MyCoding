@@ -43,6 +43,39 @@ Interactive tools for cropping and selecting image regions with batch processing
 
 **Supported Formats:** JPG, JPEG, PNG, BMP, TIFF, TIF, GIF
 
+### 🔧 SuperJPEG Encoder/Decoder
+Custom JPEG implementation from first principles with configurable block sizes
+
+**Main Tool:**
+- `superjpeg_encoder.py` - **SuperJPEG Encoder/Decoder GUI**
+  - 🔧 **Custom JPEG Implementation**: Built from first principles using pure mathematical transforms
+  - 📐 **Variable Block Sizes**: Configurable from 4x4 to 64x64 in steps of 4 (4, 8, 12, 16, ..., 64)
+  - 🎛️ **Quality Control**: Adjustable quality settings (1-100) with adaptive quantization
+  - 📊 **Multiple Variants**: Automatically generates files for ALL block sizes from single input
+  - 🔄 **Full Pipeline**: Complete encode/decode cycle with verification testing
+  - 📁 **Smart Naming**: Descriptive filenames with block size and quality info
+  - 🎨 **Color Support**: Full RGB and grayscale image processing
+  - 📈 **Progress Tracking**: Real-time encoding progress and detailed logging
+
+**Technical Features:**
+- **DCT Implementation**: Custom Discrete Cosine Transform matrices for any block size
+- **Adaptive Quantization**: Automatically scaled quantization tables based on block size
+- **Zigzag Scanning**: Proper frequency ordering for optimal compression
+- **Run-Length Encoding**: Efficient data compression for sparse coefficients  
+- **YUV Color Space**: Professional color space conversion for optimal compression
+- **Lossless Decode**: Perfect reconstruction verification for encoding validation
+
+**Output Format:**
+- Creates SuperJPEG files in JSON format containing all compression data
+- Filename pattern: `{original}_superjpeg_{blocksize}x{blocksize}_q{quality}.json`
+- Example: `photo_superjpeg_8x8_q50.json`, `photo_superjpeg_16x16_q75.json`
+
+**Use Cases:**
+- **Research**: Compare compression efficiency across different block sizes
+- **Education**: Learn JPEG compression principles with visual feedback
+- **Optimization**: Find optimal block size for specific image types
+- **Analysis**: Study frequency domain characteristics of images
+
 ### 🎯 seam_carving/
 Advanced seam carving image resizing using content-aware algorithms
 
@@ -299,6 +332,25 @@ Or navigate to specific directories and run from there:
 cd image_expander
 python image_expander_720x1600.py
 ```
+
+### Quick Launch Scripts
+**Windows (.bat files):**
+- `run_image_cropper.bat` - Launch Interactive Image Cropper
+- `run_image_expander.bat` - Launch Image Expander (720x1600)
+- `run_seam_carving.bat` - Launch Seam Carving Width Reducer
+- `run_grayscott_filter.bat` - Launch GrayScott Reaction-Diffusion Filter
+- `run_optical_flow.bat` - Launch Optical Flow Visualizer
+- `run_phrase_generator.bat` - Launch Phrase Generator
+- `run_superjpeg_encoder.bat` - Launch SuperJPEG Encoder/Decoder
+
+**Linux/Mac (.sh files):**
+- `run_image_cropper.sh` - Launch Interactive Image Cropper
+- `run_image_expander.sh` - Launch Image Expander (720x1600)
+- `run_seam_carving.sh` - Launch Seam Carving Width Reducer
+- `run_grayscott_filter.sh` - Launch GrayScott Reaction-Diffusion Filter
+- `run_optical_flow.sh` - Launch Optical Flow Visualizer
+- `run_phrase_generator.sh` - Launch Phrase Generator
+- `run_superjpeg_encoder.sh` - Launch SuperJPEG Encoder/Decoder
 
 ## Requirements
 
