@@ -4,6 +4,19 @@ A comprehensive collection of image processing tools organized by functionality.
 
 ## Directory Structure
 
+### 🔄 Format Converters & Batch Processing
+Tools for converting between formats and batch processing workflows
+
+- `png_to_jpg_processor.py` - **PNG to JPG Batch Converter with Rotation**
+  - 📁 **Batch Processing**: Converts all PNG files in directory
+  - 📐 **Smart Scaling**: Scales to max 1080x1440 preserving aspect ratio  
+  - 🌊 **Blur Fill**: Uses intelligent blur + luminance reduction for aspect ratio gaps
+  - 🔄 **Auto Rotation**: Rotates 90° counter-clockwise after scaling
+  - 📱 **Final Stretch**: Stretches to final 1920x1080 dimensions
+  - 💾 **High Quality**: Saves as high-quality JPEG (quality=88, no subsampling)
+  - 📝 **Numbered Output**: Saves as IMG00001.jpg, IMG00002.jpg format
+  - **Run with:** `run_png_processor.bat` or `python png_to_jpg_processor.py`
+
 ### 🔄 image_rotator/
 Tools for rotating images in various ways
 - `rotate_all_jpegs_in_dir_90CW.py` - Batch rotate JPEG files 90° clockwise
