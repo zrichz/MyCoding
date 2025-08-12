@@ -20,7 +20,7 @@ class PhraseGenerator:
             "cooking", "building", "painting", "writing", "reading", "standing", 
             "dancing", "running", "walking", "climbing", "swimming", "flying", "sailing",
             "gardening", "teaching", "learning", "fixing", "cleaning", "sitting",
-            "snoozing", "designing", "crafting", "exploring", "discovering", "investigating",
+            "snoozing", "designing", "crafting", "exploring", "undressing", "investigating",
             "performing", "sleeping", "training", "exercising", "meditating", "relaxing"
         ]
         
