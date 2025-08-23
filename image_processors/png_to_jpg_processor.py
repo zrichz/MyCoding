@@ -25,7 +25,6 @@ import glob
 from PIL import Image
 import numpy as np
 from scipy import ndimage
-import argparse
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 import threading
@@ -476,35 +475,9 @@ class PNGProcessorGUI:
 
 
 def main():
-    """Main function with GUI and command-line options"""
-    parser = argparse.ArgumentParser(description="Process PNG files to rotated 1920x1080 JPEGs")
-    parser.add_argument("--gui", action="store_true", help="Launch GUI interface")
-    parser.add_argument("--blur", type=int, default=160, help="Blur amount for fill areas (default: 160)")
-    parser.add_argument("--darken", type=int, default=50, help="Luminance reduction percentage (default: 50)")
-    parser.add_argument("--output", type=str, default="processed_files", help="Output directory name")
-    
-    args = parser.parse_args()
-    
-    if args.gui or len(sys.argv) == 1:  # Launch GUI if --gui flag or no arguments
-        app = PNGProcessorGUI()
-        app.run()
-    else:
-        # Command-line mode
-        processor = PNGProcessor()
-        processor.blur_amount = args.blur
-        processor.luminance_drop = args.darken
-        processor.output_dir = args.output
-        
-        print("PNG to JPG Batch Processor")
-        print("=" * 40)
-        print(f"Target size: 1080x1440 → rotate 90° → stretch to 1920x1080")
-        print(f"Blur amount: {processor.blur_amount}px")
-        print(f"Luminance reduction: {processor.luminance_drop}%")
-        print(f"Output directory: {processor.output_dir}")
-        print("=" * 40)
-        
-        # Process all PNGs in current directory
-        processor.process_all_pngs()
+    """Main function - launches GUI interface"""
+    app = PNGProcessorGUI()
+    app.run()
 
 
 if __name__ == "__main__":
