@@ -2,12 +2,21 @@
 PNG to JPG Batch Processor with Rotation and Scaling
 
 This script replicates the functionality of a batch file that processes PNG images:
+
+For PORTRAIT/SQUARE images:
 1. Scales to max 1080x1440 preserving aspect ratio (using blur fill method)
 2. Rotates 90° counter-clockwise
 3. Stretches to 1920x1080
 4. Saves as high-quality JPEG with numbered filenames
 
+For LANDSCAPE images (width > height):
+1. Scales to max 1440x1080 preserving aspect ratio (using blur fill method)
+2. Skips rotation step (already in correct orientation)
+3. Stretches to 1920x1080
+4. Saves as high-quality JPEG with numbered filenames
+
 Uses the image expansion technique from image_expander_720x1600.py for intelligent fill.
+Optimizes scaling by using the largest possible dimension for each orientation.
 """
 
 import os
@@ -233,15 +242,27 @@ class PNGProcessor:
                 image = image.convert('RGB')
             
             img_array = np.array(image)
+            orig_height, orig_width = img_array.shape[:2]
             
-            # Step 1: Scale to max 1080x1440 preserving aspect ratio with blur fill
-            scaled_array = self.scale_with_fill(img_array, 1080, 1440)
+            # Determine if image is landscape (width > height)
+            is_landscape = orig_width > orig_height
             
-            # Step 2: Rotate 90° counter-clockwise
-            rotated_array = self.rotate_90_ccw(scaled_array)
-            
-            # Step 3: Stretch to 1920x1080
-            final_array = self.stretch_to_target(rotated_array, 1920, 1080)
+            if is_landscape:
+                # For landscape images: Scale to max 1440x1080 (no rotation needed)
+                # This allows maximum scaling: 1440/width instead of 1080/width
+                scaled_array = self.scale_with_fill(img_array, 1440, 1080)
+                # Skip rotation step
+                final_array = self.stretch_to_target(scaled_array, 1920, 1080)
+            else:
+                # For portrait/square images: Use original pipeline
+                # Step 1: Scale to max 1080x1440 preserving aspect ratio with blur fill
+                scaled_array = self.scale_with_fill(img_array, 1080, 1440)
+                
+                # Step 2: Rotate 90° counter-clockwise
+                rotated_array = self.rotate_90_ccw(scaled_array)
+                
+                # Step 3: Stretch to 1920x1080
+                final_array = self.stretch_to_target(rotated_array, 1920, 1080)
             
             # Step 4: Save as high-quality JPEG
             final_image = Image.fromarray(final_array)
