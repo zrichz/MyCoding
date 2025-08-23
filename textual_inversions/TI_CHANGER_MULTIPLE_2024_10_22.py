@@ -31,10 +31,12 @@ Example: An 8-vector TI file named "my_embedding.pt" will create:
 # Load a .pt textual inversion file and show / manipulate it
 import torch
 import matplotlib.pyplot as plt
-import matplotlib_inline.backend_inline
-matplotlib_inline.backend_inline.set_matplotlib_formats('svg')
 import numpy as np
 import os
+
+# Configure matplotlib for better display (standalone Python version)
+plt.rcParams['figure.dpi'] = 100
+plt.rcParams['savefig.dpi'] = 150
 
 
 def extract_individual_vectors(data, original_filename, numvectors):
@@ -120,13 +122,32 @@ def main():
     5. retrieve and print the number of vectors and the shape of the tensor.
     """
     
-    # Load the dictionary from the .pt file within 'textual_inversions' directory
-    # eg : 'textual_inversions\TI_Tron_original.pt'
+    # Load the dictionary from the .pt file
+    # First check if file exists in current directory, then in textual_inversions subdirectory
     
-    filename = 'TI_Tron_original.pt'
+    #filename = 'TI_Tron_original.pt'
+    filename = '8vSw-1401.pt'
     
-    data = torch.load('textual_inversions/'+filename, map_location='cpu')
-    print('TI loaded successfully from ',filename)
+    # Try to find the file in current directory first, then in subdirectory
+    if os.path.exists(filename):
+        filepath = filename
+    elif os.path.exists('textual_inversions/' + filename):
+        filepath = 'textual_inversions/' + filename
+    else:
+        print(f"Error: Could not find {filename} in current directory or textual_inversions/ subdirectory")
+        print("Available .pt files in current directory:")
+        for file in os.listdir('.'):
+            if file.endswith('.pt'):
+                print(f"  - {file}")
+        if os.path.exists('textual_inversions'):
+            print("Available .pt files in textual_inversions/ subdirectory:")
+            for file in os.listdir('textual_inversions'):
+                if file.endswith('.pt'):
+                    print(f"  - {file}")
+        return
+    
+    data = torch.load(filepath, map_location='cpu')
+    print('TI loaded successfully from', filepath)
     print('-------')
     print(data.keys())
     print('-------')
