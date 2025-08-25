@@ -4,6 +4,18 @@ A comprehensive collection of image processing tools organized by functionality.
 
 ## Directory Structure
 
+### 🎮 Interactive Viewers & Animation Tools
+Creative tools for viewing and interacting with images
+
+- `falling_blocks_viewer.py` - **Interactive Image Viewer with Falling Blocks Animation**
+  - 🎬 **Falling Blocks Effect**: Images are divided into 32x32 pixel blocks that fall into place
+  - 🎨 **Original Colors**: Blocks display in their natural colors with gaussian blur effect
+  - 🌫️ **Blur Effect**: Blocks start blurred and fade to sharp once settled
+  - 🎮 **Interactive Controls**: SPACE to start/pause, arrow keys to navigate
+  - 📁 **Directory Support**: Select a folder and view all images sequentially
+  - ⚡ **Simple Physics**: Realistic falling animation with gravity-based settling
+  - **Run with:** `run_falling_blocks.bat`/`.sh` or `python falling_blocks_viewer.py`
+
 ### 🔄 Format Converters & Batch Processing
 Tools for converting between formats and batch processing workflows
 
@@ -281,6 +293,12 @@ The Phrase Generator creates diverse, realistic human situation descriptions usi
 ### Easy Launch Scripts
 For the most commonly used tools, use the provided launcher scripts:
 
+**Falling Blocks Image Viewer:**
+```cmd
+run_falling_blocks.bat    # Windows
+./run_falling_blocks.sh   # Linux/Mac
+```
+
 **Interactive Image Cropper:**
 ```cmd
 run_image_cropper.bat     # Windows
@@ -391,6 +409,7 @@ All required packages are listed in `requirements.txt`:
 - **scipy** (1.15.3) - Scientific computing (used for image filtering and blur effects)
 - **opencv-python** (4.12.0.88) - Computer vision library (seam carving, optical flow)
 - **scikit-image** (0.25.2) - Scientific image processing (CLAHE, color space conversions)
+- **pygame** (2.6.0) - Game development framework (interactive viewers and animations)
 
 ### Standard Library Modules
 These are included with Python and don't need separate installation:
