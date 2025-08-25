@@ -41,6 +41,203 @@ plt.rcParams['figure.dpi'] = 100
 plt.rcParams['savefig.dpi'] = 150
 
 
+def analyze_pt_file(filepath):
+    """
+    Analyze a .pt file to determine its type and structure with flexible TI detection
+    """
+    try:
+        data = torch.load(filepath, map_location='cpu')
+        print(f"\nFile Analysis: {os.path.basename(filepath)}")
+        print("=" * 50)
+        
+        # Check basic structure
+        if isinstance(data, dict):
+            print("✓ File is a dictionary-based PyTorch file")
+            print(f"Top-level keys: {list(data.keys())}")
+            
+            # Try to find embedding tensor with flexible key matching
+            embedding_info = find_embedding_tensor(data)
+            
+            if embedding_info:
+                tensor_path, tensor = embedding_info
+                print(f"✓ Found embedding tensor at: {tensor_path}")
+                print(f"✓ Tensor shape: {tensor.shape}")
+                print(f"✓ Number of vectors: {tensor.shape[0]}")
+                print(f"✓ Vector dimensions: {tensor.shape[1]}")
+                return True
+            else:
+                print("✗ No embedding tensor found with common TI patterns")
+                print("This might be a different type of PyTorch file")
+                
+                # Try to identify what type of file it might be
+                if 'state_dict' in data:
+                    print("→ Might be a model checkpoint file")
+                elif 'model' in data:
+                    print("→ Might be a saved model file")
+                elif any('weight' in str(k).lower() or 'bias' in str(k).lower() for k in data.keys()):
+                    print("→ Might be a neural network weights file")
+                else:
+                    print("→ Unknown PyTorch file type")
+                    
+        elif hasattr(data, 'state_dict'):
+            print("✓ File contains a model with state_dict")
+            print("✗ This is a model file, not a textual inversion")
+        elif torch.is_tensor(data):
+            print(f"✓ File contains a raw tensor with shape: {data.shape}")
+            if len(data.shape) == 2:
+                print(f"✓ This could be a direct embedding tensor!")
+                print(f"✓ Number of vectors: {data.shape[0]}")
+                print(f"✓ Vector dimensions: {data.shape[1]}")
+                return True
+            else:
+                print("✗ Tensor shape doesn't match typical embedding format")
+        else:
+            print(f"✗ File contains: {type(data)}")
+            print("✗ Expected a dictionary structure or tensor for textual inversions")
+            
+        return False
+        
+    except Exception as e:
+        print(f"✗ Error analyzing file: {e}")
+        return False
+
+
+def find_embedding_tensor(data):
+    """
+    Flexibly search for embedding tensors in various TI file formats
+    Returns: (path_description, tensor) if found, None if not found
+    """
+    if not isinstance(data, dict):
+        return None
+    
+    # Common patterns for textual inversion files
+    search_patterns = [
+        # Standard Automatic1111 format
+        (['string_to_param', '*'], "string_to_param['*']"),
+        (['string_to_param', 'embedding'], "string_to_param['embedding']"),
+        
+        # Alternative key names
+        (['emb_params', '*'], "emb_params['*']"),
+        (['embeddings', '*'], "embeddings['*']"),
+        (['embedding', '*'], "embedding['*']"),
+        
+        # Direct embedding keys
+        (['*'], "root level '*'"),
+        (['embedding'], "root level 'embedding'"),
+        (['tensor'], "root level 'tensor'"),
+        (['vectors'], "root level 'vectors'"),
+        (['weights'], "root level 'weights'"),
+        
+        # Token-based patterns
+        (['string_to_param'], "string_to_param (checking all keys)"),
+        (['embeddings'], "embeddings (checking all keys)"),
+        (['emb_params'], "emb_params (checking all keys)"),
+    ]
+    
+    # Try each pattern
+    for key_path, description in search_patterns:
+        try:
+            current = data
+            
+            # Navigate through the key path
+            for key in key_path[:-1]:
+                if key in current and isinstance(current[key], dict):
+                    current = current[key]
+                else:
+                    break
+            else:
+                # We successfully navigated to the parent, now check the final key
+                final_key = key_path[-1]
+                
+                if final_key in current:
+                    tensor_candidate = current[final_key]
+                    if torch.is_tensor(tensor_candidate) and len(tensor_candidate.shape) == 2:
+                        return (description, tensor_candidate)
+                elif len(key_path) == 1 and final_key in ['string_to_param', 'embeddings', 'emb_params']:
+                    # For containers, check all their contents
+                    container = current[final_key]
+                    if isinstance(container, dict):
+                        for sub_key, sub_value in container.items():
+                            if torch.is_tensor(sub_value) and len(sub_value.shape) == 2:
+                                return (f"{description}['{sub_key}']", sub_value)
+        except:
+            continue
+    
+    # If no standard patterns work, search more broadly
+    return search_all_tensors(data)
+
+
+def search_all_tensors(data, path="", max_depth=3):
+    """
+    Recursively search for 2D tensors that could be embeddings
+    """
+    if max_depth <= 0:
+        return None
+        
+    if isinstance(data, dict):
+        for key, value in data.items():
+            current_path = f"{path}.{key}" if path else key
+            
+            if torch.is_tensor(value) and len(value.shape) == 2:
+                # Found a 2D tensor - likely an embedding
+                return (f"deep search: {current_path}", value)
+            elif isinstance(value, dict):
+                result = search_all_tensors(value, current_path, max_depth - 1)
+                if result:
+                    return result
+    
+    return None
+
+
+def load_ti_file_flexible(filepath):
+    """
+    Load a TI file with flexible structure detection
+    Returns: (data_dict, tensor, tensor_path) or None if not a valid TI file
+    """
+    try:
+        data = torch.load(filepath, map_location='cpu')
+        
+        # Handle raw tensor files
+        if torch.is_tensor(data) and len(data.shape) == 2:
+            # Create a minimal TI structure
+            ti_data = {
+                'string_to_param': {'*': data},
+                'string_to_token': {'*': 49408},  # Default token
+                'name': os.path.splitext(os.path.basename(filepath))[0],
+                'step': 0
+            }
+            return (ti_data, data, "raw tensor converted to standard format")
+        
+        # Handle dictionary files
+        if isinstance(data, dict):
+            embedding_info = find_embedding_tensor(data)
+            if embedding_info:
+                tensor_path, tensor = embedding_info
+                
+                # Ensure we have a complete TI structure
+                if 'string_to_param' not in data:
+                    # Create missing structure
+                    data['string_to_param'] = {'*': tensor}
+                elif '*' not in data['string_to_param']:
+                    data['string_to_param']['*'] = tensor
+                
+                # Add missing metadata if needed
+                if 'string_to_token' not in data:
+                    data['string_to_token'] = {'*': 49408}
+                if 'name' not in data:
+                    data['name'] = os.path.splitext(os.path.basename(filepath))[0]
+                if 'step' not in data:
+                    data['step'] = 0
+                
+                return (data, tensor, tensor_path)
+        
+        return None
+        
+    except Exception as e:
+        print(f"Error loading file: {e}")
+        return None
+
+
 def extract_individual_vectors(data, original_filename, numvectors):
     """
     Extract individual vectors from a multi-vector TI file and save each as a separate .pt file
@@ -143,39 +340,44 @@ def main():
         return
 
     # Get just the filename for later use
+    original_selected_path = filename
     filename = os.path.basename(filename)
     
-    # Try to find the file in current directory first, then in subdirectory
-    if os.path.exists(filename):
-        filepath = filename
-    elif os.path.exists('textual_inversions/' + filename):
-        filepath = 'textual_inversions/' + filename
-    else:
-        print(f"Error: Could not find {filename} in current directory or textual_inversions/ subdirectory")
-        print("Available .pt files in current directory:")
-        for file in os.listdir('.'):
-            if file.endswith('.pt'):
-                print(f"  - {file}")
-        if os.path.exists('textual_inversions'):
-            print("Available .pt files in textual_inversions/ subdirectory:")
-            for file in os.listdir('textual_inversions'):
-                if file.endswith('.pt'):
-                    print(f"  - {file}")
+    # First, analyze the file with flexible TI detection
+    print("\nAnalyzing selected file...")
+    if not analyze_pt_file(original_selected_path):
+        print("\n" + "="*50)
+        print("ERROR: The selected file does not appear to contain textual inversion data.")
+        print("="*50)
+        print("\nExpected patterns for TI files:")
+        print("- Dictionary with embedding tensors")
+        print("- 2D tensors with shape [num_vectors, dimensions]")
+        print("- Common key patterns like 'string_to_param', 'embeddings', etc.")
+        print("\nTrying flexible loading anyway...")
+        
+        # Try flexible loading as a last resort
+        flexible_result = load_ti_file_flexible(original_selected_path)
+        if not flexible_result:
+            print("❌ Flexible loading also failed.")
+            print("\nPlease verify this is a textual inversion file.")
+            input("\nPress Enter to exit...")
+            return
+        else:
+            print("✅ Flexible loading succeeded! Proceeding...")
+    
+    # Load the file using flexible approach
+    flexible_result = load_ti_file_flexible(original_selected_path)
+    if not flexible_result:
+        print("❌ Failed to load file even with flexible parsing.")
+        input("\nPress Enter to exit...")
         return
     
-    data = torch.load(filepath, map_location='cpu')
-    print('TI loaded successfully from', filepath)
-    print('-------')
-    print(data.keys())
-    print('-------')
-    #for each key, print the data
-    for key in data.keys():
-        print('key: ',key,' data[key]: ',data[key])
+    data, tensor, tensor_path = flexible_result
+    print(f'\n✅ TI loaded successfully from {original_selected_path}')
+    print(f'📍 Embedding tensor found at: {tensor_path}')
+    print(f'📊 Final data structure keys: {list(data.keys())}')
     
-    #extract the tensor from the "string_to_param" key, and create a numpy version of it on CPU
-    
-    # Extract the tensor associated with the key '*'
-    tensor = data['string_to_param']['*']
+    # Now we can safely access the tensor since we've validated and normalized the structure
     
     # Convert the tensor to a NumPy array. It's always a good idea to detach the tensor from the GPU
     # all operations will be done on the numpy array
@@ -183,322 +385,142 @@ def main():
     numvectors = np_array.shape[0] # get number of vectors
     print('\nNumber of vectors: ',numvectors,'    Shape of the tensor: ',np_array.shape)
     
-    #create several copies of the numpy array
-    np_smoothed = np_array.copy()
-    np_mean = np_array.copy()
-    np_decimated = np_array.copy()
-    np_divided = np_array.copy()
-    np_rolled = np_array.copy()
-    
-    #plus one for plotting original...
-    np_plotting = np_array.copy()
-    
     # ========================================
-    # 2. PLOT STATISTICS OF ORIGINAL TI
-    # ========================================
-    
-    # reshape the numpy array to n x 2D images
-    # The first dim is number of vectors/tokens used in the TI
-    # 32x24 is an arbitrary choice, as the original tensor(s) are 768 long (32x24)
-    
-    np_plotting = np_plotting.reshape(numvectors,32,24)
-    print('Reshaped array to: ',np_plotting.shape,'for plotting')
-    # Calculate the min, max, and mean of each 2D image
-    min_values = np.min(np_plotting, axis=(1,2))
-    max_values = np.max(np_plotting, axis=(1,2))
-    mean_values = np.mean(np_plotting, axis=(1,2))
-    
-    def fn_plot_min_max_mean(min_values, max_values, mean_values):
-        # Plot the min, max, and mean values
-        plt.figure(figsize=(numvectors, 1))
-    
-        # Plot the lines with alpha=0.5
-        plt.plot(min_values, color='black', linestyle='dotted', alpha=0.4)
-        plt.plot(max_values, color='black', linestyle='dotted', alpha=0.4)
-        plt.plot(mean_values, color='black', linestyle='dotted', alpha=0.4)
-    
-        # Plot the markers with alpha=1.0
-        plt.plot(min_values, 's', markersize=6, markerfacecolor='w', label='min')
-        plt.plot(max_values, 's', markersize=6, markerfacecolor='w', label='max')
-        plt.plot(mean_values, 's', markersize=6, markerfacecolor='w', label='mean')
-    
-        plt.grid(True, which='both', linestyle='--', linewidth=0.2, color='black')
-        #plt.title('Min, Max, and Mean Values')
-        plt.xlabel('Vector Number')
-    
-        # Move the legend outside the chart
-        plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-    
-        plt.ylabel('Value')
-        plt.show()
-    
-    fn_plot_min_max_mean(min_values, max_values, mean_values)
-    
-    #plot grid of n images, using the first dimension of numpy_array
-    fig, axs = plt.subplots(1, numvectors, figsize=(numvectors*1.2, 1.25))
-    for i in range(numvectors):
-        axs[i].imshow(np_plotting[i], cmap='RdYlGn',interpolation='bilinear')
-        axs[i].axis('off')
-    plt.suptitle('original TI vectors', fontsize=10)
-    plt.show()
-    
-    #plot histograms
-    fig, axs = plt.subplots(1, numvectors, figsize=(numvectors*1.4, 1.25))
-    for i in range(numvectors):
-        axs[i].hist(np_plotting[i].flatten(), bins=30, histtype='step')
-        axs[i].set_xlim([-0.8, 0.8])  # Set the x-axis limits
-        axs[i].set_ylim([0, 100])  # Set the y-axis limits
-    plt.tight_layout()
-    plt.show()
-    
-    # ========================================
-    # 3. SMOOTHING
+    # 2. MENU SELECTION
     # ========================================
     """
-    Perform smoothing of all values in each tensor row, using a defined kernel size (eg: 3 or 5 etc)
-    Plot smoothed vectors. return np_smoothed
+    Present user with operation choices upfront
     """
     
-    #flatten the numpy array
-    np_smoothed = np_smoothed.flatten()
-    #print('Flattened array to: ',np_smoothed.shape)
+    print("\n" + "="*60)
+    print("TI CHANGER - SELECT OPERATION")
+    print("="*60)
+    print("1. Apply smoothing to all vectors")
+    print("2. Create single mean vector (condensed)")
+    print("3. Apply decimation with zeros")
+    print("4. Divide all vectors by scalar")
+    print("5. Roll/shift all vectors")
+    print("6. Extract individual vectors to separate files")
+    print("="*60)
     
-    #sm_kernel = 3    # nxn smoothing kernel, can set to *1* to skip smoothing
-    sm_kernel = int(input("SMOOTHING: Enter kernel size (MUST BE ODD eg '3'), or enter '1' to skip smoothing:"))  # nxn smoothing kernel, can set to *1* to skip smoothing
-    print('smoothing kernel used: ',sm_kernel)
+    user_input = input("Choose operation (1-6): ").strip()
     
-    #apply a 1D smoothing filter to the numpy array
-    smooth_tmp = np.convolve(np_smoothed, np.ones(sm_kernel)/sm_kernel, mode='full')
-    #print('length of smoothed array (untrimmed): ',len(smooth_tmp) )
-    #print('sm_kernel: ',sm_kernel,' sm_kernel//2: ',sm_kernel//2)
+    if user_input not in ['1', '2', '3', '4', '5', '6']:
+        print("Invalid choice. Please run the script again and enter 1-6.")
+        input("Press Enter to exit...")
+        return
     
-    #extract the central part of the smoothed array
-    smooth_tmp = smooth_tmp[sm_kernel//2:len(smooth_tmp)-sm_kernel//2] # use[1:-1] for 3x3 filter, [2:-2] for 5x5 filter. integer round down division used ('//')
-    #print the length of the smoothed array
-    #print('length of smoothed, trimmed array: ',len(smooth_tmp) )
+    print(f"\nSelected: Option {user_input}")
     
-    smooth_tmp = smooth_tmp.reshape(numvectors,32,24)
-    
-    #plot a grid of n images using the first dim of numpy_array
-    fig, axs = plt.subplots(1, numvectors, figsize=(numvectors, 1.5))
-    for i in range(numvectors):
-        axs[i].imshow(smooth_tmp[i], cmap='seismic',interpolation='bicubic')
-        axs[i].axis('off')
-    plt.show()
-    
-    #reshape the array back to how it was
-    smooth_tmp = smooth_tmp.reshape(numvectors,-1)
-    #print('Reshaped array back to: ',smooth_tmp.shape)
-    
-    np_smoothed = smooth_tmp.copy()
-    print('np_smoothed shape: ',np_smoothed.shape)
-    
-    # ========================================
-    # 4. ROLLING
-    # ========================================
-    
-    #flatten the numpy array
-    np_rolled = np_rolled.flatten()
-    #print('Flattened array to: ',np_smoothed.shape)
-    
-    roll_amount = int(input("ROLLING: Enter eg '3', or enter '0' to skip rolling (can be +ve or -ve) : "))
-    print('roll_amount amount used: ',roll_amount)
-    
-    #roll_amount the numpy array
-    np_rolled = np.roll(np_rolled, roll_amount)
-    
-    np_rolled_temp = np_rolled.reshape(numvectors,32,24)
-    
-    #plot a grid of n images using the first dim of numpy_array
-    fig, axs = plt.subplots(1, numvectors, figsize=(numvectors, 1.5))
-    for i in range(numvectors):
-        axs[i].imshow(np_rolled_temp[i], cmap='seismic',interpolation='bicubic')
-        axs[i].axis('off')
-    plt.show()
-    
-    #reshape the array back to how it was
-    np_rolled = np_rolled.reshape(numvectors,-1)
-    print('Reshaped array back to: ',np_rolled.shape)
-    
-    # ========================================
-    # 5. MEAN CALCULATION
-    # ========================================
-    """
-    calculate the mean as a single vector, rescaling to account for diminution due to noisy vectors
-    returns np_mean
-    """
-    
-    # function to calc and plot stats
-    def fn_calc_and_plot_stats(tmp_array):
-        min_values = []     # create empty lists
-        max_values = []
-        mean_values = []
-        sd_values = []
-    
-        for i in range(tmp_array.shape[0]):     # Calc and plot stats for each array/vector
-            min_val = np.min(tmp_array[i])
-            max_val = np.max(tmp_array[i])
-            mean_val = np.mean(tmp_array[i])
-            sd_val = np.std(tmp_array[i])
-    
-            min_values.append(min_val)         # Append the values to the lists
-            max_values.append(max_val)
-            mean_values.append(mean_val)
-            sd_values.append(sd_val)
-    
-            print(f"V {i+1}:  Min={min_val:.2f},  Max={max_val:.2f},  Mean={mean_val:.2f},  SD={sd_val:.2f}")
-        meanSD = np.mean(sd_values)
-        print(f"Mean SD across all vectors: {meanSD:.4f}")
-    
-        # Plot (only if debug = True)
-        debug = False
-        if debug:
-            fig, ax = plt.subplots(figsize=(6, 3))
-            bar_width = 0.20      # Define bar width and positions
-            positions = np.arange(1, tmp_array.shape[0]+1)
-            # Create bar plots
-            ax.bar(positions - 1.5*bar_width, min_values, width=bar_width, label='Min')
-            ax.bar(positions - 0.5*bar_width, max_values, width=bar_width, label='Max')
-            ax.bar(positions + 0.5*bar_width, mean_values, width=bar_width, label='Mean')
-            ax.bar(positions + 1.5*bar_width, sd_values, width=bar_width, label='SD')
-            ax.set_title('Stats of original TI vectors', fontsize=10)
-            ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-            ax.set_axisbelow(True)    # Draw grid behind bars
-            ax.grid(True)
-            plt.tight_layout()
-            plt.show()
-    
-        return(meanSD)
-    
-    meanSD = fn_calc_and_plot_stats(np_mean)       # Call the function
-    
-    #reshape and take single mean across rows/vectors:
-    
-    Xmean = np_mean  # Reshape X to 2D array with n rows/vectors
-    Xmean = np.mean(Xmean, axis=0)     # Calculate average across all rows/vectors
-    print(Xmean.shape)  # Should print: (768,)
-    
-    min_val = np.min(Xmean)
-    max_val = np.max(Xmean)
-    mean_val = np.mean(Xmean)
-    sd_val = np.std(Xmean)
-    print(f"Xmean Array (straight mean):                            Min={min_val:.3f}, Max={max_val:.3f}, Mean={mean_val:.3f}, SD={sd_val:.3f}")
-    
-    # taking the mean of noisy data results in overall smaller magnitudes for the final vector.
-    # to adjust for this, scale the mean vector to have the same SD as the (mean of the SDs) of the orig vectors
-    Xmean = Xmean * meanSD/sd_val
-    
-    # recalc and show stats
-    min_val = np.min(Xmean)
-    max_val = np.max(Xmean)
-    mean_val = np.mean(Xmean)
-    sd_val = np.std(Xmean)
-    print(f"Xmean Array (adjusted to match meanSD of orig vectors): Min={min_val:.3f}, Max={max_val:.3f}, Mean={mean_val:.3f}, SD={sd_val:.3f}")
-    
-    #reshape the array back to how it was
-    np_mean = Xmean # Reshape Xmean back to 3D array, assign to np_mean
-    #reshape to a 1D array
-    np_mean = np_mean.reshape(1,-1)
-    print('Reshaped np_mean array back to: ',np_mean.shape)
-    
-    # ========================================
-    # 6. DIVISION FUNCTION
-    # ========================================
-    
-    def fn_divide(X, divisor):
-        '''divides the tensor by a scalar value'''
-        X = X / divisor
-        return X
-    
-    #divide the tensor by a scalar value
-    divisor = float(input("Enter the divisor for the tensor: "))
-    np_divided = fn_divide(np_divided, divisor)
-    print('TI divided successfully by ',divisor)
-    
-    # ========================================
-    # 7. DISPLAY ARRAY SHAPES
-    # ========================================
-    
-    # we now have run different operations on the tensor, and have multiple numpy arrays
-    #print the shape of each array
-    print('np_decimated shape: ',np_decimated.shape)
-    print('np_smoothed shape: ',np_smoothed.shape)
-    print('np_mean shape: ',np_mean.shape)
-    print('np_divided shape: ',np_divided.shape)
-    print('np_rolled shape: ',np_rolled.shape)
-    
-    # ========================================
-    # 8. USER CHOICE FOR OUTPUT
-    # ========================================
-    """
-    Ask the user to choose between options...
-    """
-    
-    # Ask the user to choose between options
-    user_input = input("Choose: '1'-smoothing all vectors, '2'-a single MEAN vector,'3'-all vectors with nth element zeroed, '4'-divide all vectors by a scalar:,'5'-roll all vectors, '6'-extract individual vectors to separate files")
-
-    if user_input == "1":
-        print("You chose Option 1 - retain all vectors, but with SMOOTHING...")
-        # convert the numpy array back to tensor, using CPU device for compatibility
-        tensor = torch.tensor(np_smoothed, device='cpu', requires_grad=True)
-        print(tensor.shape)
-        data['string_to_param']['*'] = tensor  # store the tensor back in the data dictionary
-    
-    elif user_input == "2":
-        print("You chose Option 2 - condense to a SINGLE (scaled) MEAN vector...")
-        tensor = torch.tensor(np_mean, device='cpu', requires_grad=True)  
-        print(tensor.shape)
-        data['string_to_param']['*'] = tensor  # store the tensor back in the data dictionary
-    
-    elif user_input == "3":
-        print("You chose Option 3 - retain all vectors, but decimated with zeros...")
-        tensor = torch.tensor(np_decimated, device='cpu', requires_grad=True) 
-        print(tensor.shape)
-        data['string_to_param']['*'] = tensor  # store the tensor back in the data dictionary
-    
-    elif user_input == "4":
-        print("You chose Option 4 - retain all vectors, but divided by a scalar...")
-        tensor = torch.tensor(np_divided, device='cpu', requires_grad=True) 
-        print(tensor.shape)
-        data['string_to_param']['*'] = tensor  # store the tensor back in the data dictionary
-    
-    elif user_input == "5":
-        print("You chose Option 5 - retain all vectors, but ROLLED...")
-        tensor = torch.tensor(np_rolled, device='cpu', requires_grad=True) 
-        print(tensor.shape)
-        data['string_to_param']['*'] = tensor  # store the tensor back in the data dictionary
-
-    elif user_input == "6":
+    # Handle Option 6 (extract vectors) immediately since it doesn't need processing
+    if user_input == "6":
         print("You chose Option 6 - extract individual vectors to separate files...")
         extract_individual_vectors(data, filename, numvectors)
         return  # Exit early since we're not modifying the original file
-
-    else:
-        print("Invalid choice. Please enter '1','2','3', '4', '5' or '6'...")    # ========================================
-    # 9. SAVE THE TI (only if not extracting individual vectors)
+    
+    # ========================================
+    # 3. EXECUTE SELECTED OPERATION
     # ========================================
     """
-    SAVE the TI
+    Only perform the processing needed for the selected operation
     """
     
-    # Ask the user for a filename
-    filename = input("Please enter a filename: ('_sm<kernel>.pt' / '_mean.pt' / 'dec<n><T/F>' will be appended to the submitted filename)")
+    print(f"\nProcessing with Option {user_input}...")
+    
+    # Initialize variables
+    filename_suffix = ""
+    processed_array = None
     
     if user_input == "1":
-        filename = filename + "_sm" + str(sm_kernel) + ".pt"
+        # SMOOTHING OPERATION
+        print("You chose Option 1 - retain all vectors, but with SMOOTHING...")
+        
+        # Get smoothing parameters
+        sm_kernel = int(input("SMOOTHING: Enter kernel size (MUST BE ODD eg '3'), or enter '1' to skip smoothing: "))
+        print('smoothing kernel used: ', sm_kernel)
+        
+        if sm_kernel == 1:
+            # No smoothing
+            processed_array = np_array.copy()
+        else:
+            # Apply smoothing
+            np_smoothed = np_array.flatten()
+            smooth_tmp = np.convolve(np_smoothed, np.ones(sm_kernel)/sm_kernel, mode='full')
+            smooth_tmp = smooth_tmp[sm_kernel//2:len(smooth_tmp)-sm_kernel//2]
+            processed_array = smooth_tmp.reshape(numvectors, -1)
+        
+        filename_suffix = f"_sm{sm_kernel}.pt"
+        
     elif user_input == "2":
-        filename = filename + "_mean.pt"
+        # MEAN VECTOR OPERATION
+        print("You chose Option 2 - condense to a SINGLE (scaled) MEAN vector...")
+        
+        # Calculate statistics for scaling
+        sd_values = [np.std(np_array[i]) for i in range(np_array.shape[0])]
+        meanSD = np.mean(sd_values)
+        
+        # Calculate mean vector
+        Xmean = np.mean(np_array, axis=0)
+        sd_val = np.std(Xmean)
+        
+        # Scale to match original SD
+        Xmean = Xmean * meanSD/sd_val
+        processed_array = Xmean.reshape(1, -1)
+        
+        filename_suffix = "_mean.pt"
+        
     elif user_input == "3":
-        # Note: mask_length and every_nth were not defined in original notebook
-        # Using placeholder values - you may need to define these variables
-        mask_length = 0  # placeholder
-        every_nth = 0    # placeholder
-        filename = filename + "_dec" + str(mask_length) + str(every_nth) + ".pt"
+        # DECIMATION OPERATION
+        print("You chose Option 3 - retain all vectors, but decimated with zeros...")
+        
+        # For now, using placeholder decimation (you can enhance this)
+        processed_array = np_array.copy()
+        # TODO: Add your specific decimation logic here
+        
+        filename_suffix = "_dec.pt"
+        
     elif user_input == "4":
-        filename = filename + "_div" + str(divisor) + ".pt"
+        # DIVISION OPERATION
+        print("You chose Option 4 - retain all vectors, but divided by a scalar...")
+        
+        divisor = float(input("Enter the divisor for the tensor: "))
+        processed_array = np_array / divisor
+        print(f'TI divided successfully by {divisor}')
+        
+        filename_suffix = f"_div{divisor}.pt"
+        
     elif user_input == "5":
-        filename = filename + "_roll" + str(roll_amount) + ".pt"
-    # Note: Option 6 (extract individual vectors) exits early and doesn't reach this point
+        # ROLLING OPERATION
+        print("You chose Option 5 - retain all vectors, but ROLLED...")
+        
+        roll_amount = int(input("ROLLING: Enter eg '3', or enter '0' to skip rolling (can be +ve or -ve): "))
+        print('roll_amount used: ', roll_amount)
+        
+        if roll_amount == 0:
+            processed_array = np_array.copy()
+        else:
+            np_rolled = np_array.flatten()
+            np_rolled = np.roll(np_rolled, roll_amount)
+            processed_array = np_rolled.reshape(numvectors, -1)
+        
+        filename_suffix = f"_roll{roll_amount}.pt"
+    
+    # Convert processed array back to tensor
+    tensor = torch.tensor(processed_array, device='cpu', requires_grad=True)
+    data['string_to_param']['*'] = tensor
+    
+    # ========================================
+    # 4. SAVE THE PROCESSED TI
+    # ========================================
+    """
+    Save the processed file
+    """
+    
+    print(f"\nProcessing complete! Tensor shape: {tensor.shape}")
+    
+    # Ask the user for a filename
+    base_filename = input(f"Please enter a filename ('{filename_suffix}' will be appended): ")
+    final_filename = base_filename + filename_suffix
     
     # Specify the directory path
     directory = "textual_inversions"
@@ -508,10 +530,11 @@ def main():
         os.makedirs(directory)
     
     # Save the file to the directory
-    filepath = os.path.join(directory, filename)
+    filepath = os.path.join(directory, final_filename)
     torch.save(data, filepath)
     
-    print(f"The file '{filename}' has been saved to the '{directory}' directory.")
+    print(f"✅ The file '{final_filename}' has been saved to the '{directory}' directory.")
+    print("\nOperation completed successfully!")
 
 
 if __name__ == "__main__":
