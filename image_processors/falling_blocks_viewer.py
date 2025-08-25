@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 """
-Falling Blocks Image Viewer - Interactive Image Display Tool
+Progressive Image Viewer - Interactive Image Display Tool
 
-This script provides an engaging way to view images using a "falling blocks" effect.
-Images are divided into 32x32 pixel blocks that fall into place with their original colors,
-starting with a blur effect that fades away after settling.
+This script provides an engaging way to view images using a progressive reveal effect.
+Images are divided into a 6x6 grid of blocks that fade in from black over random intervals
+between 2-5 seconds, followed by gaussian blur removal to reveal the sharp image.
 
 Key Features:
 - Select directory containing images for sequential viewing
-- 32x32 pixel block grid system
-- Slow, realistic falling animation with simple gravity
-- Blocks start blurred and fade to sharp after settling
+- 6x6 grid system (36 blocks total, regardless of image size)
+- Blocks fade in from black over random 2-5 second intervals
+- Gaussian blur effect that removes after fade-in completes
 - Keyboard controls for navigation with auto-starting animations
 - Automatic progression through image directory
 
 Controls:
-- SPACE: Start/pause falling animation
+- SPACE: Start/pause reveal animation
 - RIGHT ARROW / N: Next image (auto-starts animation)
 - LEFT ARROW / P: Previous image (auto-starts animation)
 - R: Restart current image animation
@@ -24,8 +24,8 @@ Controls:
 Technical Implementation:
 - Uses pygame for graphics and animation
 - PIL for image loading and Gaussian blur processing
-- Block-based rendering system with original colors
-- Simple gravity physics with settling detection
+- Block-based rendering system with fade-in effects
+- Random timing for organic reveal progression
 - Configurable animation speeds and blur effects
 """
 
@@ -38,66 +38,84 @@ import math
 from tkinter import filedialog
 import tkinter as tk
 
-class FallingBlock:
-    def __init__(self, x, y, grid_x, grid_y, color_surface, block_size=32):
-        self.start_x = x
-        self.start_y = y
+class ProgressiveBlock:
+    def __init__(self, x, y, grid_x, grid_y, color_surface, block_width, block_height):
         self.x = x
-        self.y = -block_size - random.randint(0, 200)  # Start above screen
+        self.y = y
         self.grid_x = grid_x
         self.grid_y = grid_y
-        self.target_x = x
-        self.target_y = y
         self.color_surface = color_surface
-        self.block_size = block_size
+        self.block_width = block_width
+        self.block_height = block_height
         
-        # Physics (simple falling, no bouncing)
-        self.velocity_y = 0
-        self.gravity = random.uniform(0.01, 0.03)  # Random gravity per block
+        # Fade-in timing (2-5 seconds)
+        self.fade_duration = random.uniform(5000, 15000)  # milliseconds
+        self.fade_start_time = 0
+        self.fade_delay = random.uniform(0, 5000)  # Random delay before starting
         
         # Animation state
-        self.has_landed = False
-        self.settled = False
-        self.settle_time = 0
+        self.fade_started = False
+        self.fade_complete = False
+        self.blur_removal_started = False
+        self.blur_removal_complete = False
         
-        # Blur effect
+        # Fade and blur effects
+        self.alpha = 0.0  # 0.0 = black, 1.0 = full color
         self.blur_amount = 1.0  # 1.0 = full blur, 0.0 = no blur
-        self.blur_fade_speed = 0.002  # How fast blur fades away
+        self.blur_fade_speed = 0.003  # How fast blur fades away
         
-    def update(self):
-        if not self.has_landed:
-            # Apply gravity
-            self.velocity_y += self.gravity
-            self.y += self.velocity_y
+    def start_animation(self, start_time):
+        """Start the fade-in animation at the given time"""
+        self.fade_start_time = start_time + self.fade_delay
+        self.fade_started = False
+        self.fade_complete = False
+        self.blur_removal_started = False
+        self.blur_removal_complete = False
+        self.alpha = 0.0
+        self.blur_amount = 1.0
+        
+    def update(self, current_time):
+        """Update the block's animation state"""
+        # Check if fade-in should start
+        if not self.fade_started and current_time >= self.fade_start_time:
+            self.fade_started = True
+        
+        # Update fade-in progress
+        if self.fade_started and not self.fade_complete:
+            elapsed = current_time - self.fade_start_time
+            progress = min(1.0, elapsed / self.fade_duration)
+            self.alpha = progress
             
-            # Check if landed (no bouncing)
-            if self.y >= self.target_y:
-                self.y = self.target_y
-                self.has_landed = True
-                self.velocity_y = 0
-                self.settle_time = pygame.time.get_ticks()
-                self.settled = True
+            if progress >= 1.0:
+                self.fade_complete = True
+                self.blur_removal_started = True
         
-        # Fade blur effect after settling
-        if self.settled and self.settle_time > 0:
-            # Wait a bit before starting blur fade
-            if pygame.time.get_ticks() - self.settle_time > 200:
-                if self.blur_amount > 0.0:
-                    self.blur_amount = max(0.0, self.blur_amount - self.blur_fade_speed)
+        # Update blur removal after fade-in completes
+        if self.blur_removal_started and not self.blur_removal_complete:
+            if self.blur_amount > 0.0:
+                self.blur_amount = max(0.0, self.blur_amount - self.blur_fade_speed)
+            else:
+                self.blur_removal_complete = True
     
     def get_current_surface(self):
-        """Get the current surface with blur effect"""
+        """Get the current surface with fade and blur effects"""
+        if self.alpha <= 0:
+            # Return black surface
+            black_surface = pygame.Surface((self.block_width, self.block_height))
+            black_surface.fill((0, 0, 0))
+            return black_surface
+        
+        # Get the base surface (with blur if needed)
         if self.blur_amount <= 0:
-            return self.color_surface
+            current_surface = self.color_surface.copy()
         else:
-            # Apply gaussian blur based on blur_amount
-            # Convert pygame surface to PIL image
+            # Apply gaussian blur
             w, h = self.color_surface.get_size()
             raw = pygame.image.tostring(self.color_surface, 'RGB')
             pil_image = Image.frombytes('RGB', (w, h), raw)
             
             # Apply gaussian blur
-            blur_radius = self.blur_amount * 12.0  # Scale blur amount
+            blur_radius = self.blur_amount * 30.0  # Scale blur amount
             if blur_radius > 0:
                 blurred_image = pil_image.filter(ImageFilter.GaussianBlur(radius=blur_radius))
             else:
@@ -105,29 +123,47 @@ class FallingBlock:
             
             # Convert back to pygame surface
             raw = blurred_image.tobytes()
-            blurred_surface = pygame.image.fromstring(raw, (w, h), 'RGB')
+            current_surface = pygame.image.fromstring(raw, (w, h), 'RGB')
+        
+        # Apply alpha blending with black
+        if self.alpha < 1.0:
+            # Create black surface
+            black_surface = pygame.Surface((self.block_width, self.block_height))
+            black_surface.fill((0, 0, 0))
             
-            return blurred_surface
+            # Blend current surface with black based on alpha
+            fade_surface = pygame.Surface((self.block_width, self.block_height))
+            fade_surface.fill((0, 0, 0))
+            
+            # Scale and blend
+            current_surface.set_alpha(int(self.alpha * 255))
+            fade_surface.blit(black_surface, (0, 0))
+            fade_surface.blit(current_surface, (0, 0))
+            
+            return fade_surface
+        
+        return current_surface
     
     def draw(self, screen):
         current_surface = self.get_current_surface()
         screen.blit(current_surface, (self.x, self.y))
 
-class FallingBlocksViewer:
+class ProgressiveImageViewer:
     def __init__(self):
         pygame.init()
         
         # Screen settings
-        self.screen_width = 1600
-        self.screen_height = 900
+        self.screen_width = 2560
+        self.screen_height = 1440
         self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
-        pygame.display.set_caption("Falling Blocks Image Viewer")
+        pygame.display.set_caption("Progressive Image Viewer")
         
-        # Block settings
-        self.block_size = 128
+        # Grid settings - eg: 6x6
+        self.grid_cols = 16
+        self.grid_rows = 16
         
         # Colors
-        self.bg_color = (100, 120, 110)
+        self.bg_color = (128, 128, 128)  # Mid-grey
         self.text_color = (255, 255, 255)
         
         # Font
@@ -145,6 +181,7 @@ class FallingBlocksViewer:
         self.blocks = []
         self.animation_running = False
         self.animation_complete = False
+        self.animation_start_time = 0
         
         # Timing
         self.clock = pygame.time.Clock()
@@ -217,17 +254,21 @@ class FallingBlocksViewer:
             if pil_image.mode != 'RGB':
                 pil_image = pil_image.convert('RGB')
             
-            # Calculate scaling to fit screen while maintaining aspect ratio
+            # Hybrid scaling approach: use full screen, only downscale if necessary
             img_width, img_height = pil_image.size
-            scale_x = (self.screen_width - 100) / img_width
-            scale_y = (self.screen_height - 150) / img_height
-            scale = min(scale_x, scale_y, 1.0)  # Don't upscale
+            scale_x = self.screen_width / img_width
+            scale_y = self.screen_height / img_height
+            scale = min(scale_x, scale_y, 1.0)  # Don't upscale small images
             
-            new_width = int(img_width * scale)
-            new_height = int(img_height * scale)
-            
-            # Resize image
-            pil_image = pil_image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            # Only resize if image is larger than screen
+            if scale < 1.0:
+                new_width = int(img_width * scale)
+                new_height = int(img_height * scale)
+                pil_image = pil_image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            else:
+                # Use original size for smaller images
+                new_width = img_width
+                new_height = img_height
             
             # Convert to pygame surface
             image_string = pil_image.tobytes()
@@ -244,92 +285,74 @@ class FallingBlocksViewer:
             print(f"Error loading image {filename}: {e}")
     
     def create_blocks(self):
-        """Create falling blocks from the current image"""
+        """Create progressive blocks from the current image in a 6x6 grid"""
         if not self.current_image:
             return
             
         self.blocks = []
         img_width, img_height = self.current_image.size
         
-        # Calculate grid dimensions
-        cols = math.ceil(img_width / self.block_size)
-        rows = math.ceil(img_height / self.block_size)
+        # Calculate block dimensions for 6x6 grid
+        block_width = img_width // self.grid_cols
+        block_height = img_height // self.grid_rows
         
-        for row in range(rows):
-            for col in range(cols):
-                # Calculate block position
-                block_x = col * self.block_size
-                block_y = row * self.block_size
-                
-                # Extract block from image
-                left = col * self.block_size
-                top = row * self.block_size
-                right = min(left + self.block_size, img_width)
-                bottom = min(top + self.block_size, img_height)
+        for row in range(self.grid_rows):
+            for col in range(self.grid_cols):
+                # Calculate block position in image coordinates
+                left = col * block_width
+                top = row * block_height
+                right = min(left + block_width, img_width)
+                bottom = min(top + block_height, img_height)
                 
                 if right > left and bottom > top:
-                    # Extract color block
+                    # Extract block from image
                     color_block = self.current_image.crop((left, top, right, bottom))
                     
                     # Convert to pygame surface
                     color_string = color_block.tobytes()
                     color_surface = pygame.image.fromstring(color_string, color_block.size, 'RGB')
                     
-                    # If block is smaller than block_size, pad it
-                    if color_block.size != (self.block_size, self.block_size):
-                        padded_color = pygame.Surface((self.block_size, self.block_size))
-                        padded_color.fill((0, 0, 0))
-                        padded_color.blit(color_surface, (0, 0))
-                        color_surface = padded_color
+                    # Calculate screen position
+                    screen_x = self.image_x + left
+                    screen_y = self.image_y + top
                     
-                    # Create falling block
-                    screen_x = self.image_x + block_x
-                    screen_y = self.image_y + block_y
-                    
-                    block = FallingBlock(
+                    # Create progressive block
+                    block = ProgressiveBlock(
                         screen_x, screen_y, col, row,
-                        color_surface, self.block_size
+                        color_surface, color_block.size[0], color_block.size[1]
                     )
                     
                     self.blocks.append(block)
-        
-        # Shuffle blocks for random falling order
-        random.shuffle(self.blocks)
-        
-        # Stagger the start times
-        for i, block in enumerate(self.blocks):
-            block.y -= i * 2  # Spread them out vertically
         
         self.animation_running = False
         self.animation_complete = False
     
     def start_animation(self):
-        """Start the falling blocks animation"""
+        """Start the progressive reveal animation"""
         if self.blocks:
             self.animation_running = True
             self.animation_complete = False
+            self.animation_start_time = pygame.time.get_ticks()
             
-            # Reset all blocks
-            for i, block in enumerate(self.blocks):
-                block.y = -self.block_size - random.randint(0, 200) - i * 2
-                block.velocity_y = 0
-                block.has_landed = False
-                block.settled = False
+            # Start all blocks' animations
+            for block in self.blocks:
+                block.start_animation(self.animation_start_time)
     
     def update_animation(self):
-        """Update the falling blocks animation"""
+        """Update the progressive reveal animation"""
         if not self.animation_running:
             return
             
-        all_settled = True
+        current_time = pygame.time.get_ticks()
+        all_complete = True
         
         for block in self.blocks:
-            block.update()
+            block.update(current_time)
             
-            if not block.settled:
-                all_settled = False
+            if not (block.fade_complete and block.blur_removal_complete):
+                all_complete = False
         
-        if all_settled:
+        if all_complete:
             self.animation_complete = True
     
     def next_image(self):
@@ -355,34 +378,38 @@ class FallingBlocksViewer:
         self.screen.fill(self.bg_color)
         
         instructions = [
-            "Falling Blocks Image Viewer",
+            "Progressive Image Revealer",
             "",
             "Controls:",
-            "SPACE - Start/pause falling animation",
-            "RIGHT ARROW / N - Next image (auto-starts animation)", 
-            "LEFT ARROW / P - Previous image (auto-starts animation)",
-            "R - Restart current image animation",
+            "SPACE - Start/pause",
+            "ARROW KEYS  - Prev/Next image", 
+            "R - Restart anim",
             "ESC / Q - Quit",
             "",
-            "Press any key to select image directory..."
+            "Press a key to select image directory..."
         ]
         
-        y_offset = 150
+        y_offset = 120
         for line in instructions:
-            if line == "Falling Blocks Image Viewer":
+            if line == "Progressive Image Viewer":
                 text = self.font.render(line, True, self.text_color)
             else:
                 text = self.small_font.render(line, True, self.text_color)
             
             text_rect = text.get_rect(center=(self.screen_width // 2, y_offset))
             self.screen.blit(text, text_rect)
-            y_offset += 40 if line == "Falling Blocks Image Viewer" else 30
+            y_offset += 40 if line == "Progressive Image Viewer" else 30
     
     def draw_ui(self):
-        """Draw UI elements"""
+        """Draw UI elements - only when not animating"""
         if not self.image_files:
             return
             
+        # Don't show any text during animations
+        if self.animation_running:
+            return
+            
+        # Only show UI when animation is not running
         # Current image info
         filename = self.image_files[self.current_image_index]
         info_text = f"{self.current_image_index + 1}/{len(self.image_files)}: {filename}"
@@ -390,12 +417,10 @@ class FallingBlocksViewer:
         self.screen.blit(text, (10, 10))
         
         # Status
-        if self.animation_running:
-            status = "Animation running... Use arrows to navigate (auto-starts)"
-        elif self.animation_complete:
-            status = "Animation complete - Use arrows for next/prev or SPACE to restart"
+        if self.animation_complete:
+            status = "Reveal complete - Use arrows for next/prev or SPACE to restart"
         else:
-            status = "Press SPACE to start animation or arrows to navigate"
+            status = "Press SPACE to start reveal or arrows to navigate"
             
         status_text = self.small_font.render(status, True, self.text_color)
         self.screen.blit(status_text, (10, self.screen_height - 30))
@@ -466,5 +491,5 @@ class FallingBlocksViewer:
         pygame.quit()
 
 if __name__ == "__main__":
-    viewer = FallingBlocksViewer()
+    viewer = ProgressiveImageViewer()
     viewer.run()
