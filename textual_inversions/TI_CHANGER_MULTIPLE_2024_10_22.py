@@ -33,6 +33,8 @@ import torch
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+import tkinter as tk
+from tkinter import filedialog
 
 # Configure matplotlib for better display (standalone Python version)
 plt.rcParams['figure.dpi'] = 100
@@ -125,8 +127,23 @@ def main():
     # Load the dictionary from the .pt file
     # First check if file exists in current directory, then in textual_inversions subdirectory
     
-    #filename = 'TI_Tron_original.pt'
-    filename = '8vSw-1401.pt'
+    # Use a file chooser dialog to select the .pt file
+
+    root = tk.Tk()
+    root.withdraw()  # Hide the main window
+
+    print("Please select a .pt file to load...")
+    filename = filedialog.askopenfilename(
+        title="Select a TI .pt file",
+        filetypes=[("PyTorch TI files", "*.pt"), ("All files", "*.*")]
+    )
+
+    if not filename:
+        print("No file selected. Exiting.")
+        return
+
+    # Get just the filename for later use
+    filename = os.path.basename(filename)
     
     # Try to find the file in current directory first, then in subdirectory
     if os.path.exists(filename):
@@ -422,32 +439,32 @@ def main():
 
     if user_input == "1":
         print("You chose Option 1 - retain all vectors, but with SMOOTHING...")
-        # convert the numpy array back to tensor, include the "device='cuda:0', requires_grad=True" parameters
-        tensor = torch.tensor(np_smoothed, device='cuda:0', requires_grad=True)
+        # convert the numpy array back to tensor, using CPU device for compatibility
+        tensor = torch.tensor(np_smoothed, device='cpu', requires_grad=True)
         print(tensor.shape)
         data['string_to_param']['*'] = tensor  # store the tensor back in the data dictionary
     
     elif user_input == "2":
         print("You chose Option 2 - condense to a SINGLE (scaled) MEAN vector...")
-        tensor = torch.tensor(np_mean, device='cuda:0', requires_grad=True)  
+        tensor = torch.tensor(np_mean, device='cpu', requires_grad=True)  
         print(tensor.shape)
         data['string_to_param']['*'] = tensor  # store the tensor back in the data dictionary
     
     elif user_input == "3":
         print("You chose Option 3 - retain all vectors, but decimated with zeros...")
-        tensor = torch.tensor(np_decimated, device='cuda:0', requires_grad=True) 
+        tensor = torch.tensor(np_decimated, device='cpu', requires_grad=True) 
         print(tensor.shape)
         data['string_to_param']['*'] = tensor  # store the tensor back in the data dictionary
     
     elif user_input == "4":
         print("You chose Option 4 - retain all vectors, but divided by a scalar...")
-        tensor = torch.tensor(np_divided, device='cuda:0', requires_grad=True) 
+        tensor = torch.tensor(np_divided, device='cpu', requires_grad=True) 
         print(tensor.shape)
         data['string_to_param']['*'] = tensor  # store the tensor back in the data dictionary
     
     elif user_input == "5":
         print("You chose Option 5 - retain all vectors, but ROLLED...")
-        tensor = torch.tensor(np_rolled, device='cuda:0', requires_grad=True) 
+        tensor = torch.tensor(np_rolled, device='cpu', requires_grad=True) 
         print(tensor.shape)
         data['string_to_param']['*'] = tensor  # store the tensor back in the data dictionary
 

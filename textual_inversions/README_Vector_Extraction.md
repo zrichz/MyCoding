@@ -26,9 +26,10 @@ my_style_vector_08.pt
 
 ### How to use:
 1. Run the script using one of these methods:
-   - Double-click `run_TI_CHANGER.bat`
-   - Run `.\run_TI_CHANGER.ps1` in PowerShell
-   - Use: `"C:\MyPythonCoding\MyCoding\image_processors\.venv\Scripts\python.exe" TI_CHANGER_MULTIPLE_2024_10_22.py`
+   - **Windows**: Double-click `run_TI_CHANGER.bat`
+   - **Linux/Ubuntu**: Run `./run_TI_CHANGER.sh` or `bash run_TI_CHANGER.sh`
+   - **Cross-platform**: Run `python run_TI_CHANGER.py` (works on Windows, Linux, macOS)
+   - **Direct**: Use the full Python path with your virtual environment
 
 2. When prompted for options, enter `6`
 
