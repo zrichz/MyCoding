@@ -3,43 +3,43 @@
 Falling Blocks Image Viewer - Interactive Image Display Tool
 
 This script provides an engaging way to view images using a "falling blocks" effect.
-Images are divided into 32x32 pixel blocks that fall into place as greyscale,
-then slowly transition to their original colors.
+Images are divided into 32x32 pixel blocks that fall into place with their original colors,
+starting with a blur effect that fades away after settling.
 
 Key Features:
 - Select directory containing images for sequential viewing
 - 32x32 pixel block grid system
-- Slow, realistic falling animation with physics simulation
-- Greyscale to color transition effect after blocks settle
-- Keyboard controls for navigation
+- Slow, realistic falling animation with simple gravity
+- Blocks start blurred and fade to sharp after settling
+- Keyboard controls for navigation with auto-starting animations
 - Automatic progression through image directory
 
 Controls:
 - SPACE: Start/pause falling animation
-- RIGHT ARROW / N: Next image
-- LEFT ARROW / P: Previous image
+- RIGHT ARROW / N: Next image (auto-starts animation)
+- LEFT ARROW / P: Previous image (auto-starts animation)
 - R: Restart current image animation
 - ESC / Q: Quit application
 
 Technical Implementation:
 - Uses pygame for graphics and animation
-- PIL for image loading and processing
-- Block-based rendering system with smooth color transitions
-- Realistic physics with gravity, bounce, and settling detection
-- Configurable animation speeds and effects
+- PIL for image loading and Gaussian blur processing
+- Block-based rendering system with original colors
+- Simple gravity physics with settling detection
+- Configurable animation speeds and blur effects
 """
 
 import pygame
 import sys
 import os
-from PIL import Image
+from PIL import Image, ImageFilter
 import random
 import math
 from tkinter import filedialog
 import tkinter as tk
 
 class FallingBlock:
-    def __init__(self, x, y, grid_x, grid_y, gray_surface, color_surface, block_size=32):
+    def __init__(self, x, y, grid_x, grid_y, color_surface, block_size=32):
         self.start_x = x
         self.start_y = y
         self.x = x
@@ -48,22 +48,21 @@ class FallingBlock:
         self.grid_y = grid_y
         self.target_x = x
         self.target_y = y
-        self.gray_surface = gray_surface
         self.color_surface = color_surface
         self.block_size = block_size
         
-        # Physics (10x slower falling)
+        # Physics (simple falling, no bouncing)
         self.velocity_y = 0
-        self.gravity = 0.05  # Reduced from 0.5 to 0.05 (10x slower)
-        self.bounce = 0.3
-        self.friction = 0.95
+        self.gravity = random.uniform(0.01, 0.03)  # Random gravity per block
         
         # Animation state
         self.has_landed = False
-        self.color_transition = 0.0  # 0.0 = full gray, 1.0 = full color
-        self.transition_speed = 0.01  # Slower color transition
+        self.settled = False
         self.settle_time = 0
-        self.settled = False  # Track if block has stopped bouncing
+        
+        # Blur effect
+        self.blur_amount = 1.0  # 1.0 = full blur, 0.0 = no blur
+        self.blur_fade_speed = 0.002  # How fast blur fades away
         
     def update(self):
         if not self.has_landed:
@@ -71,56 +70,44 @@ class FallingBlock:
             self.velocity_y += self.gravity
             self.y += self.velocity_y
             
-            # Check if landed
+            # Check if landed (no bouncing)
             if self.y >= self.target_y:
                 self.y = self.target_y
                 self.has_landed = True
-                # Small bounce effect
-                self.velocity_y = -self.velocity_y * self.bounce
-                
-                # If bounce is very small, stop bouncing and start settling
-                if abs(self.velocity_y) < 0.2:  # Lower threshold for settling
-                    self.velocity_y = 0
-                    self.settled = True
-                    self.settle_time = pygame.time.get_ticks()
+                self.velocity_y = 0
+                self.settle_time = pygame.time.get_ticks()
+                self.settled = True
         
-        # Color transition after settling (or immediately if no bounce)
+        # Fade blur effect after settling
         if self.settled and self.settle_time > 0:
-            # Wait a bit before starting color transition
-            if pygame.time.get_ticks() - self.settle_time > 100:
-                if self.color_transition < 1.0:
-                    self.color_transition = min(1.0, self.color_transition + self.transition_speed)
+            # Wait a bit before starting blur fade
+            if pygame.time.get_ticks() - self.settle_time > 200:
+                if self.blur_amount > 0.0:
+                    self.blur_amount = max(0.0, self.blur_amount - self.blur_fade_speed)
     
     def get_current_surface(self):
-        """Get the current surface based on color transition state"""
-        if self.color_transition <= 0:
-            return self.gray_surface
-        elif self.color_transition >= 1:
+        """Get the current surface with blur effect"""
+        if self.blur_amount <= 0:
             return self.color_surface
         else:
-            # Create a new surface for blending
-            blended = pygame.Surface((self.block_size, self.block_size), pygame.SRCALPHA)
-            blended.fill((0, 0, 0, 0))  # Transparent background
+            # Apply gaussian blur based on blur_amount
+            # Convert pygame surface to PIL image
+            w, h = self.color_surface.get_size()
+            raw = pygame.image.tostring(self.color_surface, 'RGB')
+            pil_image = Image.frombytes('RGB', (w, h), raw)
             
-            # Create surfaces with proper alpha
-            gray_surf = self.gray_surface.copy()
-            color_surf = self.color_surface.copy()
+            # Apply gaussian blur
+            blur_radius = self.blur_amount * 12.0  # Scale blur amount
+            if blur_radius > 0:
+                blurred_image = pil_image.filter(ImageFilter.GaussianBlur(radius=blur_radius))
+            else:
+                blurred_image = pil_image
             
-            # Set alpha for blending
-            gray_alpha = int(255 * (1 - self.color_transition))
-            color_alpha = int(255 * self.color_transition)
+            # Convert back to pygame surface
+            raw = blurred_image.tobytes()
+            blurred_surface = pygame.image.fromstring(raw, (w, h), 'RGB')
             
-            # First blit the grayscale with its alpha
-            if gray_alpha > 0:
-                gray_surf.set_alpha(gray_alpha)
-                blended.blit(gray_surf, (0, 0))
-            
-            # Then blit the color on top with its alpha
-            if color_alpha > 0:
-                color_surf.set_alpha(color_alpha)
-                blended.blit(color_surf, (0, 0), special_flags=pygame.BLEND_ALPHA_SDL2)
-            
-            return blended
+            return blurred_surface
     
     def draw(self, screen):
         current_surface = self.get_current_surface()
@@ -131,16 +118,16 @@ class FallingBlocksViewer:
         pygame.init()
         
         # Screen settings
-        self.screen_width = 1200
-        self.screen_height = 800
+        self.screen_width = 1600
+        self.screen_height = 900
         self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
         pygame.display.set_caption("Falling Blocks Image Viewer")
         
         # Block settings
-        self.block_size = 32
+        self.block_size = 128
         
         # Colors
-        self.bg_color = (20, 20, 30)
+        self.bg_color = (100, 120, 110)
         self.text_color = (255, 255, 255)
         
         # Font
@@ -210,6 +197,9 @@ class FallingBlocksViewer:
         
         if self.image_files:
             self.load_current_image()
+            # Automatically start animation for the first image
+            if self.blocks:
+                self.start_animation()
     
     def load_current_image(self):
         """Load and prepare the current image"""
@@ -281,26 +271,16 @@ class FallingBlocksViewer:
                     # Extract color block
                     color_block = self.current_image.crop((left, top, right, bottom))
                     
-                    # Create grayscale version
-                    gray_block = color_block.convert('L').convert('RGB')
-                    
-                    # Convert to pygame surfaces
+                    # Convert to pygame surface
                     color_string = color_block.tobytes()
-                    gray_string = gray_block.tobytes()
-                    
                     color_surface = pygame.image.fromstring(color_string, color_block.size, 'RGB')
-                    gray_surface = pygame.image.fromstring(gray_string, gray_block.size, 'RGB')
                     
                     # If block is smaller than block_size, pad it
                     if color_block.size != (self.block_size, self.block_size):
                         padded_color = pygame.Surface((self.block_size, self.block_size))
-                        padded_gray = pygame.Surface((self.block_size, self.block_size))
                         padded_color.fill((0, 0, 0))
-                        padded_gray.fill((0, 0, 0))
                         padded_color.blit(color_surface, (0, 0))
-                        padded_gray.blit(gray_surface, (0, 0))
                         color_surface = padded_color
-                        gray_surface = padded_gray
                     
                     # Create falling block
                     screen_x = self.image_x + block_x
@@ -308,7 +288,7 @@ class FallingBlocksViewer:
                     
                     block = FallingBlock(
                         screen_x, screen_y, col, row,
-                        gray_surface, color_surface, self.block_size
+                        color_surface, self.block_size
                     )
                     
                     self.blocks.append(block)
@@ -335,8 +315,6 @@ class FallingBlocksViewer:
                 block.velocity_y = 0
                 block.has_landed = False
                 block.settled = False
-                block.color_transition = 0.0
-                block.settle_time = 0
     
     def update_animation(self):
         """Update the falling blocks animation"""
@@ -348,7 +326,7 @@ class FallingBlocksViewer:
         for block in self.blocks:
             block.update()
             
-            if not block.settled or block.color_transition < 1.0:
+            if not block.settled:
                 all_settled = False
         
         if all_settled:
@@ -359,12 +337,18 @@ class FallingBlocksViewer:
         if self.image_files and self.current_image_index < len(self.image_files) - 1:
             self.current_image_index += 1
             self.load_current_image()
+            # Automatically start the animation
+            if self.blocks:
+                self.start_animation()
     
     def previous_image(self):
         """Move to previous image"""
         if self.image_files and self.current_image_index > 0:
             self.current_image_index -= 1
             self.load_current_image()
+            # Automatically start the animation
+            if self.blocks:
+                self.start_animation()
     
     def draw_instructions(self):
         """Draw instruction screen"""
@@ -375,8 +359,8 @@ class FallingBlocksViewer:
             "",
             "Controls:",
             "SPACE - Start/pause falling animation",
-            "RIGHT ARROW / N - Next image", 
-            "LEFT ARROW / P - Previous image",
+            "RIGHT ARROW / N - Next image (auto-starts animation)", 
+            "LEFT ARROW / P - Previous image (auto-starts animation)",
             "R - Restart current image animation",
             "ESC / Q - Quit",
             "",
@@ -407,11 +391,11 @@ class FallingBlocksViewer:
         
         # Status
         if self.animation_running:
-            status = "Animation running..."
+            status = "Animation running... Use arrows to navigate (auto-starts)"
         elif self.animation_complete:
-            status = "Animation complete - Press SPACE to restart"
+            status = "Animation complete - Use arrows for next/prev or SPACE to restart"
         else:
-            status = "Press SPACE to start animation"
+            status = "Press SPACE to start animation or arrows to navigate"
             
         status_text = self.small_font.render(status, True, self.text_color)
         self.screen.blit(status_text, (10, self.screen_height - 30))

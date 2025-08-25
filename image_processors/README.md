@@ -9,10 +9,11 @@ Creative tools for viewing and interacting with images
 
 - `falling_blocks_viewer.py` - **Interactive Image Viewer with Falling Blocks Animation**
   - 🎬 **Falling Blocks Effect**: Images are divided into 32x32 pixel blocks that fall into place
-  - 🎨 **Greyscale to Color**: Blocks start as greyscale and transition to full color
+  - 🎨 **Original Colors**: Blocks display in their natural colors with gaussian blur effect
+  - 🌫️ **Blur Effect**: Blocks start blurred and fade to sharp once settled
   - 🎮 **Interactive Controls**: SPACE to start/pause, arrow keys to navigate
   - 📁 **Directory Support**: Select a folder and view all images sequentially
-  - ⚡ **Real-time Physics**: Realistic falling animation with bounce effects
+  - ⚡ **Simple Physics**: Realistic falling animation with gravity-based settling
   - **Run with:** `run_falling_blocks.bat`/`.sh` or `python falling_blocks_viewer.py`
 
 ### 🔄 Format Converters & Batch Processing
