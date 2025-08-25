@@ -368,11 +368,11 @@ class PNGProcessorGUI:
         title_label.grid(row=0, column=0, columnspan=3, pady=(0, 20))
         
         # Description
-        desc_text = ("This tool processes PNG files through the following pipeline:\n"
+        desc_text = ("-Processes PNGs through the following pipeline:\n"
                     "1. Scales to max 1080x1440 preserving aspect ratio (with blur fill)\n"
-                    "2. Rotates 90° counter-clockwise\n"
-                    "3. Stretches to 1920x1080\n"
-                    "4. Saves as high-quality baseline JPEG files")
+                    "2. Rotate 90° counter-clockwise\n"
+                    "3. Stretch to 1920x1080\n"
+                    "4. Save as high-quality baseline JPEG files")
         desc_label = ttk.Label(main_frame, text=desc_text, justify=tk.LEFT)
         desc_label.grid(row=1, column=0, columnspan=3, pady=(0, 20), sticky=tk.W)
         
