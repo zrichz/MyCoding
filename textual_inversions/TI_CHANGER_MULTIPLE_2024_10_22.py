@@ -395,9 +395,11 @@ def select_top_n_vectors(data, original_filename, numvectors, np_array):
     # Sort by magnitude (descending)
     vector_magnitudes.sort(key=lambda x: x[1], reverse=True)
     
-    # Get top N vector indices
+    # Get top N vector indices and remaining indices
     top_indices = [idx for idx, mag in vector_magnitudes[:n]]
+    bottom_indices = [idx for idx, mag in vector_magnitudes[n:]]
     top_indices.sort()  # Sort indices for consistent ordering
+    bottom_indices.sort()  # Sort indices for consistent ordering
     
     print(f"\nTop {n} vectors by magnitude:")
     for rank, (orig_idx, magnitude) in enumerate(vector_magnitudes[:n], 1):
@@ -409,16 +411,16 @@ def select_top_n_vectors(data, original_filename, numvectors, np_array):
     # Convert back to tensor
     top_tensor = torch.tensor(top_vectors, device='cpu', requires_grad=True)
     
-    # Create new data dictionary
+    # Create new data dictionary for top vectors
     top_data = data.copy()
     top_data['string_to_param'] = {'*': top_tensor}
     
-    print(f"\nSelected tensor shape: {top_tensor.shape} (reduced from {np_array.shape})")
+    print(f"\nTop vectors tensor shape: {top_tensor.shape} (reduced from {np_array.shape})")
     
-    # Generate filename
+    # Generate filenames
     base_filename = original_filename.replace('.pt', '')
-    filename_suffix = f"_TOP{n}.pt"
-    final_filename = base_filename + filename_suffix
+    top_filename_suffix = f"_TOP{n}.pt"
+    top_final_filename = base_filename + top_filename_suffix
     
     # Specify the directory path
     directory = "textual_inversions"
@@ -427,12 +429,45 @@ def select_top_n_vectors(data, original_filename, numvectors, np_array):
     if not os.path.exists(directory):
         os.makedirs(directory)
     
-    # Save the file to the directory
-    filepath = os.path.join(directory, final_filename)
-    torch.save(top_data, filepath)
+    # Save the top vectors file
+    top_filepath = os.path.join(directory, top_final_filename)
+    torch.save(top_data, top_filepath)
     
-    print(f"✅ The file '{final_filename}' has been saved to the '{directory}' directory.")
-    print(f"Successfully saved top {n} vectors based on absolute magnitude.")
+    print(f"✅ Top vectors file '{top_final_filename}' has been saved to the '{directory}' directory.")
+    
+    # Handle bottom vectors (remaining vectors)
+    if len(bottom_indices) > 0:
+        bottom_vectors = np_array[bottom_indices]
+        bottom_tensor = torch.tensor(bottom_vectors, device='cpu', requires_grad=True)
+        
+        # Create new data dictionary for bottom vectors
+        bottom_data = data.copy()
+        bottom_data['string_to_param'] = {'*': bottom_tensor}
+        
+        print(f"Bottom vectors tensor shape: {bottom_tensor.shape}")
+        
+        # Generate bottom filename
+        bottom_count = len(bottom_indices)
+        bottom_filename_suffix = f"_BOTTOM{bottom_count}.pt"
+        bottom_final_filename = base_filename + bottom_filename_suffix
+        
+        # Save the bottom vectors file
+        bottom_filepath = os.path.join(directory, bottom_final_filename)
+        torch.save(bottom_data, bottom_filepath)
+        
+        print(f"✅ Bottom vectors file '{bottom_final_filename}' has been saved to the '{directory}' directory.")
+        
+        print(f"\n📊 Summary:")
+        print(f"   Original vectors: {numvectors}")
+        print(f"   Top {n} vectors saved as: {top_final_filename}")
+        print(f"   Bottom {bottom_count} vectors saved as: {bottom_final_filename}")
+    else:
+        print(f"\n📊 Summary:")
+        print(f"   All {numvectors} vectors were selected as top vectors.")
+        print(f"   Top {n} vectors saved as: {top_final_filename}")
+        print("   No bottom vectors to save.")
+    
+    print(f"Successfully processed vectors based on absolute magnitude.")
 
 
 def main():
