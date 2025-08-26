@@ -238,6 +238,61 @@ def load_ti_file_flexible(filepath):
         return None
 
 
+def get_user_choice():
+    """
+    Robust user input function that handles Windows batch file input issues
+    """
+    import sys
+    
+    # Clear any potential input buffer issues
+    if hasattr(sys.stdin, 'flush'):
+        sys.stdin.flush()
+    
+    print("\n" + "="*60)
+    print("TI CHANGER - SELECT OPERATION")
+    print("="*60)
+    print("1. Apply smoothing to all vectors")
+    print("2. Create single mean vector (condensed)")
+    print("3. Apply decimation with zeros")
+    print("4. Divide all vectors by scalar")
+    print("5. Roll/shift all vectors")
+    print("6. Extract individual vectors to separate files")
+    print("7. Save top N vectors by absolute magnitude")
+    print("="*60)
+    
+    # Improved input handling with retry logic
+    max_attempts = 3
+    for attempt in range(max_attempts):
+        try:
+            # Add a small delay to ensure console is ready
+            import time
+            time.sleep(0.1)
+            
+            print(f"\nAttempt {attempt + 1}: ", end="", flush=True)
+            user_input = input("Choose operation (1-7): ").strip()
+            
+            # Debug: Show what was actually captured (remove this after fixing)
+            print(f"Debug: Captured input: '{user_input}' (length: {len(user_input)})")
+            
+            if user_input in ['1', '2', '3', '4', '5', '6', '7']:
+                return user_input
+            else:
+                print(f"Invalid input: '{user_input}'. Please enter a number from 1 to 7.")
+                if attempt < max_attempts - 1:
+                    print("Try again...")
+                    continue
+        except (EOFError, KeyboardInterrupt):
+            print("\nInput interrupted. Please try again...")
+            if attempt < max_attempts - 1:
+                continue
+            else:
+                print("Too many failed attempts. Exiting...")
+                return None
+    
+    print("Invalid choice after multiple attempts. Please run the script again and enter 1-7.")
+    return None
+
+
 def extract_individual_vectors(data, original_filename, numvectors):
     """
     Extract individual vectors from a multi-vector TI file and save each as a separate .pt file
@@ -305,6 +360,79 @@ def extract_individual_vectors(data, original_filename, numvectors):
         for i in range(successful_extractions):
             vector_filename = f"{base_filename}_vector_{i+1:02d}.pt"
             print(f"  - {vector_filename}")
+
+
+def select_top_n_vectors(data, original_filename, numvectors, np_array):
+    """
+    Select and save the top N vectors based on absolute magnitude
+    
+    Args:
+        data: The original TI data dictionary
+        original_filename: The original filename (without path)
+        numvectors: Number of vectors in the TI file
+        np_array: NumPy array of the tensor data
+    """
+    print(f"\nSelecting top N vectors by absolute magnitude from '{original_filename}'...")
+    print(f"Available vectors: {numvectors}")
+    
+    # Get N from user
+    while True:
+        try:
+            n = int(input(f"Enter number of top vectors to keep (1-{numvectors}): "))
+            if 1 <= n <= numvectors:
+                break
+            else:
+                print(f"Please enter a number between 1 and {numvectors}")
+        except ValueError:
+            print("Please enter a valid integer")
+    
+    # Calculate absolute magnitude for each vector
+    vector_magnitudes = []
+    for i in range(numvectors):
+        magnitude = np.linalg.norm(np_array[i])  # L2 norm (magnitude)
+        vector_magnitudes.append((i, magnitude))
+    
+    # Sort by magnitude (descending)
+    vector_magnitudes.sort(key=lambda x: x[1], reverse=True)
+    
+    # Get top N vector indices
+    top_indices = [idx for idx, mag in vector_magnitudes[:n]]
+    top_indices.sort()  # Sort indices for consistent ordering
+    
+    print(f"\nTop {n} vectors by magnitude:")
+    for rank, (orig_idx, magnitude) in enumerate(vector_magnitudes[:n], 1):
+        print(f"  Rank {rank}: Vector {orig_idx + 1} (magnitude: {magnitude:.6f})")
+    
+    # Create new tensor with only top N vectors
+    top_vectors = np_array[top_indices]
+    
+    # Convert back to tensor
+    top_tensor = torch.tensor(top_vectors, device='cpu', requires_grad=True)
+    
+    # Create new data dictionary
+    top_data = data.copy()
+    top_data['string_to_param'] = {'*': top_tensor}
+    
+    print(f"\nSelected tensor shape: {top_tensor.shape} (reduced from {np_array.shape})")
+    
+    # Generate filename
+    base_filename = original_filename.replace('.pt', '')
+    filename_suffix = f"_TOP{n}.pt"
+    final_filename = base_filename + filename_suffix
+    
+    # Specify the directory path
+    directory = "textual_inversions"
+    
+    # Create the directory if it doesn't exist
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    
+    # Save the file to the directory
+    filepath = os.path.join(directory, final_filename)
+    torch.save(top_data, filepath)
+    
+    print(f"✅ The file '{final_filename}' has been saved to the '{directory}' directory.")
+    print(f"Successfully saved top {n} vectors based on absolute magnitude.")
 
 
 def main():
@@ -386,27 +514,77 @@ def main():
     print('\nNumber of vectors: ',numvectors,'    Shape of the tensor: ',np_array.shape)
     
     # ========================================
-    # 2. MENU SELECTION
+    # 2. VECTOR STATISTICS VISUALIZATION
+    # ========================================
+    """
+    Display statistics for each vector using vertical bars
+    """
+    
+    print("\nGenerating vector statistics visualization...")
+    
+    # Calculate statistics for each vector
+    vector_numbers = list(range(1, numvectors + 1))
+    min_values = [np.min(np_array[i]) for i in range(numvectors)]
+    max_values = [np.max(np_array[i]) for i in range(numvectors)]
+    
+    # Create the plot with wider figure for bars and better spacing
+    bar_width = 0.7  # Width of each bar (wider since we only have 2 bars)
+    fig, ax = plt.subplots(figsize=(max(10, numvectors * 1.5), 7))
+    
+    # Calculate x positions - both bars at the same x position for perfect alignment
+    x_pos = np.arange(len(vector_numbers))
+    
+    # Create the bars at the same x positions
+    bars1 = ax.bar(x_pos, min_values, bar_width, label='Min', color='blue', alpha=0.6)
+    bars2 = ax.bar(x_pos, max_values, bar_width, label='Max', color='red', alpha=0.6)
+    
+    # Calculate symmetric y-axis limits
+    # Find the maximum absolute value across min and max values
+    all_values = min_values + max_values
+    max_abs_value = max(abs(min(all_values)), abs(max(all_values)))
+    
+    # Add 10% padding and ensure we have a reasonable minimum range
+    y_limit = max(max_abs_value * 1.1, 0.1)
+    
+    # Set symmetric y-axis limits
+    ax.set_ylim(-y_limit, y_limit)
+    
+    # Customize the plot
+    ax.set_title(f'Vector Statistics for {filename}\n({numvectors} vectors, {np_array.shape[1]} dimensions each)', fontsize=12, pad=20)
+    ax.set_xlabel('Vector Number', fontsize=11)
+    ax.set_ylabel('Value', fontsize=11)
+    ax.grid(True, alpha=0.3, linestyle='--', axis='y')
+    ax.legend(loc='best', framealpha=0.9)
+    
+    # Set x-axis labels and positions
+    ax.set_xticks(x_pos)
+    ax.set_xticklabels(vector_numbers)
+    
+    # Add a horizontal line at y=0 for reference
+    ax.axhline(y=0, color='black', linestyle='-', linewidth=0.5, alpha=0.5)
+    
+    # Improve layout
+    plt.tight_layout()
+    
+    # Show the plot
+    plt.show()
+    
+    # Print summary statistics
+    print(f"\n📊 Summary Statistics:")
+    print(f"   Overall Min: {min(min_values):.6f}")
+    print(f"   Overall Max: {max(max_values):.6f}")
+    print(f"   Range: {max(max_values) - min(min_values):.6f}")
+    print(f"   Y-axis range: ±{y_limit:.6f}")
+    
+    # ========================================
+    # 3. MENU SELECTION
     # ========================================
     """
     Present user with operation choices upfront
     """
     
-    print("\n" + "="*60)
-    print("TI CHANGER - SELECT OPERATION")
-    print("="*60)
-    print("1. Apply smoothing to all vectors")
-    print("2. Create single mean vector (condensed)")
-    print("3. Apply decimation with zeros")
-    print("4. Divide all vectors by scalar")
-    print("5. Roll/shift all vectors")
-    print("6. Extract individual vectors to separate files")
-    print("="*60)
-    
-    user_input = input("Choose operation (1-6): ").strip()
-    
-    if user_input not in ['1', '2', '3', '4', '5', '6']:
-        print("Invalid choice. Please run the script again and enter 1-6.")
+    user_input = get_user_choice()
+    if user_input is None:
         input("Press Enter to exit...")
         return
     
@@ -418,8 +596,14 @@ def main():
         extract_individual_vectors(data, filename, numvectors)
         return  # Exit early since we're not modifying the original file
     
+    # Handle Option 7 (top N vectors) immediately since it doesn't need processing
+    if user_input == "7":
+        print("You chose Option 7 - save top N vectors by absolute magnitude...")
+        select_top_n_vectors(data, filename, numvectors, np_array)
+        return  # Exit early since we're not modifying the original file
+    
     # ========================================
-    # 3. EXECUTE SELECTED OPERATION
+    # 4. EXECUTE SELECTED OPERATION
     # ========================================
     """
     Only perform the processing needed for the selected operation
@@ -510,7 +694,7 @@ def main():
     data['string_to_param']['*'] = tensor
     
     # ========================================
-    # 4. SAVE THE PROCESSED TI
+    # 5. SAVE THE PROCESSED TI
     # ========================================
     """
     Save the processed file
