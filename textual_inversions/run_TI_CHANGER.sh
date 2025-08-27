@@ -41,6 +41,12 @@ if [[ "$OSTYPE" == "linux-gnu"* ]]; then
             echo "Missing required packages. Installing..."
             $PYTHON_CMD -m pip install torch matplotlib numpy --user
         }
+        
+        # Check for scikit-learn for new clustering and PCA features
+        $PYTHON_CMD -c "import sklearn" 2>/dev/null || {
+            echo "Installing scikit-learn for clustering and PCA features..."
+            $PYTHON_CMD -m pip install scikit-learn --user
+        }
     fi
     
 else
