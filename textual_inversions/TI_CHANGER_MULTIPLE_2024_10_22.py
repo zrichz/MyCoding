@@ -35,6 +35,8 @@ import numpy as np
 import os
 import tkinter as tk
 from tkinter import filedialog
+from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
 
 # Configure matplotlib for better display (standalone Python version)
 plt.rcParams['figure.dpi'] = 100
@@ -258,6 +260,8 @@ def get_user_choice():
     print("5. Roll/shift all vectors")
     print("6. Extract individual vectors to separate files")
     print("7. Save top N vectors by absolute magnitude")
+    print("8. Clustering-Based Reduction (K-means)")
+    print("9. Principal Component Analysis (PCA)")
     print("="*60)
     
     # Improved input handling with retry logic
@@ -269,15 +273,15 @@ def get_user_choice():
             time.sleep(0.1)
             
             print(f"\nAttempt {attempt + 1}: ", end="", flush=True)
-            user_input = input("Choose operation (1-7): ").strip()
+            user_input = input("Choose operation (1-9): ").strip()
             
             # Debug: Show what was actually captured (remove this after fixing)
             print(f"Debug: Captured input: '{user_input}' (length: {len(user_input)})")
             
-            if user_input in ['1', '2', '3', '4', '5', '6', '7']:
+            if user_input in ['1', '2', '3', '4', '5', '6', '7', '8', '9']:
                 return user_input
             else:
-                print(f"Invalid input: '{user_input}'. Please enter a number from 1 to 7.")
+                print(f"Invalid input: '{user_input}'. Please enter a number from 1 to 9.")
                 if attempt < max_attempts - 1:
                     print("Try again...")
                     continue
@@ -289,7 +293,7 @@ def get_user_choice():
                 print("Too many failed attempts. Exiting...")
                 return None
     
-    print("Invalid choice after multiple attempts. Please run the script again and enter 1-7.")
+    print("Invalid choice after multiple attempts. Please run the script again and enter 1-9.")
     return None
 
 
@@ -470,6 +474,211 @@ def select_top_n_vectors(data, original_filename, numvectors, np_array):
     print(f"Successfully processed vectors based on absolute magnitude.")
 
 
+def clustering_based_reduction(data, original_filename, numvectors, np_array):
+    """
+    Apply K-means clustering to reduce vectors to N cluster centroids
+    
+    Args:
+        data: The original TI data dictionary
+        original_filename: The original filename (without path)
+        numvectors: Number of vectors in the TI file
+        np_array: NumPy array of the tensor data
+    """
+    try:
+        from sklearn.cluster import KMeans
+    except ImportError:
+        print("❌ Error: scikit-learn is required for clustering-based reduction.")
+        print("Please install it with: pip install scikit-learn")
+        return
+    
+    print(f"\nApplying Clustering-Based Reduction (K-means) to '{original_filename}'...")
+    print(f"Available vectors: {numvectors}")
+    
+    # Get number of clusters from user
+    while True:
+        try:
+            n_clusters = int(input(f"Enter number of clusters (1-{numvectors}): "))
+            if 1 <= n_clusters <= numvectors:
+                break
+            else:
+                print(f"Please enter a number between 1 and {numvectors}")
+        except ValueError:
+            print("Please enter a valid integer")
+    
+    print(f"\nApplying K-means clustering with {n_clusters} clusters...")
+    
+    # Apply K-means clustering
+    kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
+    cluster_labels = kmeans.fit_predict(np_array)
+    centroids = kmeans.cluster_centers_
+    
+    print(f"✓ Clustering complete!")
+    print(f"✓ Original vectors: {numvectors}")
+    print(f"✓ Reduced to centroids: {n_clusters}")
+    print(f"✓ Centroid tensor shape: {centroids.shape}")
+    
+    # Show cluster information
+    print(f"\nCluster assignments:")
+    for cluster_id in range(n_clusters):
+        vectors_in_cluster = np.where(cluster_labels == cluster_id)[0]
+        print(f"  Cluster {cluster_id + 1}: {len(vectors_in_cluster)} vectors (indices: {vectors_in_cluster.tolist()})")
+    
+    # Create base filename
+    base_filename = original_filename.replace('.pt', '')
+    
+    # Create directory if it doesn't exist
+    directory = "textual_inversions"
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    
+    # Save individual centroid files
+    print(f"\nSaving individual centroid files...")
+    for i in range(n_clusters):
+        # Extract the i-th centroid (keep as 2D with shape [1, dimensions])
+        individual_centroid = centroids[i:i+1]
+        
+        # Convert to tensor
+        centroid_tensor = torch.tensor(individual_centroid, device='cpu', requires_grad=True)
+        
+        # Create new data dictionary for this individual centroid
+        individual_data = data.copy()
+        individual_data['string_to_param'] = {'*': centroid_tensor}
+        
+        # Generate filename
+        centroid_filename = f"{base_filename}_kmeans_centroid_{i+1:02d}.pt"
+        filepath = os.path.join(directory, centroid_filename)
+        
+        # Save the individual centroid file
+        torch.save(individual_data, filepath)
+        print(f"✓ Saved centroid {i+1}/{n_clusters}: {centroid_filename}")
+    
+    # Save combined centroids file
+    print(f"\nSaving combined centroids file...")
+    combined_tensor = torch.tensor(centroids, device='cpu', requires_grad=True)
+    combined_data = data.copy()
+    combined_data['string_to_param'] = {'*': combined_tensor}
+    
+    combined_filename = f"{base_filename}_kmeans_{n_clusters}centroids.pt"
+    combined_filepath = os.path.join(directory, combined_filename)
+    torch.save(combined_data, combined_filepath)
+    
+    print(f"✅ Combined centroids file '{combined_filename}' saved to '{directory}' directory.")
+    
+    print(f"\n📊 K-means Clustering Summary:")
+    print(f"   Original vectors: {numvectors}")
+    print(f"   Clusters created: {n_clusters}")
+    print(f"   Individual centroids: {n_clusters} files")
+    print(f"   Combined file: {combined_filename}")
+    print(f"   Dimensionality preserved: {centroids.shape[1]}")
+
+
+def principal_component_analysis(data, original_filename, numvectors, np_array):
+    """
+    Apply PCA to reduce the number of vectors to N principal components
+    
+    Args:
+        data: The original TI data dictionary
+        original_filename: The original filename (without path)
+        numvectors: Number of vectors in the TI file
+        np_array: NumPy array of the tensor data
+    """
+    try:
+        from sklearn.decomposition import PCA
+    except ImportError:
+        print("❌ Error: scikit-learn is required for Principal Component Analysis.")
+        print("Please install it with: pip install scikit-learn")
+        return
+    
+    print(f"\nApplying Principal Component Analysis (PCA) to '{original_filename}'...")
+    print(f"Available vectors: {numvectors}")
+    
+    # Get number of components from user
+    while True:
+        try:
+            n_components = int(input(f"Enter number of principal components (1-{numvectors}): "))
+            if 1 <= n_components <= numvectors:
+                break
+            else:
+                print(f"Please enter a number between 1 and {numvectors}")
+        except ValueError:
+            print("Please enter a valid integer")
+    
+    print(f"\nApplying PCA with {n_components} components...")
+    
+    # Apply PCA
+    pca = PCA(n_components=n_components)
+    pca_vectors = pca.fit_transform(np_array)
+    
+    # Get the principal components (these are the new vectors)
+    # Note: pca.components_ gives us the components, but we want the transformed data
+    # The transformed data is in the original vector space dimension
+    # We need to transform back to get vectors in the original space
+    reconstructed_vectors = pca.inverse_transform(pca_vectors)
+    
+    print(f"✓ PCA complete!")
+    print(f"✓ Original vectors: {numvectors}")
+    print(f"✓ Principal components: {n_components}")
+    print(f"✓ Explained variance ratio: {pca.explained_variance_ratio_}")
+    print(f"✓ Total explained variance: {np.sum(pca.explained_variance_ratio_):.4f}")
+    print(f"✓ PCA vectors shape: {reconstructed_vectors.shape}")
+    
+    # Show variance information
+    print(f"\nVariance explained by each component:")
+    for i, var_ratio in enumerate(pca.explained_variance_ratio_):
+        print(f"  Component {i + 1}: {var_ratio:.4f} ({var_ratio*100:.2f}%)")
+    
+    # Create base filename
+    base_filename = original_filename.replace('.pt', '')
+    
+    # Create directory if it doesn't exist
+    directory = "textual_inversions"
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    
+    # Save individual PCA component files
+    print(f"\nSaving individual PCA component files...")
+    for i in range(n_components):
+        # Extract the i-th component (keep as 2D with shape [1, dimensions])
+        individual_component = reconstructed_vectors[i:i+1]
+        
+        # Convert to tensor
+        component_tensor = torch.tensor(individual_component, device='cpu', requires_grad=True)
+        
+        # Create new data dictionary for this individual component
+        individual_data = data.copy()
+        individual_data['string_to_param'] = {'*': component_tensor}
+        
+        # Generate filename
+        component_filename = f"{base_filename}_pca_component_{i+1:02d}.pt"
+        filepath = os.path.join(directory, component_filename)
+        
+        # Save the individual component file
+        torch.save(individual_data, filepath)
+        variance_pct = pca.explained_variance_ratio_[i] * 100
+        print(f"✓ Saved component {i+1}/{n_components}: {component_filename} (explains {variance_pct:.2f}% variance)")
+    
+    # Save combined PCA components file
+    print(f"\nSaving combined PCA components file...")
+    combined_tensor = torch.tensor(reconstructed_vectors, device='cpu', requires_grad=True)
+    combined_data = data.copy()
+    combined_data['string_to_param'] = {'*': combined_tensor}
+    
+    combined_filename = f"{base_filename}_pca_{n_components}components.pt"
+    combined_filepath = os.path.join(directory, combined_filename)
+    torch.save(combined_data, combined_filepath)
+    
+    print(f"✅ Combined PCA components file '{combined_filename}' saved to '{directory}' directory.")
+    
+    print(f"\n📊 PCA Analysis Summary:")
+    print(f"   Original vectors: {numvectors}")
+    print(f"   Principal components: {n_components}")
+    print(f"   Total variance explained: {np.sum(pca.explained_variance_ratio_)*100:.2f}%")
+    print(f"   Individual components: {n_components} files")
+    print(f"   Combined file: {combined_filename}")
+    print(f"   Dimensionality preserved: {reconstructed_vectors.shape[1]}")
+    
+
+
 def main():
     """Main function to execute the TI manipulation workflow"""
     
@@ -635,6 +844,18 @@ def main():
     if user_input == "7":
         print("You chose Option 7 - save top N vectors by absolute magnitude...")
         select_top_n_vectors(data, filename, numvectors, np_array)
+        return  # Exit early since we're not modifying the original file
+    
+    # Handle Option 8 (clustering-based reduction) immediately since it doesn't need processing
+    if user_input == "8":
+        print("You chose Option 8 - clustering-based reduction (K-means)...")
+        clustering_based_reduction(data, filename, numvectors, np_array)
+        return  # Exit early since we're not modifying the original file
+    
+    # Handle Option 9 (PCA) immediately since it doesn't need processing
+    if user_input == "9":
+        print("You chose Option 9 - Principal Component Analysis (PCA)...")
+        principal_component_analysis(data, filename, numvectors, np_array)
         return  # Exit early since we're not modifying the original file
     
     # ========================================
