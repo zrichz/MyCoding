@@ -1,0 +1,6 @@
+{
+    "python.defaultInterpreterPath": "./venv_mycoding/Scripts/python.exe",
+    "python.terminal.activateEnvironment": true,
+    "python.terminal.activateEnvInCurrentTerminal": true,
+    "jupyter.defaultKernel": "venv_mycoding"
+}
