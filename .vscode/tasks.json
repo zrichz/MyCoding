@@ -1,10 +1,9 @@
 {
 	"version": "2.0.0",
-	"tasks": [
-		{
+	"tasks": [		{
 			"label": "Focus Stacker GUI",
 			"type": "shell",
-			"command": "C:/Users/richm/Envs/venv_myDL1/Scripts/python.exe",
+			"command": "C:/MyPythonCoding/MyCoding/venv_mycoding/Scripts/python.exe",
 			"args": [
 				"main.py",
 				"--gui"
