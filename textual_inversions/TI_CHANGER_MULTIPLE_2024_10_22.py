@@ -255,7 +255,7 @@ def get_user_choice():
     print("="*60)
     print("1. Apply smoothing to all vectors")
     print("2. Create single mean vector (condensed)")
-    print("3. Apply decimation with zeros")
+    print("3. Apply threshold-based decimation (zero small values)")
     print("4. Divide all vectors by scalar")
     print("5. Roll/shift all vectors")
     print("6. Extract individual vectors to separate files")
@@ -770,10 +770,9 @@ def main():
     vector_numbers = list(range(1, numvectors + 1))
     min_values = [np.min(np_array[i]) for i in range(numvectors)]
     max_values = [np.max(np_array[i]) for i in range(numvectors)]
-    
-    # Create the plot with wider figure for bars and better spacing
+      # Create the plot with wider figure for bars and better spacing (smaller size)
     bar_width = 0.7  # Width of each bar (wider since we only have 2 bars)
-    fig, ax = plt.subplots(figsize=(max(10, numvectors * 1.5), 7))
+    fig, ax = plt.subplots(figsize=(max(8, numvectors * 0.5), 5))  # Smaller figure
     
     # Calculate x positions - both bars at the same x position for perfect alignment
     x_pos = np.arange(len(vector_numbers))
@@ -793,12 +792,13 @@ def main():
     # Set symmetric y-axis limits
     ax.set_ylim(-y_limit, y_limit)
     
-    # Customize the plot
-    ax.set_title(f'Vector Statistics for {filename}\n({numvectors} vectors, {np_array.shape[1]} dimensions each)', fontsize=12, pad=20)
-    ax.set_xlabel('Vector Number', fontsize=11)
-    ax.set_ylabel('Value', fontsize=11)
+    # Customize the plot with better spacing
+    ax.set_title(f'Vector Statistics for {filename}\n({numvectors} vectors, {np_array.shape[1]} dimensions each)', 
+                fontsize=10, pad=15)
+    ax.set_xlabel('Vector Number', fontsize=9)
+    ax.set_ylabel('Value', fontsize=9)
     ax.grid(True, alpha=0.3, linestyle='--', axis='y')
-    ax.legend(loc='best', framealpha=0.9)
+    ax.legend(loc='best', framealpha=0.9, fontsize=8)
     
     # Set x-axis labels and positions
     ax.set_xticks(x_pos)
@@ -807,10 +807,152 @@ def main():
     # Add a horizontal line at y=0 for reference
     ax.axhline(y=0, color='black', linestyle='-', linewidth=0.5, alpha=0.5)
     
-    # Improve layout
-    plt.tight_layout()
+    # Improve layout with more white space
+    plt.tight_layout(pad=2.0)
     
-    # Show the plot
+    # Show the first plot
+    plt.show()
+    
+    # ========================================
+    # NEW: INDIVIDUAL VECTOR VALUES LINE PLOT
+    # ========================================
+    """
+    Display all vector values as line plots with x-axis 0-768 and different colored lines
+    """
+    
+    print("\nGenerating individual vector values visualization...")
+    
+    # Create figure for vector line plots with better spacing
+    fig2, ax2 = plt.subplots(figsize=(12, 6))  # Wider for better dimension visibility
+      # Generate colors for each vector
+    import matplotlib.cm as cm
+    
+    # Use different color strategies based on number of vectors
+    if numvectors <= 10:
+        # Use distinct colors for up to 10 vectors
+        colors = cm.get_cmap('tab10')(np.linspace(0, 1, 10))[:numvectors]
+    else:
+        # Use a continuous colormap for many vectors
+        colors = cm.get_cmap('viridis')(np.linspace(0, 1, numvectors))
+    
+    # X-axis represents dimensions (0 to vector_length-1)
+    x_dims = np.arange(np_array.shape[1])
+    
+    # Plot each vector as a separate line
+    for i in range(numvectors):
+        vector_values = np_array[i]
+        color = colors[i]
+        ax2.plot(x_dims, vector_values, 
+                label=f'Vector {i+1}', 
+                color=color, 
+                linewidth=1.5, 
+                alpha=0.8)
+    
+    # Customize the vector plot
+    ax2.set_title(f'Individual Vector Values for {filename}\n({numvectors} vectors × {np_array.shape[1]} dimensions)', 
+                 fontsize=10, pad=15)
+    ax2.set_xlabel('Dimension Index (0-{})'.format(np_array.shape[1]-1), fontsize=9)
+    ax2.set_ylabel('Vector Value', fontsize=9)
+    ax2.grid(True, alpha=0.3, linestyle='--')
+    
+    # Add legend (but limit it if too many vectors)
+    if numvectors <= 10:
+        ax2.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize=8)
+    else:
+        ax2.text(1.02, 0.5, f'{numvectors} vectors\n(too many for legend)', 
+                transform=ax2.transAxes, fontsize=8, verticalalignment='center')
+    
+    # Add a horizontal line at y=0 for reference
+    ax2.axhline(y=0, color='black', linestyle='-', linewidth=0.5, alpha=0.5)
+    
+    # Improve layout with more white space
+    plt.tight_layout(pad=2.0)
+    
+    # Show the second plot
+    plt.show()
+    
+    # ========================================
+    # NEW: 2D HEATMAP GRID VISUALIZATION
+    # ========================================
+    """
+    Display each vector as a 2D heatmap reshaped to 36x24 for better visualization
+    """
+    
+    print("\nGenerating 2D heatmap grid visualization...")
+    
+    # Calculate grid dimensions for subplots
+    import math
+    grid_cols = min(4, numvectors)  # Max 4 columns
+    grid_rows = math.ceil(numvectors / grid_cols)
+    
+    # Create figure for heatmap grid
+    fig_size_factor = 3  # Size factor for each subplot
+    fig3, axes = plt.subplots(grid_rows, grid_cols, 
+                             figsize=(grid_cols * fig_size_factor, grid_rows * fig_size_factor))
+    
+    # Handle case where we only have one subplot
+    if numvectors == 1:
+        axes = [axes]
+    elif grid_rows == 1:
+        axes = [axes] if numvectors == 1 else axes
+    else:
+        axes = axes.flatten()
+    
+    # Define heatmap dimensions (36x24 = 864, close to common 768 dimensions)
+    heatmap_height = 36
+    heatmap_width = 24
+    target_size = heatmap_height * heatmap_width
+    
+    # Process each vector
+    for i in range(numvectors):
+        vector_data = np_array[i].copy()
+        
+        # Pad or truncate to target size
+        if len(vector_data) < target_size:
+            # Pad with zeros if vector is smaller
+            padded_data = np.zeros(target_size)
+            padded_data[:len(vector_data)] = vector_data
+            vector_data = padded_data
+        elif len(vector_data) > target_size:
+            # Truncate if vector is larger
+            vector_data = vector_data[:target_size]
+        
+        # Reshape to 2D heatmap
+        heatmap_data = vector_data.reshape(heatmap_height, heatmap_width)
+        
+        # Create heatmap
+        ax = axes[i]
+        im = ax.imshow(heatmap_data, cmap='RdBu_r', aspect='auto', 
+                      vmin=np.min(np_array), vmax=np.max(np_array))
+        
+        # Customize each subplot
+        ax.set_title(f'Vector {i+1}', fontsize=10, pad=5)
+        ax.set_xlabel(f'Dim Width (0-{heatmap_width-1})', fontsize=8)
+        ax.set_ylabel(f'Dim Height (0-{heatmap_height-1})', fontsize=8)
+        
+        # Reduce tick density for cleaner look
+        ax.set_xticks(np.linspace(0, heatmap_width-1, 5).astype(int))
+        ax.set_yticks(np.linspace(0, heatmap_height-1, 5).astype(int))
+        ax.tick_params(labelsize=7)
+        
+        # Add colorbar for the first subplot as reference
+        if i == 0:
+            cbar = plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+            cbar.set_label('Value', fontsize=8)
+            cbar.ax.tick_params(labelsize=7)
+    
+    # Hide empty subplots if we have fewer vectors than grid spaces
+    for i in range(numvectors, len(axes)):
+        axes[i].set_visible(False)
+    
+    # Set overall title
+    fig3.suptitle(f'Vector Heatmaps for {filename}\n({numvectors} vectors reshaped to {heatmap_height}×{heatmap_width} for visualization)', 
+                 fontsize=12, y=0.98)
+    
+    # Adjust layout
+    plt.tight_layout(rect=(0, 0, 1, 0.95))
+    
+    # Show the third plot
     plt.show()
     
     # Print summary statistics
@@ -819,6 +961,8 @@ def main():
     print(f"   Overall Max: {max(max_values):.6f}")
     print(f"   Range: {max(max_values) - min(min_values):.6f}")
     print(f"   Y-axis range: ±{y_limit:.6f}")
+    print(f"   Heatmap grid: {grid_rows}×{grid_cols} layout")
+    print(f"   Each heatmap: {heatmap_height}×{heatmap_width} dimensions")
     
     # ========================================
     # 3. MENU SELECTION
@@ -902,8 +1046,7 @@ def main():
         # Calculate mean vector
         Xmean = np.mean(np_array, axis=0)
         sd_val = np.std(Xmean)
-        
-        # Scale to match original SD
+          # Scale to match original SD
         Xmean = Xmean * meanSD/sd_val
         processed_array = Xmean.reshape(1, -1)
         
@@ -913,11 +1056,55 @@ def main():
         # DECIMATION OPERATION
         print("You chose Option 3 - retain all vectors, but decimated with zeros...")
         
-        # For now, using placeholder decimation (you can enhance this)
-        processed_array = np_array.copy()
-        # TODO: Add your specific decimation logic here
+        # Get threshold values from user
+        print("\nThreshold-based decimation:")
+        print("Values will be set to zero if they fall within the threshold ranges")
         
-        filename_suffix = "_dec.pt"
+        # Get positive threshold
+        while True:
+            try:
+                pos_threshold = float(input("Enter positive threshold (positive values < this will become 0): "))
+                if pos_threshold > 0:
+                    break
+                else:
+                    print("Please enter a positive value")
+            except ValueError:
+                print("Please enter a valid number")
+        
+        # Get negative threshold  
+        while True:
+            try:
+                neg_threshold = float(input("Enter negative threshold (negative values > this will become 0): "))
+                if neg_threshold < 0:
+                    break
+                else:
+                    print("Please enter a negative value")
+            except ValueError:
+                print("Please enter a valid number")
+        
+        print(f"\nApplying thresholds:")
+        print(f"  Positive values < {pos_threshold} → 0")
+        print(f"  Negative values > {neg_threshold} → 0")
+        
+        # Apply decimation thresholds
+        processed_array = np_array.copy()
+        
+        # Count affected values for reporting
+        pos_count = np.sum((processed_array > 0) & (processed_array < pos_threshold))
+        neg_count = np.sum((processed_array < 0) & (processed_array > neg_threshold))
+        
+        # Apply positive threshold: zero out positive values below threshold
+        processed_array[(processed_array > 0) & (processed_array < pos_threshold)] = 0
+        
+        # Apply negative threshold: zero out negative values above threshold (closer to zero)
+        processed_array[(processed_array < 0) & (processed_array > neg_threshold)] = 0
+        
+        print(f"✓ Decimation complete!")
+        print(f"  {pos_count} positive values set to zero")
+        print(f"  {neg_count} negative values set to zero")
+        print(f"  Total values affected: {pos_count + neg_count}")
+        
+        filename_suffix = f"_dec_pos{pos_threshold}_neg{neg_threshold}.pt"
         
     elif user_input == "4":
         # DIVISION OPERATION
