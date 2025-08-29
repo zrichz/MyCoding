@@ -4,40 +4,47 @@ Combination Generator Script
 Generates all k-combinations of an n-element set based on user input.
 
 Usage:
-1. Enter a base phrase (e.g., "cat_vector")
+1. Enter a base phrase (e.g., "8vSw-0600")
 2. Enter an integer n
 3. Script generates all combinations from k=1 to k=n
 4. Outputs to a .txt file with comma-separated values
 
 Example:
-Input: "cat_vector", n=3
-Output: "cat_vector_01","cat_vector_02","cat_vector_03","cat_vector_01 cat_vector_02","cat_vector_01 cat_vector_03","cat_vector_02 cat_vector_03","cat_vector_01 cat_vector_02 cat_vector_03"
+Input: "8vSw-0600", n=3, k_min=1
+Output: "8vSw-0600_vector_01.pt","8vSw-0600_vector_02.pt","8vSw-0600_vector_03.pt",
+        "8vSw-0600_vector_01.pt 8vSw-0600_vector_02.pt","8vSw-0600_vector_01.pt 8vSw-0600_vector_03.pt",
+        "8vSw-0600_vector_02.pt 8vSw-0600_vector_03.pt","8vSw-0600_vector_01.pt 8vSw-0600_vector_02.pt 8vSw-0600_vector_03.pt"
+
+Input: "8vSw-0600", n=3, k_min=2  
+Output: "8vSw-0600_vector_01.pt 8vSw-0600_vector_02.pt","8vSw-0600_vector_01.pt 8vSw-0600_vector_03.pt",
+        "8vSw-0600_vector_02.pt 8vSw-0600_vector_03.pt","8vSw-0600_vector_01.pt 8vSw-0600_vector_02.pt 8vSw-0600_vector_03.pt"
 """
 
 import itertools
 import os
 
 
-def generate_combinations(base_phrase, n):
+def generate_combinations(base_phrase, n, k_min=1):
     """
-    Generate all k-combinations for k=1 to n of the n-element set
+    Generate all k-combinations for k=k_min to n of the n-element set
     
     Args:
-        base_phrase: Base phrase like "cat_vector"
+        base_phrase: Base phrase like "8vSw-0600"
         n: Integer representing the size of the set
+        k_min: Minimum combination size (default: 1)
     
     Returns:
         List of all combination strings
     """
-    # Generate the base elements (e.g., cat_vector_01, cat_vector_02, etc.)
-    elements = [f"{base_phrase}_{i+1:02d}" for i in range(n)]
+    # Generate the base elements (e.g., 8vSw-0600_vector_01.pt, 8vSw-0600_vector_02.pt, etc.)
+    elements = [f"{base_phrase}_vector_{i+1:02d}.pt" for i in range(n)]
     
     print(f"\nGenerated base elements: {elements}")
     
     all_combinations = []
     
-    # Generate combinations for each k from 1 to n
-    for k in range(1, n + 1):
+    # Generate combinations for each k from k_min to n
+    for k in range(k_min, n + 1):
         combinations = list(itertools.combinations(elements, k))
         
         print(f"\nCombinations of size {k} ({len(combinations)} total):")
@@ -56,7 +63,7 @@ def generate_combinations(base_phrase, n):
     return all_combinations
 
 
-def save_to_file(combinations, base_phrase, n):
+def save_to_file(combinations, base_phrase, n, k_min=1):
     """
     Save combinations to a comma-separated .txt file
     
@@ -64,10 +71,14 @@ def save_to_file(combinations, base_phrase, n):
         combinations: List of combination strings
         base_phrase: Base phrase used for filename
         n: Integer n for filename
+        k_min: Minimum combination size for filename
     """
     # Create filename
     safe_phrase = base_phrase.replace(" ", "_").replace("/", "_").replace("\\", "_")
-    filename = f"{safe_phrase}_n{n}_combinations.txt"
+    if k_min == 1:
+        filename = f"{safe_phrase}_n{n}_combinations.txt"
+    else:
+        filename = f"{safe_phrase}_n{n}_k{k_min}-{n}_combinations.txt"
     
     # Create output directory if it doesn't exist
     output_dir = "combination_outputs"
@@ -103,7 +114,7 @@ def main():
     
     # Get user input for base phrase
     while True:
-        base_phrase = input("\nEnter base phrase (e.g., 'cat_vector'): ").strip()
+        base_phrase = input("\nEnter base phrase (e.g., '8vSw-0600'): ").strip()
         if base_phrase:
             break
         print("Please enter a valid phrase.")
@@ -119,13 +130,29 @@ def main():
         except ValueError:
             print("Please enter a valid integer.")
     
+    # Get user input for k_min
+    while True:
+        try:
+            k_min_input = input(f"Enter minimum k (1-{n}, press Enter for 1): ").strip()
+            if k_min_input == "":
+                k_min = 1
+                break
+            k_min = int(k_min_input)
+            if 1 <= k_min <= n:
+                break
+            else:
+                print(f"Please enter an integer between 1 and {n}.")
+        except ValueError:
+            print("Please enter a valid integer or press Enter for default.")
+    
     print(f"\n📝 Configuration:")
     print(f"   Base phrase: '{base_phrase}'")
     print(f"   Set size (n): {n}")
-    print(f"   Will generate combinations for k = 1 to {n}")
+    print(f"   Minimum combination size (k): {k_min}")
+    print(f"   Will generate combinations for k = {k_min} to {n}")
     
     # Calculate total number of combinations
-    total_combinations = sum(len(list(itertools.combinations(range(n), k))) for k in range(1, n + 1))
+    total_combinations = sum(len(list(itertools.combinations(range(n), k))) for k in range(k_min, n + 1))
     print(f"   Total combinations to generate: {total_combinations}")
     
     # Confirm with user
@@ -136,11 +163,11 @@ def main():
     
     # Generate combinations
     print(f"\n🔄 Generating combinations...")
-    combinations = generate_combinations(base_phrase, n)
+    combinations = generate_combinations(base_phrase, n, k_min)
     
     # Save to file
     print(f"\n💾 Saving to file...")
-    filepath = save_to_file(combinations, base_phrase, n)
+    filepath = save_to_file(combinations, base_phrase, n, k_min)
     
     # Show sample of output
     print(f"\n📋 Sample output (first 3 combinations):")
