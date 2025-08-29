@@ -1,31 +1,46 @@
 #!/usr/bin/env python3
 """
 TI Changer Multiple - Convert and manipulate textual inversion files
-Converted from Jupyter notebook to Python script
-
-New Features Added:
-- Option 6: Extract individual vectors from multi-vector TI files
-  This option allows you to:
-  * Load a .pt file containing multiple vectors (e.g., 8 vectors)
-  * Display the number of vectors present
-  * Extract each vector as a separate .pt file
-  * Save with numbered suffixes (e.g., filename_vector_01.pt, filename_vector_02.pt, etc.)
-  
 """
 
 # Load a .pt textual inversion file and show / manipulate it
 import torch
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+import matplotlib.colors as mcolors
 import numpy as np
 import os
+import sys
+import time
+import math
 import tkinter as tk
 from tkinter import filedialog
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
+from scipy.ndimage import zoom
 
 # Configure matplotlib for better display (standalone Python version)
 plt.rcParams['figure.dpi'] = 100
-plt.rcParams['savefig.dpi'] = 150
+plt.rcParams['savefig.dpi'] = 200
+
+# ========================================
+# VISUALIZATION CONFIGURATION
+# ========================================
+# Customizable colormap for heatmap visualizations
+HEATMAP_COLORS = ['#FF0000', "#FF8C19", "#FB00FF", "#EA00FF", "#E100FF", 
+                  "#FF00E1", "#FF00FF", "#FFFB00", "#666666", "#000000"]
+
+# Alternative color schemes you can use by changing HEATMAP_COLORS above:
+# COOL_COLORS = ['#000080', '#0000FF', '#0080FF', '#00FFFF', '#80FFFF', '#FFFFFF', '#FFFF80', '#FFFF00', '#FF8000', '#FF0000']
+# WARM_COLORS = ['#000000', '#330000', '#660000', '#990000', '#CC0000', '#FF0000', '#FF3300', '#FF6600', '#FF9900', '#FFCC00']
+# RAINBOW_COLORS = ['#9400D3', '#4B0082', '#0000FF', '#00FF00', '#FFFF00', '#FF7F00', '#FF0000', '#FF1493', '#00CED1', '#32CD32']
+
+# Heatmap dimensions (adjust based on your vector size preferences)
+HEATMAP_HEIGHT = 36
+HEATMAP_WIDTH = 24
+
+# Cubic interpolation smoothing factor (3 provides good balance)
+SMOOTHING_FACTOR = 1
 
 
 def analyze_pt_file(filepath):
@@ -227,7 +242,7 @@ def load_ti_file_flexible(filepath):
 
 def get_user_choice():
     """
-    Robust user input function that handles Windows batch file input issues
+    user input function
     """
     import sys
     
@@ -250,6 +265,7 @@ def get_user_choice():
     print("10. Quantile Transform (Uniform/Gaussian)")
     print("11. Nonlinear Squashing (tanh)")
     print("12. L² Normalization")
+    print("13. Max/Min Averaging (single vector from extremes)")
     print("="*60)
     
     # Improved input handling with retry logic
@@ -261,15 +277,15 @@ def get_user_choice():
             time.sleep(0.1)
             
             print(f"\nAttempt {attempt + 1}: ", end="", flush=True)
-            user_input = input("Choose operation (1-12): ").strip()
+            user_input = input("Choose operation (1-13): ").strip()
             
             # Debug: Show what was actually captured (remove this after fixing)
             print(f"Debug: Captured input: '{user_input}' (length: {len(user_input)})")
             
-            if user_input in ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']:
+            if user_input in ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13']:
                 return user_input
             else:
-                print(f"Invalid input: '{user_input}'. Please enter a number from 1 to 12.")
+                print(f"Invalid input: '{user_input}'. Please enter a number from 1 to 13.")
                 if attempt < max_attempts - 1:
                     print("Try again...")
                     continue
@@ -281,7 +297,7 @@ def get_user_choice():
                 print("Too many failed attempts. Exiting...")
                 return None
     
-    print("Invalid choice after multiple attempts. Please run the script again and enter 1-12.")
+    print("Invalid choice after multiple attempts. Please run the script again and enter 1-13.")
     return None
 
 
@@ -886,6 +902,138 @@ def l2_normalization(data, original_filename, numvectors, np_array):
     save_transformed_file(data, original_filename, transformed_array, suffix)
 
 
+def max_min_averaging(data, original_filename, numvectors, np_array):
+    """
+    Create a single vector where each datapoint is either the max (if average is positive) 
+    or min (if average is negative) across all vectors at that position.
+    
+    Args:
+        data: The original TI data dictionary
+        original_filename: The original filename (without path)
+        numvectors: Number of vectors in the TI file
+        np_array: NumPy array of the tensor data
+    """
+    print(f"\nApplying Max/Min Averaging to '{original_filename}'...")
+    print(f"Available vectors: {numvectors}")
+    print(f"Vector dimensions: {np_array.shape[1]}")
+    
+    # Get dimensions
+    num_dimensions = np_array.shape[1]
+    
+    # Create output vector
+    result_vector = np.zeros(num_dimensions)
+    
+    # Statistics tracking
+    positive_avg_count = 0
+    negative_avg_count = 0
+    zero_avg_count = 0
+    
+    print(f"\nProcessing {num_dimensions} datapoints...")
+    
+    # Process each dimension (datapoint position) across all vectors
+    for dim_idx in range(num_dimensions):
+        # Extract all values at this dimension across all vectors
+        values_at_dimension = np_array[:, dim_idx]
+        
+        # Calculate average for this dimension
+        avg_value = np.mean(values_at_dimension)
+        
+        if avg_value > 0:
+            # Use maximum value if average is positive
+            result_vector[dim_idx] = np.max(values_at_dimension)
+            positive_avg_count += 1
+        elif avg_value < 0:
+            # Use minimum value if average is negative
+            result_vector[dim_idx] = np.min(values_at_dimension)
+            negative_avg_count += 1
+        else:
+            # Handle exact zero case (rare but possible)
+            result_vector[dim_idx] = 0.0
+            zero_avg_count += 1
+        
+        # Print progress for first few and every 100th dimension
+        if dim_idx < 5 or dim_idx % 100 == 0:
+            print(f"  Dim {dim_idx:3d}: avg={avg_value:8.5f} → {'MAX' if avg_value > 0 else 'MIN' if avg_value < 0 else 'ZERO'} = {result_vector[dim_idx]:8.5f}")
+    
+    # Create the result as a 2D array (single vector)
+    result_array = result_vector.reshape(1, -1)
+    
+    print(f"\n✓ Max/Min Averaging complete!")
+    print(f"✓ Original vectors: {numvectors}")
+    print(f"✓ Result: 1 vector with {num_dimensions} dimensions")
+    print(f"✓ Statistics:")
+    print(f"   Positive averages (used MAX): {positive_avg_count} ({positive_avg_count/num_dimensions*100:.1f}%)")
+    print(f"   Negative averages (used MIN): {negative_avg_count} ({negative_avg_count/num_dimensions*100:.1f}%)")
+    print(f"   Zero averages: {zero_avg_count} ({zero_avg_count/num_dimensions*100:.1f}%)")
+    
+    # Show statistics of the result vector
+    print(f"\n📊 Result Vector Statistics:")
+    print(f"   Range: [{result_vector.min():.6f}, {result_vector.max():.6f}]")
+    print(f"   Mean: {result_vector.mean():.6f}")
+    print(f"   Std: {result_vector.std():.6f}")
+    print(f"   L2 norm: {np.linalg.norm(result_vector):.6f}")
+    
+    # Show transformation visualization
+    # Create a comparison with the mean vector for context
+    mean_vector = np.mean(np_array, axis=0).reshape(1, -1)
+    
+    # Show both mean and max/min result for comparison
+    comparison_data = np.vstack([mean_vector, result_array])
+    comparison_labels = ["Mean Vector", "Max/Min Result"]
+    
+    # Create comparison plot
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(14, 10))
+    
+    # Original data histogram (all vectors combined)
+    orig_flat = np_array.flatten()
+    ax1.hist(orig_flat, bins=50, alpha=0.7, color='blue', edgecolor='black')
+    ax1.set_title('Original: All Vector Values Distribution', fontsize=10)
+    ax1.set_xlabel('Value')
+    ax1.set_ylabel('Frequency')
+    ax1.grid(True, alpha=0.3)
+    
+    # Result vector histogram
+    ax2.hist(result_vector, bins=50, alpha=0.7, color='red', edgecolor='black')
+    ax2.set_title('Result: Max/Min Vector Distribution', fontsize=10)
+    ax2.set_xlabel('Value')
+    ax2.set_ylabel('Frequency')
+    ax2.grid(True, alpha=0.3)
+    
+    # Vector comparison plot
+    x_dims = np.arange(num_dimensions)
+    ax3.plot(x_dims, mean_vector[0], alpha=0.7, label='Mean Vector', color='blue', linewidth=1)
+    ax3.plot(x_dims, result_vector, alpha=0.8, label='Max/Min Vector', color='red', linewidth=1.5)
+    ax3.set_title('Comparison: Mean vs Max/Min Vector', fontsize=10)
+    ax3.set_xlabel('Dimension Index')
+    ax3.set_ylabel('Value')
+    ax3.grid(True, alpha=0.3)
+    ax3.legend()
+    
+    # Statistics bar chart
+    categories = ['Positive Avg\n(MAX used)', 'Negative Avg\n(MIN used)', 'Zero Avg']
+    counts = [positive_avg_count, negative_avg_count, zero_avg_count]
+    colors = ['green', 'red', 'gray']
+    
+    bars = ax4.bar(categories, counts, color=colors, alpha=0.7, edgecolor='black')
+    ax4.set_title('Max/Min Selection Statistics', fontsize=10)
+    ax4.set_ylabel('Number of Dimensions')
+    ax4.grid(True, alpha=0.3, axis='y')
+    
+    # Add count labels on bars
+    for bar, count in zip(bars, counts):
+        height = bar.get_height()
+        ax4.text(bar.get_x() + bar.get_width()/2., height + max(counts)*0.01,
+                f'{count}', ha='center', va='bottom', fontsize=9)
+    
+    plt.suptitle(f'Max/Min Averaging Analysis\nFile: {original_filename}', fontsize=12, y=0.98)
+    plt.tight_layout(rect=(0, 0, 1, 0.95))
+    plt.show()
+    
+    # Save the result file
+    suffix = "_maxmin_avg"
+    save_transformed_file(data, original_filename, result_array, suffix)
+
+
 def save_transformed_file(data, original_filename, transformed_array, suffix):
     """
     Save transformed array as a new TI file
@@ -1138,9 +1286,9 @@ def process_single_file():
     else:
         axes = axes.flatten()
     
-    # Define heatmap dimensions (36x24 = 864, close to common 768 dimensions)
-    heatmap_height = 36
-    heatmap_width = 24
+    # Define heatmap dimensions using configuration
+    heatmap_height = HEATMAP_HEIGHT
+    heatmap_width = HEATMAP_WIDTH
     target_size = heatmap_height * heatmap_width
     
     # Process each vector
@@ -1160,10 +1308,30 @@ def process_single_file():
         # Reshape to 2D heatmap
         heatmap_data = vector_data.reshape(heatmap_height, heatmap_width)
         
+        # Apply cubic interpolation for smoothing using configuration
+        smooth_factor = SMOOTHING_FACTOR
+        upsampled = zoom(heatmap_data, smooth_factor, order=3)  # order=3 for cubic interpolation
+        smoothed_heatmap = zoom(upsampled, 1/smooth_factor, order=3)
+        
+        # Ensure we maintain original dimensions
+        if smoothed_heatmap.shape != (heatmap_height, heatmap_width):
+            # Fallback to original if size mismatch
+            smoothed_heatmap = heatmap_data
+        
+        # Create quantized colormap using configuration
+        bright_colors = HEATMAP_COLORS
+        n_colors = len(bright_colors)
+        quantized_cmap = mcolors.ListedColormap(bright_colors)
+        
+        # Create quantized normalization to enforce discrete color levels
+        data_min, data_max = np.min(np_array), np.max(np_array)
+        boundaries = np.linspace(data_min, data_max, n_colors + 1)
+        norm = mcolors.BoundaryNorm(boundaries, quantized_cmap.N)
+        
         # Create heatmap
         ax = axes[i]
-        im = ax.imshow(heatmap_data, cmap='RdBu_r', aspect='auto', 
-                      vmin=np.min(np_array), vmax=np.max(np_array))
+        im = ax.imshow(smoothed_heatmap, cmap=quantized_cmap, norm=norm, aspect='auto', 
+                      interpolation='bicubic')  # Additional smoothing at display level
         
         # Customize each subplot
         ax.set_title(f'Vector {i+1}', fontsize=10, pad=5)
@@ -1258,6 +1426,12 @@ def process_single_file():
     if user_input == "12":
         print("You chose Option 12 - L² Normalization...")
         l2_normalization(data, filename, numvectors, np_array)
+        return True  # Successfully completed processing
+    
+    # Handle Option 13 (Max/Min Averaging) immediately since it doesn't need processing
+    if user_input == "13":
+        print("You chose Option 13 - Max/Min Averaging (single vector from extremes)...")
+        max_min_averaging(data, filename, numvectors, np_array)
         return True  # Successfully completed processing
     
     # ========================================
