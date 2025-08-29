@@ -11,21 +11,6 @@ New Features Added:
   * Extract each vector as a separate .pt file
   * Save with numbered suffixes (e.g., filename_vector_01.pt, filename_vector_02.pt, etc.)
   
-Usage for Option 6:
-1. Run the script
-2. Choose option '6' when prompted
-3. Confirm the extraction when shown the list of files to be created
-4. Each vector will be saved as an individual, fully functional TI file
-
-Example: An 8-vector TI file named "my_embedding.pt" will create:
-- my_embedding_vector_01.pt
-- my_embedding_vector_02.pt
-- my_embedding_vector_03.pt
-- my_embedding_vector_04.pt
-- my_embedding_vector_05.pt
-- my_embedding_vector_06.pt
-- my_embedding_vector_07.pt
-- my_embedding_vector_08.pt
 """
 
 # Load a .pt textual inversion file and show / manipulate it
@@ -262,6 +247,9 @@ def get_user_choice():
     print("7. Save top N vectors by absolute magnitude")
     print("8. Clustering-Based Reduction (K-means)")
     print("9. Principal Component Analysis (PCA)")
+    print("10. Quantile Transform (Uniform/Gaussian)")
+    print("11. Nonlinear Squashing (tanh)")
+    print("12. L² Normalization")
     print("="*60)
     
     # Improved input handling with retry logic
@@ -273,15 +261,15 @@ def get_user_choice():
             time.sleep(0.1)
             
             print(f"\nAttempt {attempt + 1}: ", end="", flush=True)
-            user_input = input("Choose operation (1-9): ").strip()
+            user_input = input("Choose operation (1-12): ").strip()
             
             # Debug: Show what was actually captured (remove this after fixing)
             print(f"Debug: Captured input: '{user_input}' (length: {len(user_input)})")
             
-            if user_input in ['1', '2', '3', '4', '5', '6', '7', '8', '9']:
+            if user_input in ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']:
                 return user_input
             else:
-                print(f"Invalid input: '{user_input}'. Please enter a number from 1 to 9.")
+                print(f"Invalid input: '{user_input}'. Please enter a number from 1 to 12.")
                 if attempt < max_attempts - 1:
                     print("Try again...")
                     continue
@@ -293,7 +281,7 @@ def get_user_choice():
                 print("Too many failed attempts. Exiting...")
                 return None
     
-    print("Invalid choice after multiple attempts. Please run the script again and enter 1-9.")
+    print("Invalid choice after multiple attempts. Please run the script again and enter 1-12.")
     return None
 
 
@@ -679,8 +667,255 @@ def principal_component_analysis(data, original_filename, numvectors, np_array):
     
 
 
-def main():
-    """Main function to execute the TI manipulation workflow"""
+def show_transformation_plots(original_data, transformed_data, title, filename):
+    """
+    Show before/after histograms and vector plots for transformations
+    """
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(14, 10))
+    
+    # Flatten data for histograms
+    orig_flat = original_data.flatten()
+    trans_flat = transformed_data.flatten()
+    
+    # Original histogram
+    ax1.hist(orig_flat, bins=50, alpha=0.7, color='blue', edgecolor='black')
+    ax1.set_title('Before: Original Data Distribution', fontsize=10)
+    ax1.set_xlabel('Value')
+    ax1.set_ylabel('Frequency')
+    ax1.grid(True, alpha=0.3)
+    
+    # Transformed histogram
+    ax2.hist(trans_flat, bins=50, alpha=0.7, color='red', edgecolor='black')
+    ax2.set_title('After: Transformed Data Distribution', fontsize=10)
+    ax2.set_xlabel('Value')
+    ax2.set_ylabel('Frequency')
+    ax2.grid(True, alpha=0.3)
+    
+    # Original vectors plot (first few vectors)
+    num_vectors_to_show = min(5, original_data.shape[0])
+    x_dims = np.arange(original_data.shape[1])
+    
+    for i in range(num_vectors_to_show):
+        ax3.plot(x_dims, original_data[i], alpha=0.7, label=f'Vector {i+1}')
+    
+    ax3.set_title('Before: Original Vector Values', fontsize=10)
+    ax3.set_xlabel('Dimension Index')
+    ax3.set_ylabel('Value')
+    ax3.grid(True, alpha=0.3)
+    ax3.legend()
+    
+    # Transformed vectors plot
+    for i in range(num_vectors_to_show):
+        ax4.plot(x_dims, transformed_data[i], alpha=0.7, label=f'Vector {i+1}')
+    
+    ax4.set_title('After: Transformed Vector Values', fontsize=10)
+    ax4.set_xlabel('Dimension Index')
+    ax4.set_ylabel('Value')
+    ax4.grid(True, alpha=0.3)
+    ax4.legend()
+    
+    plt.suptitle(f'{title} Transformation Analysis\nFile: {filename}', fontsize=12, y=0.98)
+    plt.tight_layout(rect=(0, 0, 1, 0.95))
+    plt.show()
+    
+    # Print statistics
+    print(f"\n📊 {title} Statistics:")
+    print(f"   Original range: [{orig_flat.min():.6f}, {orig_flat.max():.6f}]")
+    print(f"   Original mean: {orig_flat.mean():.6f}")
+    print(f"   Original std: {orig_flat.std():.6f}")
+    print(f"   Transformed range: [{trans_flat.min():.6f}, {trans_flat.max():.6f}]")
+    print(f"   Transformed mean: {trans_flat.mean():.6f}")
+    print(f"   Transformed std: {trans_flat.std():.6f}")
+
+
+def quantile_transform(data, original_filename, numvectors, np_array):
+    """
+    Apply quantile transformation (uniform or Gaussian) to TI data
+    """
+    try:
+        from scipy import stats
+    except ImportError:
+        print("❌ Error: scipy is required for quantile transform.")
+        print("Please install it with: pip install scipy")
+        return
+    
+    print(f"\nApplying Quantile Transform to '{original_filename}'...")
+    print(f"Available vectors: {numvectors}")
+    
+    # Choose distribution type
+    print("\nChoose target distribution:")
+    print("1. Uniform (0 to 1)")
+    print("2. Gaussian (normal/bell curve)")
+    
+    while True:
+        try:
+            dist_choice = input("Enter choice (1 or 2): ").strip()
+            if dist_choice in ['1', '2']:
+                break
+            else:
+                print("Please enter 1 or 2")
+        except ValueError:
+            print("Please enter 1 or 2")
+    
+    # Process each vector independently
+    transformed_array = np.zeros_like(np_array)
+    
+    for i in range(numvectors):
+        vector = np_array[i].copy()
+        
+        # Sort values and get ranks
+        sorted_indices = np.argsort(vector)
+        ranks = np.empty_like(sorted_indices)
+        ranks[sorted_indices] = np.arange(len(vector))
+        
+        # Convert ranks to empirical CDF (0 to 1)
+        empirical_cdf = (ranks + 1) / (len(vector) + 1)
+        
+        if dist_choice == '1':
+            # Uniform distribution (use CDF directly)
+            transformed_vector = empirical_cdf
+            suffix = "_quantile_uniform"
+        else:
+            # Gaussian distribution (inverse normal CDF)
+            transformed_vector = stats.norm.ppf(empirical_cdf)
+            suffix = "_quantile_gaussian"
+        
+        # Scale to [-0.5, 0.5] range
+        min_val, max_val = transformed_vector.min(), transformed_vector.max()
+        if max_val > min_val:  # Avoid division by zero
+            transformed_vector = (transformed_vector - min_val) / (max_val - min_val) - 0.5
+        
+        transformed_array[i] = transformed_vector
+    
+    # Show visualization
+    show_transformation_plots(np_array, transformed_array, 
+                            f"Quantile {'Uniform' if dist_choice == '1' else 'Gaussian'}", 
+                            original_filename)
+    
+    # Save the transformed file
+    save_transformed_file(data, original_filename, transformed_array, suffix)
+
+
+def nonlinear_squashing_tanh(data, original_filename, numvectors, np_array):
+    """
+    Apply tanh nonlinear squashing to TI data
+    """
+    print(f"\nApplying Nonlinear Squashing (tanh) to '{original_filename}'...")
+    print(f"Available vectors: {numvectors}")
+    
+    # Get scale/temperature parameter
+    print("\nTanh scaling parameter controls the 'sharpness' of the transformation:")
+    print("  - Small scale (0.1-1.0): Even moderate values hit boundaries quickly")
+    print("  - Medium scale (1.0-5.0): Balanced transformation")
+    print("  - Large scale (5.0-20.0): More linear behavior, gradual curve")
+    
+    while True:
+        try:
+            scale = float(input("Enter scale parameter (recommended: 0.5-10.0): "))
+            if scale > 0:
+                break
+            else:
+                print("Please enter a positive value")
+        except ValueError:
+            print("Please enter a valid number")
+    
+    print(f"\nApplying tanh transformation with scale {scale}...")
+    
+    # Apply tanh transformation
+    transformed_array = np.tanh(np_array * scale)
+    
+    # Scale to [-0.5, 0.5] range
+    # tanh already outputs [-1, 1], so we just scale by 0.5
+    transformed_array = transformed_array * 0.5
+    
+    # Show visualization
+    show_transformation_plots(np_array, transformed_array, f"Tanh (scale={scale})", original_filename)
+    
+    # Save the transformed file
+    suffix = f"_tanh_scale{scale}"
+    save_transformed_file(data, original_filename, transformed_array, suffix)
+
+
+def l2_normalization(data, original_filename, numvectors, np_array):
+    """
+    Apply L2 normalization to each vector in TI data
+    """
+    print(f"\nApplying L² Normalization to '{original_filename}'...")
+    print(f"Available vectors: {numvectors}")
+    
+    # Apply L2 normalization to each vector
+    transformed_array = np.zeros_like(np_array)
+    
+    for i in range(numvectors):
+        vector = np_array[i].copy()
+        
+        # Calculate L2 norm (Euclidean length)
+        l2_norm = np.linalg.norm(vector)
+        
+        if l2_norm > 0:  # Avoid division by zero
+            # Normalize vector to unit length
+            normalized_vector = vector / l2_norm
+        else:
+            # Handle zero vector case
+            normalized_vector = vector
+        
+        # Scale to [-0.5, 0.5] range
+        # Since normalized vector is in approximately [-1, 1] range, scale by 0.5
+        min_val, max_val = normalized_vector.min(), normalized_vector.max()
+        if max_val > min_val:
+            # First normalize to [0, 1], then shift to [-0.5, 0.5]
+            scaled_vector = (normalized_vector - min_val) / (max_val - min_val) - 0.5
+        else:
+            scaled_vector = normalized_vector * 0.5
+        
+        transformed_array[i] = scaled_vector
+        
+        # Print L2 norm info for first few vectors
+        if i < 3:
+            original_norm = np.linalg.norm(vector)
+            new_norm = np.linalg.norm(normalized_vector)
+            final_norm = np.linalg.norm(scaled_vector)
+            print(f"  Vector {i+1}: Original norm={original_norm:.6f}, "
+                  f"Normalized norm={new_norm:.6f}, Final norm={final_norm:.6f}")
+    
+    # Show visualization
+    show_transformation_plots(np_array, transformed_array, "L² Normalization", original_filename)
+    
+    # Save the transformed file
+    suffix = "_l2norm"
+    save_transformed_file(data, original_filename, transformed_array, suffix)
+
+
+def save_transformed_file(data, original_filename, transformed_array, suffix):
+    """
+    Save transformed array as a new TI file
+    """
+    # Convert back to tensor
+    transformed_tensor = torch.tensor(transformed_array, device='cpu', requires_grad=True)
+    
+    # Create new data dictionary
+    new_data = data.copy()
+    new_data['string_to_param'] = {'*': transformed_tensor}
+    
+    # Generate filename
+    base_filename = original_filename.replace('.pt', '')
+    final_filename = base_filename + suffix + ".pt"
+    
+    # Create directory if it doesn't exist
+    directory = "textual_inversions"
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    
+    # Save the file
+    filepath = os.path.join(directory, final_filename)
+    torch.save(new_data, filepath)
+    
+    print(f"✅ Transformed file '{final_filename}' saved to '{directory}' directory.")
+    print(f"   Tensor shape: {transformed_tensor.shape}")
+
+
+def process_single_file():
+    """Process a single TI file - main workflow"""
     
     # ========================================
     # 1. LOAD TEXTUAL INVERSION FILE
@@ -700,16 +935,21 @@ def main():
 
     root = tk.Tk()
     root.withdraw()  # Hide the main window
+    
+    # Make the dialog larger and more prominent
+    root.attributes('-topmost', True)  # Bring to front
+    root.geometry("800x600")  # Set a larger initial size
 
     print("Please select a .pt file to load...")
     filename = filedialog.askopenfilename(
         title="Select a TI .pt file",
-        filetypes=[("PyTorch TI files", "*.pt"), ("All files", "*.*")]
+        filetypes=[("PyTorch TI files", "*.pt"), ("All files", "*.*")],
+        parent=root
     )
 
     if not filename:
-        print("No file selected. Exiting.")
-        return
+        print("No file selected. Returning to main menu.")
+        return False
 
     # Get just the filename for later use
     original_selected_path = filename
@@ -732,8 +972,8 @@ def main():
         if not flexible_result:
             print("❌ Flexible loading also failed.")
             print("\nPlease verify this is a textual inversion file.")
-            input("\nPress Enter to exit...")
-            return
+            input("\nPress Enter to continue...")
+            return False
         else:
             print("✅ Flexible loading succeeded! Proceeding...")
     
@@ -741,8 +981,8 @@ def main():
     flexible_result = load_ti_file_flexible(original_selected_path)
     if not flexible_result:
         print("❌ Failed to load file even with flexible parsing.")
-        input("\nPress Enter to exit...")
-        return
+        input("\nPress Enter to continue...")
+        return False
     
     data, tensor, tensor_path = flexible_result
     print(f'\n✅ TI loaded successfully from {original_selected_path}')
@@ -802,7 +1042,7 @@ def main():
     
     # Set x-axis labels and positions
     ax.set_xticks(x_pos)
-    ax.set_xticklabels(vector_numbers)
+    ax.set_xticklabels([str(x) for x in vector_numbers])
     
     # Add a horizontal line at y=0 for reference
     ax.axhline(y=0, color='black', linestyle='-', linewidth=0.5, alpha=0.5)
@@ -973,8 +1213,8 @@ def main():
     
     user_input = get_user_choice()
     if user_input is None:
-        input("Press Enter to exit...")
-        return
+        input("Press Enter to continue...")
+        return False
     
     print(f"\nSelected: Option {user_input}")
     
@@ -982,25 +1222,43 @@ def main():
     if user_input == "6":
         print("You chose Option 6 - extract individual vectors to separate files...")
         extract_individual_vectors(data, filename, numvectors)
-        return  # Exit early since we're not modifying the original file
+        return True  # Successfully completed processing
     
     # Handle Option 7 (top N vectors) immediately since it doesn't need processing
     if user_input == "7":
         print("You chose Option 7 - save top N vectors by absolute magnitude...")
         select_top_n_vectors(data, filename, numvectors, np_array)
-        return  # Exit early since we're not modifying the original file
+        return True  # Successfully completed processing
     
     # Handle Option 8 (clustering-based reduction) immediately since it doesn't need processing
     if user_input == "8":
         print("You chose Option 8 - clustering-based reduction (K-means)...")
         clustering_based_reduction(data, filename, numvectors, np_array)
-        return  # Exit early since we're not modifying the original file
+        return True  # Successfully completed processing
     
     # Handle Option 9 (PCA) immediately since it doesn't need processing
     if user_input == "9":
         print("You chose Option 9 - Principal Component Analysis (PCA)...")
         principal_component_analysis(data, filename, numvectors, np_array)
-        return  # Exit early since we're not modifying the original file
+        return True  # Successfully completed processing
+    
+    # Handle Option 10 (Quantile Transform) immediately since it doesn't need processing
+    if user_input == "10":
+        print("You chose Option 10 - Quantile Transform (Uniform/Gaussian)...")
+        quantile_transform(data, filename, numvectors, np_array)
+        return True  # Successfully completed processing
+    
+    # Handle Option 11 (Tanh Squashing) immediately since it doesn't need processing
+    if user_input == "11":
+        print("You chose Option 11 - Nonlinear Squashing (tanh)...")
+        nonlinear_squashing_tanh(data, filename, numvectors, np_array)
+        return True  # Successfully completed processing
+    
+    # Handle Option 12 (L2 Normalization) immediately since it doesn't need processing
+    if user_input == "12":
+        print("You chose Option 12 - L² Normalization...")
+        l2_normalization(data, filename, numvectors, np_array)
+        return True  # Successfully completed processing
     
     # ========================================
     # 4. EXECUTE SELECTED OPERATION
@@ -1162,6 +1420,57 @@ def main():
     
     print(f"✅ The file '{final_filename}' has been saved to the '{directory}' directory.")
     print("\nOperation completed successfully!")
+    return True  # Successfully completed processing
+
+
+def main():
+    """Main function with loop for processing multiple files"""
+    print("="*60)
+    print("TI CHANGER MULTIPLE - TEXTUAL INVERSION FILE PROCESSOR")
+    print("="*60)
+    print("This tool allows you to manipulate and transform textual inversion files.")
+    print("You can process multiple files in sequence.")
+    print("="*60)
+    
+    while True:
+        print(f"\n{'='*60}")
+        print("STARTING NEW FILE PROCESSING SESSION")
+        print("="*60)
+        
+        # Process a single file
+        success = process_single_file()
+        
+        if success:
+            print(f"\n{'='*60}")
+            print("FILE PROCESSING COMPLETED SUCCESSFULLY!")
+            print("="*60)
+        else:
+            print(f"\n{'='*60}")
+            print("FILE PROCESSING WAS CANCELLED OR FAILED")
+            print("="*60)
+        
+        # Ask user if they want to process another file
+        print("\nWould you like to process another textual inversion file?")
+        while True:
+            try:
+                continue_choice = input("Enter 'Y' for Yes or 'N' for No: ").strip().upper()
+                if continue_choice in ['Y', 'YES']:
+                    print("\nStarting new file selection...")
+                    break
+                elif continue_choice in ['N', 'NO']:
+                    print(f"\n{'='*60}")
+                    print("THANK YOU FOR USING TI CHANGER MULTIPLE!")
+                    print("="*60)
+                    print("Session completed. Goodbye!")
+                    return
+                else:
+                    print("Please enter 'Y' for Yes or 'N' for No")
+            except (EOFError, KeyboardInterrupt):
+                print(f"\n\n{'='*60}")
+                print("SESSION INTERRUPTED BY USER")
+                print("="*60)
+                print("Goodbye!")
+                return
 
 
 if __name__ == "__main__":
