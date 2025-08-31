@@ -56,9 +56,9 @@ class NCAAnimationGenerator:
         self.frames = []
         self.animation_params = {
             'total_steps': 128,
-            'frame_interval': 2,  # Capture every N steps
+            'frame_interval': 1,  # Capture every step
             'gif_duration': 33,   # Fixed at 30fps (33ms per frame)
-            'image_size': 256,    # Output image size
+            'image_size': 16,     # Output image size
             'add_labels': True,   # Add step numbers to frames
         }
         
@@ -250,7 +250,10 @@ class NCAAnimationGenerator:
             labeled_img = self.add_step_label(img, step)
             
             # Apply scaling for small outputs
-            if output_size == 32:
+            if output_size == 16:
+                # 16x16 with 4x nearest neighbor scaling to 64x64
+                labeled_img = labeled_img.resize((64, 64), Image.Resampling.NEAREST)
+            elif output_size == 32:
                 # 32x32 with 4x nearest neighbor scaling to 128x128
                 labeled_img = labeled_img.resize((128, 128), Image.Resampling.NEAREST)
             elif output_size == 64:
@@ -346,26 +349,42 @@ class NCAAnimationGUI:
         
         # Image size
         ttk.Label(settings_frame, text="Output Size:").grid(row=3, column=0, sticky=tk.W)
-        self.image_size = tk.StringVar(value="256")
+        self.image_size = tk.StringVar(value="16")
         size_combo = ttk.Combobox(settings_frame, textvariable=self.image_size, width=15)
-        size_combo['values'] = ('32', '64', '128', '256', '512')
+        size_combo['values'] = ('16', '32', '64', '128', '256', '512')
         size_combo.grid(row=3, column=1, padx=(5, 0))
         size_combo.state(['readonly'])
         
+        # Frame interval (skip frames)
+        ttk.Label(settings_frame, text="Frame Interval:").grid(row=4, column=0, sticky=tk.W)
+        self.frame_interval = tk.StringVar(value="1")
+        ttk.Spinbox(settings_frame, from_=1, to=10, textvariable=self.frame_interval, width=15).grid(row=4, column=1, padx=(5, 0))
+        
         # Random seed
-        ttk.Label(settings_frame, text="Random Seed:").grid(row=4, column=0, sticky=tk.W)
+        ttk.Label(settings_frame, text="Random Seed:").grid(row=5, column=0, sticky=tk.W)
         self.seed_value = tk.StringVar(value="42")
-        ttk.Entry(settings_frame, textvariable=self.seed_value, width=15).grid(row=4, column=1, padx=(5, 0))
+        ttk.Entry(settings_frame, textvariable=self.seed_value, width=15).grid(row=5, column=1, padx=(5, 0))
         
         # Add labels checkbox
         self.add_labels = tk.BooleanVar(value=True)
         ttk.Checkbutton(settings_frame, text="Add step numbers", 
-                       variable=self.add_labels).grid(row=5, column=0, columnspan=2, sticky=tk.W, pady=(5, 0))
+                       variable=self.add_labels).grid(row=6, column=0, columnspan=2, sticky=tk.W, pady=(5, 0))
         
         # Info label for fixed GIF speed
         info_label = ttk.Label(settings_frame, text="GIF Speed: Fixed at 30fps (33ms per frame)", 
                               font=('TkDefaultFont', 8), foreground='gray')
-        info_label.grid(row=6, column=0, columnspan=2, sticky=tk.W, pady=(5, 0))
+        info_label.grid(row=7, column=0, columnspan=2, sticky=tk.W, pady=(5, 0))
+        
+        # Size info display
+        self.size_info = ttk.Label(settings_frame, text="", 
+                                  font=('TkDefaultFont', 8), foreground='blue')
+        self.size_info.grid(row=8, column=0, columnspan=2, sticky=tk.W, pady=(2, 0))
+        
+        # Bind size change to update info
+        self.image_size.trace('w', self.update_size_info)
+        
+        # Initialize size info
+        self.update_size_info()
         
         # Generation frame
         gen_frame = ttk.LabelFrame(main_frame, text="3. Generate Animation", padding="10")
@@ -374,14 +393,27 @@ class NCAAnimationGUI:
         ttk.Button(gen_frame, text="Create GIF", 
                   command=self.create_gif).pack(side=tk.LEFT)
         
-        # Progress bar
-        self.progress = ttk.Progressbar(gen_frame, mode='indeterminate')
-        self.progress.pack(side=tk.RIGHT, padx=(10, 0))
-        
         # Status
         self.status_var = tk.StringVar(value="Ready - Load a model to begin")
         status_label = ttk.Label(main_frame, textvariable=self.status_var)
         status_label.grid(row=3, column=0, columnspan=2, pady=(10, 0))
+        
+    def update_size_info(self, *args):
+        """Update the size information display"""
+        try:
+            size = int(self.image_size.get())
+            if size == 16:
+                info_text = "Input: 16x16 → Output: 64x64 (4x nearest neighbor scaling)"
+            elif size == 32:
+                info_text = "Input: 32x32 → Output: 128x128 (4x nearest neighbor scaling)"
+            elif size == 64:
+                info_text = "Input: 64x64 → Output: 128x128 (2x nearest neighbor scaling)"
+            else:
+                info_text = f"Input: {size}x{size} → Output: {size}x{size} (no scaling)"
+            
+            self.size_info.config(text=info_text)
+        except:
+            self.size_info.config(text="")
         
     def load_model(self):
         """Load a trained NCA model"""
@@ -429,7 +461,6 @@ class NCAAnimationGUI:
             
         try:
             self.update_animation_params()
-            self.progress.start()
             self.status_var.set("Generating full animation...")
             self.root.update()
             
@@ -451,7 +482,6 @@ class NCAAnimationGUI:
             # Create GIF
             self.generator.create_gif(output_path, optimize_for_social=True)
             
-            self.progress.stop()
             self.status_var.set(f"GIF created: {os.path.basename(output_path)}")
             
             # Ask if user wants to open the file
@@ -459,7 +489,6 @@ class NCAAnimationGUI:
                 os.startfile(output_path)
                 
         except Exception as e:
-            self.progress.stop()
             messagebox.showerror("Error", f"GIF creation failed: {str(e)}")
             self.status_var.set("GIF creation failed")
 

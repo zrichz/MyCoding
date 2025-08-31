@@ -4,8 +4,10 @@ Create mesmerizing animated GIFs from your trained Neural Cellular Automata mode
 
 ## 🌟 Features
 
-✅ **Multiple Output Sizes**: 32x32, 64x64, 128x128, 256x256, and 512x512 pixel outputs  
-✅ **Smart Scaling**: 32x32 and 64x64 are automatically scaled up with nearest neighbor for crisp pixelated look  
+✅ **Multiple Output Sizes**: 16x16, 32x32, 64x64, 128x128, 256x256, and 512x512 pixel outputs  
+✅ **Smart Scaling**: Small sizes are automatically scaled up with nearest neighbor for crisp pixelated look  
+✅ **Frame Interval Control**: Choose how many steps to skip between frames (1-10)  
+✅ **Real-time Size Info**: See input and output dimensions clearly displayed  
 ✅ **Optimized for Social Media**: Fixed 30fps (33ms per frame) for smooth playback  
 ✅ **Multiple Initialization Types**: Center, random single, random multi, sparse, edge, and circle patterns  
 ✅ **User-Friendly GUI**: Streamlined interface focused on GIF creation  
@@ -60,6 +62,7 @@ python nca_quick_animator.py my_model.pth small.gif --init random_multi --size 6
 ## ⚙️ Settings Guide
 
 ### Output Sizes
+- **16x16**: Processed at 16x16, then scaled 4x to 64x64 with nearest neighbor for pixelated look
 - **32x32**: Processed at 32x32, then scaled 4x to 128x128 with nearest neighbor for pixelated look
 - **64x64**: Processed at 64x64, then scaled 2x to 128x128 with nearest neighbor for pixelated look  
 - **128x128**: Native resolution, no scaling
@@ -67,6 +70,14 @@ python nca_quick_animator.py my_model.pth small.gif --init random_multi --size 6
 - **512x512**: Native resolution, no scaling
 
 ### Animation Parameters
+
+- **Total Steps**: How many CA evolution steps to run (default: 128)
+- **Frame Interval**: Capture every N steps (1=every step, 2=every other step, etc.)
+  - Interval 1: Smooth but larger file size
+  - Interval 2: Good balance (default)
+  - Interval 5+: Faster evolution, smaller files
+- **Random Seed**: For reproducible results
+- **Step Labels**: Show step numbers on frames
 
 ### Animation Settings
 

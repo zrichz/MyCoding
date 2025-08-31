@@ -11,7 +11,8 @@ Usage:
 Examples:
     python nca_quick_animator.py my_model.pth evolution.gif
     python nca_quick_animator.py my_model.pth spiral.gif --init circle --steps 200
-    python nca_quick_animator.py my_model.pth small.gif --init random_multi --size 32
+    python nca_quick_animator.py my_model.pth tiny.gif --init random_multi --size 16
+    python nca_quick_animator.py my_model.pth small.gif --size 32
     python nca_quick_animator.py my_model.pth large.gif --size 512
 """
 
@@ -40,9 +41,9 @@ def main():
     parser.add_argument('--init', choices=['center', 'random_single', 'random_multi', 'sparse', 'edge', 'circle'],
                        default='center', help='Initialization type (default: center)')
     parser.add_argument('--steps', type=int, default=128, help='Total animation steps (default: 128)')
-    parser.add_argument('--interval', type=int, default=2, help='Frame capture interval (default: 2)')
-    parser.add_argument('--size', type=int, choices=[32, 64, 128, 256, 512], default=256, 
-                       help='Output image size (default: 256). 32 and 64 are scaled up with nearest neighbor.')
+    parser.add_argument('--interval', type=int, default=1, help='Frame capture interval (default: 1)')
+    parser.add_argument('--size', type=int, choices=[16, 32, 64, 128, 256, 512], default=16, 
+                       help='Output image size (default: 16). Small sizes are scaled up with nearest neighbor.')
     parser.add_argument('--seed', type=int, help='Random seed for reproducible results')
     parser.add_argument('--no-labels', action='store_true', help='Disable step number labels')
     
