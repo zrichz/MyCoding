@@ -46,7 +46,7 @@ python NCA_baseline.py
 ### Basic Workflow
 
 1. **Load an Image**: Click "Load Image" and select your target image
-   - Images are automatically resized to 128x128 pixels for performance
+   - Images are automatically resized to maximum 256x256 pixels for better detail
    - RGBA format is used (RGB + alpha channel)
 
 2. **Initialize Model**: Click "Initialize Model" to create a new NCA
@@ -141,7 +141,7 @@ The NCA uses a simple but effective architecture:
 ### Performance Tips
 
 - Use GPU if available for faster training
-- Smaller images (64x64) train faster than larger ones
+- Larger images (up to 256x256) provide more detail but train slower
 - Reduce number of channels if training is too slow
 
 ## Examples

@@ -3,17 +3,32 @@
 ===============================================
 
 This script implements a Neural Cellular Automata that can learn to recreate
-target images from noise. It includes a tkinter GUI for easy interaction.
+target images from various random initializations. It includes a tkinter GUI for easy interaction.
 
 Features:
 - Load target images
-- Train NCA to recreate the image
+- Train NCA to recreate the image using random initialization for robustness
 - Real-time visualization of training progress
 - Save/load trained models
 - Adjustable hyperparameters
+- Test different initialization methods (center pixel vs random)
 
 Author: GitHub Copilot
 Date: August 31, 2025
+"""
+
+"""
+WHAT IS NEURAL CELLULAR AUTOMATA (NCA)?
+
+Think of it like teaching pixels to paint themselves:
+- Start with mostly empty pixels (like a blank canvas)
+- Each pixel looks at its neighbors and decides how to change its color
+- The AI learns the "rules" for how pixels should behave to recreate your target image
+- After many small steps, the pixels self-organize into the desired picture
+
+This script trains an AI to learn these pixel behavior rules, then tests if it can
+recreate your image starting from random scattered pixels (proving it really learned
+the pattern, not just memorized one specific path).
 """
 
 import torch
@@ -121,10 +136,67 @@ class NCATrainer:
         self.losses = []
         self.is_training = False
         
-    def create_seed(self, size):
-        """Create initial seed state"""
+    def create_seed(self, size, random_init=True):
+        """Create initial seed state with random or center initialization"""
         seed = torch.zeros(1, self.model.channel_n, size, size)
-        seed[:, 3:, size//2, size//2] = 1.0  # Set alpha channel in center
+        
+        if random_init:
+            # Random initialization for training robustness
+            init_type = torch.randint(0, 4, (1,)).item()
+            
+            if init_type == 0:
+                # Single random center point
+                center_x = int(torch.randint(size//4, 3*size//4, (1,)).item())
+                center_y = int(torch.randint(size//4, 3*size//4, (1,)).item())
+                seed[:, 3:, center_x, center_y] = 1.0
+                
+            elif init_type == 1:
+                # Multiple random seed points (2-5 points)
+                num_seeds = int(torch.randint(2, 6, (1,)).item())
+                for _ in range(num_seeds):
+                    x = int(torch.randint(0, size, (1,)).item())
+                    y = int(torch.randint(0, size, (1,)).item())
+                    seed[:, 3:, x, y] = torch.rand(self.model.channel_n-3) * 0.8 + 0.2
+                    
+            elif init_type == 2:
+                # Sparse random pixels (0.5-2% density)
+                density = torch.rand(1).item() * 0.015 + 0.005
+                mask = torch.rand(size, size) < density
+                num_pixels = int(mask.sum().item())
+                if num_pixels > 0:
+                    seed[:, 3:, mask] = torch.rand(self.model.channel_n-3, num_pixels) * 0.7 + 0.3
+                
+            else:
+                # Edge/corner initialization
+                if torch.rand(1).item() < 0.5:
+                    # Random edge
+                    edge = torch.randint(0, 4, (1,)).item()
+                    if edge == 0:  # Top
+                        seed[:, 3:, 0, size//4:3*size//4] = 1.0
+                    elif edge == 1:  # Bottom
+                        seed[:, 3:, -1, size//4:3*size//4] = 1.0
+                    elif edge == 2:  # Left
+                        seed[:, 3:, size//4:3*size//4, 0] = 1.0
+                    else:  # Right
+                        seed[:, 3:, size//4:3*size//4, -1] = 1.0
+                else:
+                    # Random corner
+                    corner_idx = int(torch.randint(0, 4, (1,)).item())
+                    corners = [(0, 0), (0, -1), (-1, 0), (-1, -1)]
+                    x_idx, y_idx = corners[corner_idx]
+                    if x_idx == -1:
+                        x_slice = slice(size-3, size)
+                    else:
+                        x_slice = slice(0, 3)
+                    if y_idx == -1:
+                        y_slice = slice(size-3, size)
+                    else:
+                        y_slice = slice(0, 3)
+                    seed[:, 3:, x_slice, y_slice] = 1.0
+        else:
+            # Traditional center initialization for manual generation
+            seed[:, 3:, size//2, size//2] = 1.0
+            
         return seed.to(self.device)
     
     def train_step(self, steps_range=(64, 96)):
@@ -135,9 +207,9 @@ class NCATrainer:
         # Random number of steps
         steps = np.random.randint(*steps_range)
         
-        # Create seed
+        # Create seed with random initialization for robust training
         size = self.target_image.shape[-1]
-        x = self.create_seed(size)
+        x = self.create_seed(size, random_init=True)
         
         # Run CA
         x = self.model(x, steps=steps)
@@ -151,7 +223,7 @@ class NCATrainer:
         
         return loss.item(), x
     
-    def train_epoch(self, steps_per_epoch=100):
+    def train_epoch(self, steps_per_epoch=100, steps_range=(64, 96)):
         """Train for one epoch"""
         total_loss = 0
         latest_output = None
@@ -160,7 +232,7 @@ class NCATrainer:
             if not self.is_training:
                 break
                 
-            loss, output = self.train_step()
+            loss, output = self.train_step(steps_range)
             total_loss += loss
             latest_output = output
             
@@ -189,6 +261,7 @@ class NCAGUI:
         self.training_thread = None
         self.auto_generate_enabled = False
         self.last_auto_generate = 0
+        self.alpha_colorbar = None  # Track colorbar for alpha channel
         
         # Setup GUI
         self.setup_gui()
@@ -230,8 +303,8 @@ class NCAGUI:
         ttk.Button(file_frame, text="Save Model", command=self.save_model).grid(row=0, column=1, padx=(0, 5))
         ttk.Button(file_frame, text="Load Model", command=self.load_model).grid(row=0, column=2)
         
-        # Training parameters
-        params_frame = ttk.LabelFrame(control_frame, text="Parameters", padding="5")
+        # Training parameters with optimal settings info
+        params_frame = ttk.LabelFrame(control_frame, text="Parameters (Optimal for 64x64: Ch=12-16, Fire=0.6-0.8, Steps=32-64)", padding="5")
         params_frame.grid(row=1, column=0, sticky="ew", pady=(0, 10))
         
         # Channel count
@@ -247,6 +320,26 @@ class NCAGUI:
                                    textvariable=self.fire_rate_var, width=10)
         fire_rate_spin.grid(row=1, column=1, padx=(5, 0))
         
+        # Training steps range
+        ttk.Label(params_frame, text="Min Steps:").grid(row=2, column=0, sticky=tk.W)
+        self.min_steps_var = tk.StringVar(value="64")
+        min_steps_spin = ttk.Spinbox(params_frame, from_=16, to=128, increment=8,
+                                   textvariable=self.min_steps_var, width=10)
+        min_steps_spin.grid(row=2, column=1, padx=(5, 0))
+        
+        ttk.Label(params_frame, text="Max Steps:").grid(row=3, column=0, sticky=tk.W)
+        self.max_steps_var = tk.StringVar(value="96")
+        max_steps_spin = ttk.Spinbox(params_frame, from_=32, to=256, increment=8,
+                                   textvariable=self.max_steps_var, width=10)
+        max_steps_spin.grid(row=3, column=1, padx=(5, 0))
+        
+        # Add preset buttons for quick configuration
+        preset_frame = ttk.Frame(params_frame)
+        preset_frame.grid(row=4, column=0, columnspan=2, pady=(5, 0), sticky="ew")
+        
+        ttk.Button(preset_frame, text="64x64 Preset", command=self.apply_64x64_preset, width=12).grid(row=0, column=0, padx=(0, 5))
+        ttk.Button(preset_frame, text="High Quality", command=self.apply_hq_preset, width=12).grid(row=0, column=1)
+        
         # Training controls
         train_frame = ttk.LabelFrame(control_frame, text="Training", padding="5")
         train_frame.grid(row=2, column=0, sticky="ew", pady=(0, 10))
@@ -259,12 +352,14 @@ class NCAGUI:
         
         ttk.Button(train_frame, text="Generate Now", command=self.generate_image).grid(row=2, column=0, pady=(0, 5), sticky="ew")
         
+        ttk.Button(train_frame, text="Test Random Init", command=self.generate_random_image).grid(row=3, column=0, pady=(0, 5), sticky="ew")
+        
         # Auto-generate checkbox
         self.auto_generate_var = tk.BooleanVar()
         auto_check = ttk.Checkbutton(train_frame, text="Auto-generate every 8s", 
                                    variable=self.auto_generate_var,
                                    command=self.toggle_auto_generate)
-        auto_check.grid(row=3, column=0, pady=(5, 0), sticky="w")
+        auto_check.grid(row=4, column=0, pady=(5, 0), sticky="w")
         
         train_frame.columnconfigure(0, weight=1)
         
@@ -292,6 +387,11 @@ class NCAGUI:
         ttk.Label(progress_frame, text="Training Rate:").grid(row=3, column=0, sticky=tk.W)
         self.rate_label = ttk.Label(progress_frame, text="N/A")
         self.rate_label.grid(row=3, column=1, sticky=tk.W, padx=(5, 0))
+        
+        # Add current steps display
+        ttk.Label(progress_frame, text="Current Steps:").grid(row=4, column=0, sticky=tk.W)
+        self.steps_label = ttk.Label(progress_frame, text="N/A")
+        self.steps_label.grid(row=4, column=1, sticky=tk.W, padx=(5, 0))
         
         # Device info
         device_frame = ttk.Frame(control_frame)
@@ -360,9 +460,9 @@ class NCAGUI:
                 # Load and process image
                 img = Image.open(file_path).convert('RGBA')
                 
-                # Resize to reasonable size
-                if max(img.size) > 128:
-                    img.thumbnail((128, 128), Image.Resampling.LANCZOS)
+                # Resize to maximum 256x256 pixels for better detail
+                if max(img.size) > 256:
+                    img.thumbnail((256, 256), Image.Resampling.LANCZOS)
                 
                 # Convert to tensor
                 import torchvision.transforms.functional as TF
@@ -382,6 +482,22 @@ class NCAGUI:
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to load image: {str(e)}")
                 
+    def apply_64x64_preset(self):
+        """Apply optimal settings for 64x64 images"""
+        self.channels_var.set("14")
+        self.fire_rate_var.set("0.7")
+        self.min_steps_var.set("32")
+        self.max_steps_var.set("64")
+        self.status_var.set("Applied 64x64 optimal preset (Ch=14, Fire=0.7, Steps=32-64)")
+        
+    def apply_hq_preset(self):
+        """Apply high quality settings for larger images"""
+        self.channels_var.set("20")
+        self.fire_rate_var.set("0.5")
+        self.min_steps_var.set("64")
+        self.max_steps_var.set("128")
+        self.status_var.set("Applied high quality preset (Ch=20, Fire=0.5, Steps=64-128)")
+
     def initialize_model(self):
         """Initialize the NCA model"""
         if self.target_image is None:
@@ -389,6 +505,14 @@ class NCAGUI:
             return
             
         try:
+            # Validate steps range
+            min_steps = int(self.min_steps_var.get())
+            max_steps = int(self.max_steps_var.get())
+            
+            if min_steps >= max_steps:
+                messagebox.showerror("Error", "Min steps must be less than max steps")
+                return
+                
             self.init_button.config(state='disabled')
             self.model_status_label.config(text="Initializing...", foreground="orange")
             self.status_var.set("Initializing Neural Cellular Automata model...")
@@ -417,16 +541,22 @@ class NCAGUI:
                                horizontalalignment='center', verticalalignment='center',
                                transform=self.axes[1, 0].transAxes, fontsize=12)
             
-            # Initialize alpha plot
+            # Initialize alpha plot and reset colorbar
             self.axes[1, 1].clear()
+            self.alpha_colorbar = None  # Reset colorbar tracking
             self.axes[1, 1].set_title("Cell States (Alpha)", fontsize=14)
             self.axes[1, 1].text(0.5, 0.5, 'No output yet', 
                                horizontalalignment='center', verticalalignment='center',
                                transform=self.axes[1, 1].transAxes, fontsize=12)
             
             self.canvas.draw()
-            self.status_var.set("Model initialized successfully! Ready to train.")
+            self.status_var.set(f"Model initialized! Steps: {min_steps}-{max_steps}, Channels: {channels}, Fire Rate: {fire_rate}")
             
+        except ValueError as e:
+            self.model_status_label.config(text="Error", foreground="red")
+            self.init_button.config(state='normal')
+            messagebox.showerror("Error", f"Invalid parameter values: {str(e)}")
+            self.status_var.set("Model initialization failed")
         except Exception as e:
             self.model_status_label.config(text="Error", foreground="red")
             self.init_button.config(state='normal')
@@ -440,7 +570,8 @@ class NCAGUI:
             return
             
         if not self.trainer.is_training:
-            # Start training
+            # Start training - reset colorbar tracking
+            self.alpha_colorbar = None
             self.trainer.is_training = True
             self.train_button.config(text="Stop Training")
             self.training_thread = threading.Thread(target=self.training_loop)
@@ -486,7 +617,12 @@ class NCAGUI:
             
         while self.trainer.is_training:
             try:
-                loss, output = self.trainer.train_epoch(steps_per_epoch=25)  # Smaller batches for more updates
+                # Get current steps range from GUI
+                min_steps = int(self.min_steps_var.get())
+                max_steps = int(self.max_steps_var.get())
+                steps_range = (min_steps, max_steps)
+                
+                loss, output = self.trainer.train_epoch(steps_per_epoch=25, steps_range=steps_range)
                 self.current_output = output
                 
                 epochs_completed += 1
@@ -517,6 +653,14 @@ class NCAGUI:
         self.epoch_label.config(text=str(self.trainer.current_epoch))
         self.loss_label.config(text=f"{loss:.6f}")
         
+        # Update steps range display
+        try:
+            min_steps = self.min_steps_var.get()
+            max_steps = self.max_steps_var.get()
+            self.steps_label.config(text=f"{min_steps}-{max_steps}")
+        except:
+            self.steps_label.config(text="N/A")
+        
         if epochs_per_sec is not None:
             self.rate_label.config(text=f"{epochs_per_sec:.2f} epochs/sec")
         
@@ -539,11 +683,12 @@ class NCAGUI:
             self.axes[1, 1].set_xticks([])
             self.axes[1, 1].set_yticks([])
             
-            # Add colorbar for alpha channel if not already present
-            try:
-                plt.colorbar(im, ax=self.axes[1, 1], shrink=0.8)
-            except:
-                pass  # Colorbar might already exist
+            # Add colorbar for alpha channel only if not already present
+            if self.alpha_colorbar is None:
+                try:
+                    self.alpha_colorbar = plt.colorbar(im, ax=self.axes[1, 1], shrink=0.8)
+                except:
+                    pass  # Ignore colorbar errors
             
         # Enhanced loss plot
         if self.trainer and len(self.trainer.losses) > 1:
@@ -597,12 +742,23 @@ class NCAGUI:
             self.model.eval()
             with torch.no_grad():
                 size = self.target_image.shape[-1]
-                seed = torch.zeros(1, self.model.channel_n, size, size)
-                seed[:, 3:, size//2, size//2] = 1.0
-                seed = seed.to(self.device)
+                # Use deterministic center initialization for manual generation
+                if self.trainer:
+                    seed = self.trainer.create_seed(size, random_init=False)
+                else:
+                    # Fallback if no trainer
+                    seed = torch.zeros(1, self.model.channel_n, size, size)
+                    seed[:, 3:, size//2, size//2] = 1.0
+                    seed = seed.to(self.device)
                 
-                # Generate with more steps for better quality
-                output = self.model(seed, steps=128)
+                # Use configured max steps for generation (higher quality)
+                try:
+                    max_steps = int(self.max_steps_var.get())
+                    generation_steps = min(max_steps * 2, 256)  # Use 2x max training steps, capped at 256
+                except:
+                    generation_steps = 128  # Fallback
+                
+                output = self.model(seed, steps=generation_steps)
                 
                 # Display result with enhanced visualization
                 self.axes[0, 1].clear()
@@ -633,11 +789,74 @@ class NCAGUI:
                 self.canvas.draw()
                 
                 if not self.auto_generate_enabled:
-                    self.status_var.set("Image generated successfully")
+                    self.status_var.set(f"Image generated with {generation_steps} steps")
                 
         except Exception as e:
             if not self.auto_generate_enabled:  # Only show error if not auto-generating
                 messagebox.showerror("Error", f"Failed to generate image: {str(e)}")
+                
+    def generate_random_image(self):
+        """Generate image from random initialization to test robustness"""
+        if self.model is None:
+            messagebox.showwarning("Warning", "Please initialize model first")
+            return
+            
+        if self.target_image is None:
+            messagebox.showwarning("Warning", "Please load target image first")
+            return
+            
+        if self.trainer is None:
+            messagebox.showwarning("Warning", "Please initialize model first")
+            return
+            
+        try:
+            self.model.eval()
+            with torch.no_grad():
+                size = self.target_image.shape[-1]
+                # Use random initialization to test robustness
+                seed = self.trainer.create_seed(size, random_init=True)
+                
+                # Use configured max steps for generation (higher quality)
+                try:
+                    max_steps = int(self.max_steps_var.get())
+                    generation_steps = min(max_steps * 2, 256)  # Use 2x max training steps, capped at 256
+                except:
+                    generation_steps = 128  # Fallback
+                
+                output = self.model(seed, steps=generation_steps)
+                
+                # Display result with enhanced visualization
+                self.axes[0, 1].clear()
+                output_rgb = output[0, :3].permute(1, 2, 0).detach().cpu().numpy()
+                output_rgb = np.clip(output_rgb, 0, 1)
+                self.axes[0, 1].imshow(output_rgb, interpolation='nearest')
+                
+                # Calculate similarity to target
+                if self.target_image is not None:
+                    target_rgb = self.target_image[0, :3].permute(1, 2, 0).cpu().numpy()
+                    similarity = 1.0 - np.mean((output_rgb - target_rgb) ** 2)
+                    self.axes[0, 1].set_title(f"Random Init Result (Similarity: {similarity:.3f})", fontsize=14)
+                else:
+                    self.axes[0, 1].set_title("Random Init Result", fontsize=14)
+                    
+                self.axes[0, 1].set_xticks([])
+                self.axes[0, 1].set_yticks([])
+                
+                # Update alpha visualization
+                self.axes[1, 1].clear()
+                alpha = output[0, 3].detach().cpu().numpy()
+                im = self.axes[1, 1].imshow(alpha, cmap='viridis', interpolation='nearest')
+                live_cells = np.sum(alpha > 0.1)
+                self.axes[1, 1].set_title(f"Random Init Alpha ({live_cells} live cells)", fontsize=14)
+                self.axes[1, 1].set_xticks([])
+                self.axes[1, 1].set_yticks([])
+                
+                self.canvas.draw()
+                
+                self.status_var.set(f"Random init image generated with {generation_steps} steps")
+                
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to generate random image: {str(e)}")
             
     def save_model(self):
         """Save trained model"""
