@@ -70,15 +70,16 @@ class NeuralCellularAutomata(nn.Module):
             
     def perceive(self, x, angle=0.0):
         """Perceive the environment using sobel filters"""
-        identify = torch.tensor([[0, 0, 0], [0, 1, 0], [0, 0, 0]], dtype=torch.float32)
-        identify = identify.to(x.device)
+        device = x.device
         
-        dx = torch.tensor([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], dtype=torch.float32) / 8.0
+        identify = torch.tensor([[0, 0, 0], [0, 1, 0], [0, 0, 0]], dtype=torch.float32, device=device)
+        
+        dx = torch.tensor([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], dtype=torch.float32, device=device) / 8.0
         dy = dx.T
         
-        c, s = torch.cos(torch.tensor(angle)), torch.sin(torch.tensor(angle))
+        c, s = torch.cos(torch.tensor(angle, device=device)), torch.sin(torch.tensor(angle, device=device))
         kernel = torch.stack([identify, c*dx-s*dy, s*dx+c*dy], 0)[:, None, ...]
-        kernel = kernel.repeat(self.channel_n, 1, 1, 1).to(x.device)
+        kernel = kernel.repeat(self.channel_n, 1, 1, 1)
         
         y = F.conv2d(x, kernel, groups=self.channel_n, padding=1)
         return y
@@ -138,7 +139,8 @@ class NCATrainer:
         
     def create_seed(self, size, random_init=True):
         """Create initial seed state with random or center initialization"""
-        seed = torch.zeros(1, self.model.channel_n, size, size)
+        # Create seed tensor directly on the correct device
+        seed = torch.zeros(1, self.model.channel_n, size, size, device=self.device)
         
         if random_init:
             # Random initialization for training robustness
@@ -156,15 +158,18 @@ class NCATrainer:
                 for _ in range(num_seeds):
                     x = int(torch.randint(0, size, (1,)).item())
                     y = int(torch.randint(0, size, (1,)).item())
-                    seed[:, 3:, x, y] = torch.rand(self.model.channel_n-3) * 0.8 + 0.2
+                    # Create random values on the correct device
+                    rand_values = torch.rand(self.model.channel_n-3, device=self.device) * 0.8 + 0.2
+                    seed[:, 3:, x, y] = rand_values
                     
             elif init_type == 2:
                 # Sparse random pixels (0.5-2% density)
                 density = torch.rand(1).item() * 0.015 + 0.005
-                mask = torch.rand(size, size) < density
+                mask = torch.rand(size, size, device=self.device) < density
                 num_pixels = int(mask.sum().item())
                 if num_pixels > 0:
-                    seed[:, 3:, mask] = torch.rand(self.model.channel_n-3, num_pixels) * 0.7 + 0.3
+                    rand_values = torch.rand(self.model.channel_n-3, num_pixels, device=self.device) * 0.7 + 0.3
+                    seed[:, 3:, mask] = rand_values
                 
             else:
                 # Edge/corner initialization
@@ -197,7 +202,7 @@ class NCATrainer:
             # Traditional center initialization for manual generation
             seed[:, 3:, size//2, size//2] = 1.0
             
-        return seed.to(self.device)
+        return seed
     
     def train_step(self, steps_range=(64, 96)):
         """Perform one training step"""
@@ -444,7 +449,9 @@ class NCAGUI:
         
     def setup_status_bar(self, parent):
         """Setup status bar"""
-        self.status_var = tk.StringVar(value="Ready")
+        device_info = f"GPU: {torch.cuda.get_device_name(0)}" if torch.cuda.is_available() else "CPU"
+        initial_status = f"Ready - Device: {device_info}"
+        self.status_var = tk.StringVar(value=initial_status)
         status_bar = ttk.Label(parent, textvariable=self.status_var, relief=tk.SUNKEN)
         status_bar.grid(row=2, column=0, columnspan=2, sticky="ew", pady=(10, 0))
         
