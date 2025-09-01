@@ -27,8 +27,8 @@ plt.rcParams['savefig.dpi'] = 200
 # VISUALIZATION CONFIGURATION
 # ========================================
 # Customizable colormap for heatmap visualizations
-HEATMAP_COLORS = ['#FF0000', "#FF8C19", "#FB00FF", "#EA00FF", "#E100FF", 
-                  "#FF00E1", "#FF00FF", "#FFFB00", "#666666", "#000000"]
+HEATMAP_COLORS = ['#FF0000', "#BE6103", "#000000", "#000000", "#000000", 
+                  "#000000", "#000000", "#8D8A00", "#D6C400", "#FFF200"]
 
 # Alternative color schemes you can use by changing HEATMAP_COLORS above:
 # COOL_COLORS = ['#000080', '#0000FF', '#0080FF', '#00FFFF', '#80FFFF', '#FFFFFF', '#FFFF80', '#FFFF00', '#FF8000', '#FF0000']
@@ -38,9 +38,6 @@ HEATMAP_COLORS = ['#FF0000', "#FF8C19", "#FB00FF", "#EA00FF", "#E100FF",
 # Heatmap dimensions (adjust based on your vector size preferences)
 HEATMAP_HEIGHT = 36
 HEATMAP_WIDTH = 24
-
-# Cubic interpolation smoothing factor (3 provides good balance)
-SMOOTHING_FACTOR = 1
 
 
 def analyze_pt_file(filepath):
@@ -266,6 +263,7 @@ def get_user_choice():
     print("11. Nonlinear Squashing (tanh)")
     print("12. L² Normalization")
     print("13. Max/Min Averaging (single vector from extremes)")
+    print("14. Average specified vectors and combine with remaining")
     print("="*60)
     
     # Improved input handling with retry logic
@@ -277,15 +275,15 @@ def get_user_choice():
             time.sleep(0.1)
             
             print(f"\nAttempt {attempt + 1}: ", end="", flush=True)
-            user_input = input("Choose operation (1-13): ").strip()
+            user_input = input("Choose operation (1-14): ").strip()
             
             # Debug: Show what was actually captured (remove this after fixing)
             print(f"Debug: Captured input: '{user_input}' (length: {len(user_input)})")
             
-            if user_input in ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13']:
+            if user_input in ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14']:
                 return user_input
             else:
-                print(f"Invalid input: '{user_input}'. Please enter a number from 1 to 13.")
+                print(f"Invalid input: '{user_input}'. Please enter a number from 1 to 14.")
                 if attempt < max_attempts - 1:
                     print("Try again...")
                     continue
@@ -297,7 +295,7 @@ def get_user_choice():
                 print("Too many failed attempts. Exiting...")
                 return None
     
-    print("Invalid choice after multiple attempts. Please run the script again and enter 1-13.")
+    print("Invalid choice after multiple attempts. Please run the script again and enter 1-14.")
     return None
 
 
@@ -1034,6 +1032,150 @@ def max_min_averaging(data, original_filename, numvectors, np_array):
     save_transformed_file(data, original_filename, result_array, suffix)
 
 
+def average_specified_vectors(data, original_filename, numvectors, np_array):
+    """
+    Average specified vectors and save both combined file and averaged vector separately
+    
+    Args:
+        data: The original TI data dictionary
+        original_filename: The original filename (without path)
+        numvectors: Number of vectors in the TI file
+        np_array: NumPy array of the tensor data
+    """
+    print(f"\nAveraging specified vectors from '{original_filename}'...")
+    print(f"Available vectors: {numvectors} (numbered 1-{numvectors})")
+    
+    # Get vector indices from user
+    while True:
+        try:
+            user_input = input(f"Enter vector numbers to average (comma-separated, e.g., '2,5,10'): ").strip()
+            if not user_input:
+                print("Please enter at least one vector number")
+                continue
+            
+            # Parse the input
+            vector_indices_str = [x.strip() for x in user_input.split(',')]
+            vector_indices = []
+            
+            for idx_str in vector_indices_str:
+                idx = int(idx_str)
+                if 1 <= idx <= numvectors:
+                    vector_indices.append(idx - 1)  # Convert to 0-based indexing
+                else:
+                    print(f"Vector {idx} is out of range. Please use numbers 1-{numvectors}")
+                    raise ValueError("Invalid vector index")
+            
+            if len(vector_indices) < 2:
+                print("Please specify at least 2 vectors to average")
+                continue
+            
+            # Remove duplicates while preserving order
+            seen = set()
+            unique_indices = []
+            for idx in vector_indices:
+                if idx not in seen:
+                    seen.add(idx)
+                    unique_indices.append(idx)
+            vector_indices = unique_indices
+            
+            break
+            
+        except ValueError:
+            print("Please enter valid vector numbers separated by commas")
+    
+    # Convert back to 1-based for display
+    vector_numbers = [idx + 1 for idx in vector_indices]
+    print(f"\nVectors to average: {vector_numbers}")
+    print(f"Number of vectors to average: {len(vector_indices)}")
+    
+    # Calculate average of specified vectors
+    specified_vectors = np_array[vector_indices]
+    averaged_vector = np.mean(specified_vectors, axis=0)
+    
+    print(f"✓ Calculated average of {len(vector_indices)} vectors")
+    
+    # Get remaining vector indices (not in the averaging list)
+    all_indices = set(range(numvectors))
+    remaining_indices = sorted(list(all_indices - set(vector_indices)))
+    remaining_numbers = [idx + 1 for idx in remaining_indices]
+    
+    print(f"Remaining vectors: {remaining_numbers}")
+    print(f"Number of remaining vectors: {len(remaining_indices)}")
+    
+    # Create combined array: remaining vectors + averaged vector
+    if remaining_indices:
+        remaining_vectors = np_array[remaining_indices]
+        combined_array = np.vstack([remaining_vectors, averaged_vector.reshape(1, -1)])
+    else:
+        # Edge case: all vectors were averaged
+        combined_array = averaged_vector.reshape(1, -1)
+    
+    total_combined_vectors = len(remaining_indices) + 1
+    print(f"Combined file will have: {total_combined_vectors} vectors")
+    
+    # Create base filename
+    base_filename = original_filename.replace('.pt', '')
+    
+    # Create directory if it doesn't exist
+    directory = "textual_inversions"
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    
+    # Save combined file (remaining + averaged)
+    print(f"\nSaving combined file...")
+    combined_tensor = torch.tensor(combined_array, device='cpu', requires_grad=True)
+    combined_data = data.copy()
+    combined_data['string_to_param'] = {'*': combined_tensor}
+    
+    # Generate combined filename
+    vector_list_str = "_".join(map(str, vector_numbers))
+    combined_filename = f"{base_filename}_combined_avg{vector_list_str}.pt"
+    combined_filepath = os.path.join(directory, combined_filename)
+    torch.save(combined_data, combined_filepath)
+    
+    print(f"✅ Combined file '{combined_filename}' saved to '{directory}' directory.")
+    print(f"   Contains {len(remaining_indices)} original vectors + 1 averaged vector = {total_combined_vectors} total vectors")
+    
+    # Save averaged vector only
+    print(f"\nSaving averaged vector file...")
+    averaged_tensor = torch.tensor(averaged_vector.reshape(1, -1), device='cpu', requires_grad=True)
+    averaged_data = data.copy()
+    averaged_data['string_to_param'] = {'*': averaged_tensor}
+    
+    # Generate averaged filename
+    averaged_filename = f"{base_filename}_avg{vector_list_str}.pt"
+    averaged_filepath = os.path.join(directory, averaged_filename)
+    torch.save(averaged_data, averaged_filepath)
+    
+    print(f"✅ Averaged vector file '{averaged_filename}' saved to '{directory}' directory.")
+    print(f"   Contains 1 vector (average of vectors {vector_numbers})")
+    
+    # Show statistics
+    print(f"\n📊 Vector Averaging Summary:")
+    print(f"   Original file: {numvectors} vectors")
+    print(f"   Vectors averaged: {vector_numbers} ({len(vector_indices)} vectors)")
+    print(f"   Remaining vectors: {remaining_numbers} ({len(remaining_indices)} vectors)")
+    print(f"   Combined file: {combined_filename} ({total_combined_vectors} vectors)")
+    print(f"   Averaged vector file: {averaged_filename} (1 vector)")
+    
+    # Show vector statistics
+    print(f"\n📊 Averaged Vector Statistics:")
+    print(f"   Range: [{averaged_vector.min():.6f}, {averaged_vector.max():.6f}]")
+    print(f"   Mean: {averaged_vector.mean():.6f}")
+    print(f"   Std: {averaged_vector.std():.6f}")
+    print(f"   L2 norm: {np.linalg.norm(averaged_vector):.6f}")
+    
+    # Compare with original vectors being averaged
+    print(f"\n📊 Individual Vector Statistics (being averaged):")
+    for i, orig_idx in enumerate(vector_indices):
+        vector = np_array[orig_idx]
+        vector_num = orig_idx + 1
+        print(f"   Vector {vector_num}: Range=[{vector.min():.6f}, {vector.max():.6f}], "
+              f"Mean={vector.mean():.6f}, L2 norm={np.linalg.norm(vector):.6f}")
+    
+    print(f"Successfully processed vector averaging and combination.")
+
+
 def save_transformed_file(data, original_filename, transformed_array, suffix):
     """
     Save transformed array as a new TI file
@@ -1308,15 +1450,7 @@ def process_single_file():
         # Reshape to 2D heatmap
         heatmap_data = vector_data.reshape(heatmap_height, heatmap_width)
         
-        # Apply cubic interpolation for smoothing using configuration
-        smooth_factor = SMOOTHING_FACTOR
-        upsampled = zoom(heatmap_data, smooth_factor, order=3)  # order=3 for cubic interpolation
-        smoothed_heatmap = zoom(upsampled, 1/smooth_factor, order=3)
-        
-        # Ensure we maintain original dimensions
-        if smoothed_heatmap.shape != (heatmap_height, heatmap_width):
-            # Fallback to original if size mismatch
-            smoothed_heatmap = heatmap_data
+        # Use raw heatmap data without smoothing
         
         # Create quantized colormap using configuration
         bright_colors = HEATMAP_COLORS
@@ -1324,14 +1458,13 @@ def process_single_file():
         quantized_cmap = mcolors.ListedColormap(bright_colors)
         
         # Create quantized normalization to enforce discrete color levels
-        data_min, data_max = np.min(np_array), np.max(np_array)
-        boundaries = np.linspace(data_min, data_max, n_colors + 1)
+        boundaries = np.linspace(np.min(vector_data), np.max(vector_data), n_colors + 1)
         norm = mcolors.BoundaryNorm(boundaries, quantized_cmap.N)
         
         # Create heatmap
         ax = axes[i]
-        im = ax.imshow(smoothed_heatmap, cmap=quantized_cmap, norm=norm, aspect='auto', 
-                      interpolation='bicubic')  # Additional smoothing at display level
+        im = ax.imshow(heatmap_data, cmap=quantized_cmap, norm=norm, aspect='auto', 
+                      interpolation='nearest')  # Use raw values without smoothing
         
         # Customize each subplot
         ax.set_title(f'Vector {i+1}', fontsize=10, pad=5)
@@ -1432,6 +1565,18 @@ def process_single_file():
     if user_input == "13":
         print("You chose Option 13 - Max/Min Averaging (single vector from extremes)...")
         max_min_averaging(data, filename, numvectors, np_array)
+        return True  # Successfully completed processing
+    
+    # Handle Option 14 (Average Specified Vectors) immediately since it doesn't need processing
+    if user_input == "14":
+        print("You chose Option 14 - Average specified vectors and combine with remaining...")
+        average_specified_vectors(data, filename, numvectors, np_array)
+        return True  # Successfully completed processing
+    
+    # Handle Option 14 (Average specified vectors) immediately since it doesn't need processing
+    if user_input == "14":
+        print("You chose Option 14 - Average specified vectors and combine with remaining...")
+        average_specified_vectors(data, filename, numvectors, np_array)
         return True  # Successfully completed processing
     
     # ========================================
