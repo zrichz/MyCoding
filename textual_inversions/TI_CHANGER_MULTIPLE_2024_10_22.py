@@ -275,7 +275,7 @@ def get_user_choice():
             time.sleep(0.1)
             
             print(f"\nAttempt {attempt + 1}: ", end="", flush=True)
-            user_input = input("Choose operation (1-13): ").strip()
+            user_input = input("Choose operation (1-14): ").strip()
             
             # Debug: Show what was actually captured (remove this after fixing)
             print(f"Debug: Captured input: '{user_input}' (length: {len(user_input)})")
