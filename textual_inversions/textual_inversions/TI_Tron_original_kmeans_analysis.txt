@@ -1,0 +1,26 @@
+K-means Clustering Analysis Report
+=================================
+
+Original file: TI_Tron_original.pt
+Original vectors: 8
+Selected clusters: 3
+Compression ratio: 2.67:1
+
+Analysis Results:
+Elbow method optimal: 3
+Silhouette optimal: 3
+Best silhouette score: 0.076
+
+Final Metrics:
+Final inertia: 7.19
+Final silhouette: 0.076
+
+Detailed Statistics:
+Clusters   Inertia      Silhouette  
+----------------------------------------
+2          9.21         0.069       
+3          7.19         0.076       
+4          5.41         0.067       
+5          3.79         0.058       
+6          2.33         0.041       
+7          1.02         0.023       

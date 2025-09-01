@@ -17,6 +17,7 @@ import tkinter as tk
 from tkinter import filedialog
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
+from sklearn.metrics import silhouette_score
 from scipy.ndimage import zoom
 
 # Configure matplotlib for better display (standalone Python version)
@@ -257,7 +258,7 @@ def get_user_choice():
     print("5. Roll/shift all vectors")
     print("6. Extract individual vectors to separate files")
     print("7. Save top N vectors by absolute magnitude")
-    print("8. Clustering-Based Reduction (K-means)")
+    print("8. Clustering-Based Reduction (K-means with Elbow Method)")
     print("9. Principal Component Analysis (PCA)")
     print("10. Quantile Transform (Uniform/Gaussian)")
     print("11. Nonlinear Squashing (tanh)")
@@ -476,9 +477,149 @@ def select_top_n_vectors(data, original_filename, numvectors, np_array):
     print(f"Successfully processed vectors based on absolute magnitude.")
 
 
+def find_optimal_clusters_elbow_method(np_array, max_clusters=None, show_plots=True):
+    """
+    Find optimal number of clusters using elbow method and silhouette analysis
+    
+    Args:
+        np_array: NumPy array of the tensor data
+        max_clusters: Maximum number of clusters to test (default: min(20, n_vectors-1))
+        show_plots: Whether to display plots for analysis
+        
+    Returns:
+        dict: Analysis results including optimal clusters and metrics
+    """
+    try:
+        from sklearn.cluster import KMeans
+        from sklearn.metrics import silhouette_score
+    except ImportError:
+        print("❌ Error: scikit-learn is required for clustering analysis.")
+        print("Please install it with: pip install scikit-learn")
+        return None
+    
+    n_vectors = np_array.shape[0]
+    
+    # Set reasonable range for testing
+    if max_clusters is None:
+        max_clusters = min(20, n_vectors - 1)
+    
+    max_clusters = min(max_clusters, n_vectors - 1)
+    
+    if max_clusters < 2:
+        print("❌ Cannot perform clustering analysis: need at least 2 vectors")
+        return None
+    
+    print(f"\n🔍 Analyzing optimal number of clusters...")
+    print(f"   Testing clusters from 2 to {max_clusters}")
+    print(f"   Vector count: {n_vectors}")
+    
+    # Store metrics for analysis
+    cluster_range = range(2, max_clusters + 1)
+    inertias = []
+    silhouette_scores = []
+    
+    print("\n   Progress:")
+    for k in cluster_range:
+        print(f"   Testing k={k}...", end=" ")
+        
+        # Fit K-means
+        kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
+        cluster_labels = kmeans.fit_predict(np_array)
+        
+        # Calculate metrics
+        inertia = kmeans.inertia_
+        sil_score = silhouette_score(np_array, cluster_labels)
+        
+        inertias.append(inertia)
+        silhouette_scores.append(sil_score)
+        
+        print(f"Inertia: {inertia:.2f}, Silhouette: {sil_score:.3f}")
+    
+    # Find elbow using simple derivative method
+    def find_elbow_point(values):
+        """Find elbow using rate of change analysis"""
+        if len(values) < 3:
+            return 0
+        
+        # Calculate rate of change (derivative)
+        derivatives = []
+        for i in range(1, len(values) - 1):
+            derivative = values[i-1] - 2*values[i] + values[i+1]
+            derivatives.append(derivative)
+        
+        # Find point with maximum rate of change
+        max_derivative_idx = np.argmax(derivatives)
+        return max_derivative_idx + 1  # +1 because derivatives start from index 1
+    
+    # Find optimal points
+    elbow_idx = find_elbow_point(inertias)
+    best_silhouette_idx = np.argmax(silhouette_scores)
+    
+    optimal_clusters_elbow = list(cluster_range)[elbow_idx] if elbow_idx < len(cluster_range) else cluster_range[0]
+    optimal_clusters_silhouette = list(cluster_range)[best_silhouette_idx]
+    
+    # Create analysis plots if requested
+    if show_plots:
+        plt.figure(figsize=(15, 5))
+        
+        # Plot 1: Elbow Method (Inertia)
+        plt.subplot(1, 3, 1)
+        plt.plot(cluster_range, inertias, 'bo-', markersize=8, linewidth=2)
+        plt.axvline(x=optimal_clusters_elbow, color='red', linestyle='--', 
+                   label=f'Elbow at k={optimal_clusters_elbow}')
+        plt.xlabel('Number of Clusters (k)')
+        plt.ylabel('Inertia (WCSS)')
+        plt.title('Elbow Method')
+        plt.grid(True, alpha=0.3)
+        plt.legend()
+        
+        # Plot 2: Silhouette Analysis
+        plt.subplot(1, 3, 2)
+        plt.plot(cluster_range, silhouette_scores, 'go-', markersize=8, linewidth=2)
+        plt.axvline(x=optimal_clusters_silhouette, color='red', linestyle='--',
+                   label=f'Best Silhouette at k={optimal_clusters_silhouette}')
+        plt.xlabel('Number of Clusters (k)')
+        plt.ylabel('Silhouette Score')
+        plt.title('Silhouette Analysis')
+        plt.grid(True, alpha=0.3)
+        plt.legend()
+        
+        # Plot 3: Combined Analysis
+        plt.subplot(1, 3, 3)
+        # Normalize both metrics for comparison
+        norm_inertias = [(max(inertias) - x) / (max(inertias) - min(inertias)) for x in inertias]
+        norm_silhouettes = [(x - min(silhouette_scores)) / (max(silhouette_scores) - min(silhouette_scores)) for x in silhouette_scores]
+        
+        plt.plot(cluster_range, norm_inertias, 'b-', label='Normalized Inertia (inverted)', linewidth=2)
+        plt.plot(cluster_range, norm_silhouettes, 'g-', label='Normalized Silhouette', linewidth=2)
+        plt.axvline(x=optimal_clusters_elbow, color='blue', linestyle='--', alpha=0.7)
+        plt.axvline(x=optimal_clusters_silhouette, color='green', linestyle='--', alpha=0.7)
+        plt.xlabel('Number of Clusters (k)')
+        plt.ylabel('Normalized Score')
+        plt.title('Combined Analysis')
+        plt.legend()
+        plt.grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        plt.show()
+    
+    # Prepare results
+    results = {
+        'cluster_range': list(cluster_range),
+        'inertias': inertias,
+        'silhouette_scores': silhouette_scores,
+        'optimal_elbow': optimal_clusters_elbow,
+        'optimal_silhouette': optimal_clusters_silhouette,
+        'best_silhouette_score': max(silhouette_scores),
+        'elbow_inertia': inertias[elbow_idx] if elbow_idx < len(inertias) else inertias[0]
+    }
+    
+    return results
+
+
 def clustering_based_reduction(data, original_filename, numvectors, np_array):
     """
-    Apply K-means clustering to reduce vectors to N cluster centroids
+    Apply K-means clustering to reduce vectors to N cluster centroids with elbow method analysis
     
     Args:
         data: The original TI data dictionary
@@ -488,6 +629,7 @@ def clustering_based_reduction(data, original_filename, numvectors, np_array):
     """
     try:
         from sklearn.cluster import KMeans
+        from sklearn.metrics import silhouette_score
     except ImportError:
         print("❌ Error: scikit-learn is required for clustering-based reduction.")
         print("Please install it with: pip install scikit-learn")
@@ -496,31 +638,121 @@ def clustering_based_reduction(data, original_filename, numvectors, np_array):
     print(f"\nApplying Clustering-Based Reduction (K-means) to '{original_filename}'...")
     print(f"Available vectors: {numvectors}")
     
-    # Get number of clusters from user
+    if numvectors < 2:
+        print("❌ Error: Need at least 2 vectors for clustering analysis")
+        return
+    
+    # Perform elbow method analysis
+    print("\n" + "="*60)
+    print("🔍 OPTIMAL CLUSTER ANALYSIS")
+    print("="*60)
+    
+    analysis = find_optimal_clusters_elbow_method(np_array, max_clusters=min(20, numvectors-1), show_plots=True)
+    
+    if analysis is None:
+        print("❌ Could not perform cluster analysis")
+        return
+    
+    # Display analysis results
+    print(f"\n📊 CLUSTERING ANALYSIS RESULTS:")
+    print(f"   Optimal clusters (Elbow method): {analysis['optimal_elbow']}")
+    print(f"   Optimal clusters (Silhouette): {analysis['optimal_silhouette']}")
+    print(f"   Best silhouette score: {analysis['best_silhouette_score']:.3f}")
+    
+    # Create detailed statistics table
+    print(f"\n📋 DETAILED CLUSTER STATISTICS:")
+    print(f"{'Clusters':<10} {'Inertia':<12} {'Silhouette':<12} {'Recommendation':<15}")
+    print("-" * 55)
+    
+    for i, k in enumerate(analysis['cluster_range']):
+        inertia = analysis['inertias'][i]
+        silhouette = analysis['silhouette_scores'][i]
+        
+        recommendation = ""
+        if k == analysis['optimal_elbow']:
+            recommendation += "ELBOW "
+        if k == analysis['optimal_silhouette']:
+            recommendation += "BEST_SIL"
+        
+        print(f"{k:<10} {inertia:<12.2f} {silhouette:<12.3f} {recommendation:<15}")
+    
+    # Recommend optimal choice
+    if analysis['optimal_elbow'] == analysis['optimal_silhouette']:
+        recommended = analysis['optimal_elbow']
+        print(f"\n🎯 STRONG RECOMMENDATION: {recommended} clusters")
+        print(f"   Both elbow method and silhouette analysis agree on {recommended} clusters")
+    else:
+        print(f"\n🤔 MIXED SIGNALS:")
+        print(f"   Elbow method suggests: {analysis['optimal_elbow']} clusters")
+        print(f"   Silhouette analysis suggests: {analysis['optimal_silhouette']} clusters")
+        
+        # Use silhouette as tiebreaker for better cluster quality
+        recommended = analysis['optimal_silhouette']
+        print(f"   RECOMMENDED: {recommended} clusters (better silhouette score)")
+    
+    print(f"\n" + "="*60)
+    print("🎯 CLUSTER SELECTION")
+    print("="*60)
+    print(f"Recommended number of clusters: {recommended}")
+    print(f"\nOptions:")
+    print(f"1. Accept recommendation ({recommended} clusters)")
+    print(f"2. Use elbow method suggestion ({analysis['optimal_elbow']} clusters)")
+    print(f"3. Enter custom number of clusters")
+    
+    # Get user choice
     while True:
         try:
-            n_clusters = int(input(f"Enter number of clusters (1-{numvectors}): "))
-            if 1 <= n_clusters <= numvectors:
+            choice = input(f"\nEnter your choice (1-3): ").strip()
+            
+            if choice == "1":
+                n_clusters = recommended
+                print(f"✓ Using recommended {n_clusters} clusters")
+                break
+            elif choice == "2":
+                n_clusters = analysis['optimal_elbow']
+                print(f"✓ Using elbow method suggestion: {n_clusters} clusters")
+                break
+            elif choice == "3":
+                while True:
+                    try:
+                        n_clusters = int(input(f"Enter number of clusters (1-{numvectors}): "))
+                        if 1 <= n_clusters <= numvectors:
+                            print(f"✓ Using custom selection: {n_clusters} clusters")
+                            break
+                        else:
+                            print(f"Please enter a number between 1 and {numvectors}")
+                    except ValueError:
+                        print("Please enter a valid integer")
                 break
             else:
-                print(f"Please enter a number between 1 and {numvectors}")
-        except ValueError:
-            print("Please enter a valid integer")
+                print("Please enter 1, 2, or 3")
+        except (ValueError, KeyboardInterrupt):
+            print("Please enter a valid choice")
     
-    print(f"\nApplying K-means clustering with {n_clusters} clusters...")
+    print(f"\n🚀 Applying K-means clustering with {n_clusters} clusters...")
     
     # Apply K-means clustering
     kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
     cluster_labels = kmeans.fit_predict(np_array)
     centroids = kmeans.cluster_centers_
     
+    # Calculate final metrics for the chosen number of clusters
+    final_inertia = kmeans.inertia_
+    if n_clusters > 1:
+        final_silhouette = silhouette_score(np_array, cluster_labels)
+    else:
+        final_silhouette = 0  # Silhouette score undefined for 1 cluster
+    
     print(f"✓ Clustering complete!")
     print(f"✓ Original vectors: {numvectors}")
     print(f"✓ Reduced to centroids: {n_clusters}")
+    print(f"✓ Final inertia: {final_inertia:.2f}")
+    if n_clusters > 1:
+        print(f"✓ Final silhouette score: {final_silhouette:.3f}")
     print(f"✓ Centroid tensor shape: {centroids.shape}")
     
     # Show cluster information
-    print(f"\nCluster assignments:")
+    print(f"\n📊 FINAL CLUSTER ASSIGNMENTS:")
     for cluster_id in range(n_clusters):
         vectors_in_cluster = np.where(cluster_labels == cluster_id)[0]
         print(f"  Cluster {cluster_id + 1}: {len(vectors_in_cluster)} vectors (indices: {vectors_in_cluster.tolist()})")
@@ -534,7 +766,7 @@ def clustering_based_reduction(data, original_filename, numvectors, np_array):
         os.makedirs(directory)
     
     # Save individual centroid files
-    print(f"\nSaving individual centroid files...")
+    print(f"\n💾 Saving individual centroid files...")
     for i in range(n_clusters):
         # Extract the i-th centroid (keep as 2D with shape [1, dimensions])
         individual_centroid = centroids[i:i+1]
@@ -555,7 +787,7 @@ def clustering_based_reduction(data, original_filename, numvectors, np_array):
         print(f"✓ Saved centroid {i+1}/{n_clusters}: {centroid_filename}")
     
     # Save combined centroids file
-    print(f"\nSaving combined centroids file...")
+    print(f"\n💾 Saving combined centroids file...")
     combined_tensor = torch.tensor(centroids, device='cpu', requires_grad=True)
     combined_data = data.copy()
     combined_data['string_to_param'] = {'*': combined_tensor}
@@ -566,12 +798,46 @@ def clustering_based_reduction(data, original_filename, numvectors, np_array):
     
     print(f"✅ Combined centroids file '{combined_filename}' saved to '{directory}' directory.")
     
-    print(f"\n📊 K-means Clustering Summary:")
+    print(f"\n📊 K-MEANS CLUSTERING SUMMARY:")
     print(f"   Original vectors: {numvectors}")
     print(f"   Clusters created: {n_clusters}")
+    print(f"   Compression ratio: {numvectors/n_clusters:.2f}:1")
+    print(f"   Final inertia: {final_inertia:.2f}")
+    if n_clusters > 1:
+        print(f"   Final silhouette score: {final_silhouette:.3f}")
     print(f"   Individual centroids: {n_clusters} files")
     print(f"   Combined file: {combined_filename}")
     print(f"   Dimensionality preserved: {centroids.shape[1]}")
+    
+    # Save analysis report
+    analysis_filename = f"{base_filename}_kmeans_analysis.txt"
+    analysis_filepath = os.path.join(directory, analysis_filename)
+    
+    with open(analysis_filepath, 'w') as f:
+        f.write(f"K-means Clustering Analysis Report\n")
+        f.write(f"=================================\n\n")
+        f.write(f"Original file: {original_filename}\n")
+        f.write(f"Original vectors: {numvectors}\n")
+        f.write(f"Selected clusters: {n_clusters}\n")
+        f.write(f"Compression ratio: {numvectors/n_clusters:.2f}:1\n\n")
+        
+        f.write(f"Analysis Results:\n")
+        f.write(f"Elbow method optimal: {analysis['optimal_elbow']}\n")
+        f.write(f"Silhouette optimal: {analysis['optimal_silhouette']}\n")
+        f.write(f"Best silhouette score: {analysis['best_silhouette_score']:.3f}\n\n")
+        
+        f.write(f"Final Metrics:\n")
+        f.write(f"Final inertia: {final_inertia:.2f}\n")
+        if n_clusters > 1:
+            f.write(f"Final silhouette: {final_silhouette:.3f}\n")
+        
+        f.write(f"\nDetailed Statistics:\n")
+        f.write(f"{'Clusters':<10} {'Inertia':<12} {'Silhouette':<12}\n")
+        f.write("-" * 40 + "\n")
+        for i, k in enumerate(analysis['cluster_range']):
+            f.write(f"{k:<10} {analysis['inertias'][i]:<12.2f} {analysis['silhouette_scores'][i]:<12.3f}\n")
+    
+    print(f"📋 Analysis report saved: {analysis_filename}")
 
 
 def principal_component_analysis(data, original_filename, numvectors, np_array):
