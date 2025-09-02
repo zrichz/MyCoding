@@ -28,8 +28,8 @@ plt.rcParams['savefig.dpi'] = 200
 # VISUALIZATION CONFIGURATION
 # ========================================
 # Customizable colormap for heatmap visualizations
-HEATMAP_COLORS = ['#FF0000', "#BE6103", "#000000", "#000000", "#000000", 
-                  "#000000", "#000000", "#8D8A00", "#D6C400", "#FFF200"]
+HEATMAP_COLORS = ['#FF0000', "#850000", "#FFFFFF", "#ECECEC", "#FFFFFF", 
+                  "#0F7758", "#FFFFFF", "#FFFFFF", "#A09300", "#FFF200"]
 
 # Alternative color schemes you can use by changing HEATMAP_COLORS above:
 # COOL_COLORS = ['#000080', '#0000FF', '#0080FF', '#00FFFF', '#80FFFF', '#FFFFFF', '#FFFF80', '#FFFF00', '#FF8000', '#FF0000']
@@ -37,8 +37,8 @@ HEATMAP_COLORS = ['#FF0000', "#BE6103", "#000000", "#000000", "#000000",
 # RAINBOW_COLORS = ['#9400D3', '#4B0082', '#0000FF', '#00FF00', '#FFFF00', '#FF7F00', '#FF0000', '#FF1493', '#00CED1', '#32CD32']
 
 # Heatmap dimensions (adjust based on your vector size preferences)
-HEATMAP_HEIGHT = 36
-HEATMAP_WIDTH = 24
+HEATMAP_HEIGHT = 24
+HEATMAP_WIDTH = 36
 
 
 def analyze_pt_file(filepath):
