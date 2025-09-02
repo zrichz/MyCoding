@@ -1,9 +1,9 @@
 @echo off
 title TI Changer Multiple
 echo Running TI Changer Multiple with virtual environment...
-echo Virtual Environment: C:\MyPythonCoding\MyCoding\venv_mycoding
+echo Virtual Environment: ..\.venv
 echo Current Directory: %cd%
-echo Python executable: C:\MyPythonCoding\MyCoding\venv_mycoding\Scripts\python.exe
+echo Python executable: ..\.venv\Scripts\python.exe
 echo Script: TI_CHANGER_MULTIPLE_2024_10_22.py
 echo.
 
@@ -15,7 +15,7 @@ timeout /t 1 /nobreak >nul
 
 echo Starting Python script...
 REM Run the Python script
-"C:\MyPythonCoding\MyCoding\venv_mycoding\Scripts\python.exe" "TI_CHANGER_MULTIPLE_2024_10_22.py"
+"..\.venv\Scripts\python.exe" "TI_CHANGER_MULTIPLE_2024_10_22.py"
 
 echo.
 echo Script execution completed.
