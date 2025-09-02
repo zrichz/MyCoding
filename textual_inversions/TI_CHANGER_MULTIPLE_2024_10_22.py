@@ -571,6 +571,7 @@ def find_optimal_clusters_elbow_method(np_array, max_clusters=None, show_plots=T
         plt.ylabel('Inertia (WCSS)')
         plt.title('Elbow Method')
         plt.grid(True, alpha=0.3)
+        plt.xticks(cluster_range)  # Only show ticks for actual cluster values
         plt.legend()
         
         # Plot 2: Silhouette Analysis
@@ -582,6 +583,7 @@ def find_optimal_clusters_elbow_method(np_array, max_clusters=None, show_plots=T
         plt.ylabel('Silhouette Score')
         plt.title('Silhouette Analysis')
         plt.grid(True, alpha=0.3)
+        plt.xticks(cluster_range)  # Only show ticks for actual cluster values
         plt.legend()
         
         # Plot 3: Combined Analysis
@@ -597,6 +599,7 @@ def find_optimal_clusters_elbow_method(np_array, max_clusters=None, show_plots=T
         plt.xlabel('Number of Clusters (k)')
         plt.ylabel('Normalized Score')
         plt.title('Combined Analysis')
+        plt.xticks(cluster_range)  # Only show ticks for actual cluster values
         plt.legend()
         plt.grid(True, alpha=0.3)
         
@@ -647,7 +650,7 @@ def clustering_based_reduction(data, original_filename, numvectors, np_array):
     print("🔍 OPTIMAL CLUSTER ANALYSIS")
     print("="*60)
     
-    analysis = find_optimal_clusters_elbow_method(np_array, max_clusters=min(20, numvectors-1), show_plots=True)
+    analysis = find_optimal_clusters_elbow_method(np_array, max_clusters=numvectors-1, show_plots=True)
     
     if analysis is None:
         print("❌ Could not perform cluster analysis")
@@ -1040,6 +1043,9 @@ def quantile_transform(data, original_filename, numvectors, np_array):
     # Process each vector independently
     transformed_array = np.zeros_like(np_array)
     
+    # Set suffix based on choice
+    suffix = "_quantile_uniform" if dist_choice == '1' else "_quantile_gaussian"
+    
     for i in range(numvectors):
         vector = np_array[i].copy()
         
@@ -1054,11 +1060,9 @@ def quantile_transform(data, original_filename, numvectors, np_array):
         if dist_choice == '1':
             # Uniform distribution (use CDF directly)
             transformed_vector = empirical_cdf
-            suffix = "_quantile_uniform"
         else:
             # Gaussian distribution (inverse normal CDF)
             transformed_vector = stats.norm.ppf(empirical_cdf)
-            suffix = "_quantile_gaussian"
         
         # Scale to [-0.5, 0.5] range
         min_val, max_val = transformed_vector.min(), transformed_vector.max()
