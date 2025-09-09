@@ -28,8 +28,8 @@ plt.rcParams['savefig.dpi'] = 200
 # VISUALIZATION CONFIGURATION
 # ========================================
 # Customizable colormap for heatmap visualizations
-HEATMAP_COLORS = ['#FF0000', "#BE6103", "#000000", "#000000", "#000000", 
-                  "#000000", "#000000", "#8D8A00", "#D6C400", "#FFF200"]
+HEATMAP_COLORS = ['#FF0000', "#850000", "#FFFFFF", "#FFFFFF", "#FFFFFF", 
+                  "#FFFFFF", "#FFFFFF", "#FFFFFF", "#105C66", "#00B7FF"]
 
 # Alternative color schemes you can use by changing HEATMAP_COLORS above:
 # COOL_COLORS = ['#000080', '#0000FF', '#0080FF', '#00FFFF', '#80FFFF', '#FFFFFF', '#FFFF80', '#FFFF00', '#FF8000', '#FF0000']
@@ -37,8 +37,8 @@ HEATMAP_COLORS = ['#FF0000', "#BE6103", "#000000", "#000000", "#000000",
 # RAINBOW_COLORS = ['#9400D3', '#4B0082', '#0000FF', '#00FF00', '#FFFF00', '#FF7F00', '#FF0000', '#FF1493', '#00CED1', '#32CD32']
 
 # Heatmap dimensions (adjust based on your vector size preferences)
-HEATMAP_HEIGHT = 36
-HEATMAP_WIDTH = 24
+HEATMAP_HEIGHT = 24
+HEATMAP_WIDTH = 36
 
 
 def analyze_pt_file(filepath):
@@ -2078,17 +2078,19 @@ def process_single_file():
     plt.show()
     
     # ========================================
-    # NEW: INDIVIDUAL VECTOR VALUES LINE PLOT
+    # NEW: TOP 5% MAGNITUDE BAR PLOT
     # ========================================
     """
-    Display all vector values as line plots with x-axis 0-768 and different colored lines
+    Display only the top 5% (95%+) magnitude datapoints as bars for each vector
+    Shows only the most significant positive and negative values
     """
     
-    print("\nGenerating individual vector values visualization...")
+    print("\nGenerating top 5% magnitude bar visualization...")
     
-    # Create figure for vector line plots with better spacing
-    fig2, ax2 = plt.subplots(figsize=(12, 6))  # Wider for better dimension visibility
-      # Generate colors for each vector
+    # Create figure for magnitude bar plots with better spacing
+    fig2, ax2 = plt.subplots(figsize=(15, 8))  # Wider for better visibility of bars
+    
+    # Generate colors for each vector
     import matplotlib.cm as cm
     
     # Use different color strategies based on number of vectors
@@ -2099,35 +2101,70 @@ def process_single_file():
         # Use a continuous colormap for many vectors
         colors = cm.get_cmap('viridis')(np.linspace(0, 1, numvectors))
     
-    # X-axis represents dimensions (0 to vector_length-1)
-    x_dims = np.arange(np_array.shape[1])
+    # Collect all bar data for plotting
+    all_x_positions = []
+    all_bar_values = []
+    all_bar_colors = []
+    all_bar_labels = []
     
-    # Plot each vector as a separate line
-    for i in range(numvectors):
-        vector_values = np_array[i]
-        color = colors[i]
-        ax2.plot(x_dims, vector_values, 
-                label=f'Vector {i+1}', 
-                color=color, 
-                linewidth=1.5, 
-                alpha=0.8)
+    # Process each vector to find top 5% magnitude values
+    bar_width = 0.8 / numvectors  # Adjust bar width based on number of vectors
     
-    # Customize the vector plot
-    ax2.set_title(f'Individual Vector Values for {filename}\n({numvectors} vectors × {np_array.shape[1]} dimensions)', 
-                 fontsize=10, pad=15)
-    ax2.set_xlabel('Dimension Index (0-{})'.format(np_array.shape[1]-1), fontsize=9)
-    ax2.set_ylabel('Vector Value', fontsize=9)
-    ax2.grid(True, alpha=0.3, linestyle='--')
+    for vector_idx in range(numvectors):
+        vector_values = np_array[vector_idx]
+        color = colors[vector_idx]
+        
+        # Calculate absolute magnitudes for this vector
+        abs_magnitudes = np.abs(vector_values)
+        
+        # Find the 95th percentile threshold for this vector
+        threshold_95 = np.percentile(abs_magnitudes, 95)
+        
+        # Get indices where magnitude is above 95th percentile
+        top_5_percent_mask = abs_magnitudes >= threshold_95
+        top_5_percent_indices = np.where(top_5_percent_mask)[0]
+        top_5_percent_values = vector_values[top_5_percent_mask]
+        
+        # Create x positions for this vector's bars (offset by vector index)
+        x_positions = top_5_percent_indices + (vector_idx - numvectors/2 + 0.5) * bar_width
+        
+        # Store data for plotting
+        all_x_positions.extend(x_positions)
+        all_bar_values.extend(top_5_percent_values)
+        all_bar_colors.extend([color] * len(top_5_percent_values))
+        all_bar_labels.extend([f'Vector {vector_idx+1}'] * len(top_5_percent_values))
+        
+        print(f"Vector {vector_idx+1}: {len(top_5_percent_indices)} datapoints above 95th percentile (threshold: {threshold_95:.4f})")
     
-    # Add legend (but limit it if too many vectors)
+    # Create the bar plot
+    bars = ax2.bar(all_x_positions, all_bar_values, 
+                   width=bar_width, 
+                   color=all_bar_colors,
+                   alpha=0.8)
+    
+    # Customize the plot
+    ax2.set_title(f'Top 5% Magnitude Values for {filename}\n'
+                 f'({numvectors} vectors × {np_array.shape[1]} dimensions) - Only 95%+ magnitude datapoints shown', 
+                 fontsize=11, pad=15)
+    ax2.set_xlabel('Dimension Index', fontsize=10)
+    ax2.set_ylabel('Vector Value', fontsize=10)
+    ax2.grid(True, alpha=0.3, linestyle='--', axis='y')
+    
+    # Create custom legend showing vector colors
     if numvectors <= 10:
-        ax2.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize=8)
+        from matplotlib.patches import Patch
+        legend_elements = [Patch(facecolor=colors[i], alpha=0.7, label=f'Vector {i+1}') 
+                          for i in range(numvectors)]
+        ax2.legend(handles=legend_elements, loc='center left', bbox_to_anchor=(1, 0.5), fontsize=9)
     else:
-        ax2.text(1.02, 0.5, f'{numvectors} vectors\n(too many for legend)', 
-                transform=ax2.transAxes, fontsize=8, verticalalignment='center')
+        ax2.text(1.02, 0.5, f'{numvectors} vectors\n(color gradient)', 
+                transform=ax2.transAxes, fontsize=9, verticalalignment='center')
     
     # Add a horizontal line at y=0 for reference
-    ax2.axhline(y=0, color='black', linestyle='-', linewidth=0.5, alpha=0.5)
+    ax2.axhline(y=0, color='black', linestyle='-', linewidth=0.8, alpha=0.7)
+    
+    # Set x-axis limits to show full dimension range
+    ax2.set_xlim(-1, np_array.shape[1])
     
     # Improve layout with more white space
     plt.tight_layout(pad=2.0)
