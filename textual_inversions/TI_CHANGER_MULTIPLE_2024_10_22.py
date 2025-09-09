@@ -44,9 +44,10 @@ HEATMAP_WIDTH = 24
 def analyze_pt_file(filepath):
     """
     Analyze a .pt file to determine its type and structure with flexible TI detection
+    Now supports both single-vector (1D) and multi-vector (2D) files
     """
     try:
-        data = torch.load(filepath, map_location='cpu')
+        data = torch.load(filepath, map_location='cpu', weights_only=False)
         print(f"\nFile Analysis: {os.path.basename(filepath)}")
         print("=" * 50)
         
@@ -62,8 +63,15 @@ def analyze_pt_file(filepath):
                 tensor_path, tensor = embedding_info
                 print(f"✓ Found embedding tensor at: {tensor_path}")
                 print(f"✓ Tensor shape: {tensor.shape}")
-                print(f"✓ Number of vectors: {tensor.shape[0]}")
-                print(f"✓ Vector dimensions: {tensor.shape[1]}")
+                
+                if len(tensor.shape) == 1:
+                    print(f"✓ Single vector file (1D tensor)")
+                    print(f"✓ Vector dimensions: {tensor.shape[0]}")
+                elif len(tensor.shape) == 2:
+                    print(f"✓ Multi-vector file (2D tensor)")
+                    print(f"✓ Number of vectors: {tensor.shape[0]}")
+                    print(f"✓ Vector dimensions: {tensor.shape[1]}")
+                
                 return True
             else:
                 print("✗ No embedding tensor found with common TI patterns")
@@ -84,8 +92,11 @@ def analyze_pt_file(filepath):
             print("✗ This is a model file, not a textual inversion")
         elif torch.is_tensor(data):
             print(f"✓ File contains a raw tensor with shape: {data.shape}")
-            if len(data.shape) == 2:
-                print(f"✓ This could be a direct embedding tensor!")
+            if len(data.shape) == 1:
+                print(f"✓ Single vector file! Vector dimensions: {data.shape[0]}")
+                return True
+            elif len(data.shape) == 2:
+                print(f"✓ Multi-vector file! This could be a direct embedding tensor!")
                 print(f"✓ Number of vectors: {data.shape[0]}")
                 print(f"✓ Vector dimensions: {data.shape[1]}")
                 return True
@@ -105,6 +116,7 @@ def analyze_pt_file(filepath):
 def find_embedding_tensor(data):
     """
     Flexibly search for embedding tensors in various TI file formats
+    Handles both 1D (single vector) and 2D (multi-vector) tensors
     Returns: (path_description, tensor) if found, None if not found
     """
     if not isinstance(data, dict):
@@ -151,14 +163,16 @@ def find_embedding_tensor(data):
                 
                 if final_key in current:
                     tensor_candidate = current[final_key]
-                    if torch.is_tensor(tensor_candidate) and len(tensor_candidate.shape) == 2:
+                    # Accept both 1D and 2D tensors
+                    if torch.is_tensor(tensor_candidate) and len(tensor_candidate.shape) in [1, 2]:
                         return (description, tensor_candidate)
                 elif len(key_path) == 1 and final_key in ['string_to_param', 'embeddings', 'emb_params']:
                     # For containers, check all their contents
                     container = current[final_key]
                     if isinstance(container, dict):
                         for sub_key, sub_value in container.items():
-                            if torch.is_tensor(sub_value) and len(sub_value.shape) == 2:
+                            # Accept both 1D and 2D tensors
+                            if torch.is_tensor(sub_value) and len(sub_value.shape) in [1, 2]:
                                 return (f"{description}['{sub_key}']", sub_value)
         except:
             continue
@@ -169,7 +183,7 @@ def find_embedding_tensor(data):
 
 def search_all_tensors(data, path="", max_depth=3):
     """
-    Recursively search for 2D tensors that could be embeddings
+    Recursively search for 1D or 2D tensors that could be embeddings
     """
     if max_depth <= 0:
         return None
@@ -178,8 +192,8 @@ def search_all_tensors(data, path="", max_depth=3):
         for key, value in data.items():
             current_path = f"{path}.{key}" if path else key
             
-            if torch.is_tensor(value) and len(value.shape) == 2:
-                # Found a 2D tensor - likely an embedding
+            # Accept both 1D and 2D tensors
+            if torch.is_tensor(value) and len(value.shape) in [1, 2]:
                 return (f"deep search: {current_path}", value)
             elif isinstance(value, dict):
                 result = search_all_tensors(value, current_path, max_depth - 1)
@@ -192,34 +206,62 @@ def search_all_tensors(data, path="", max_depth=3):
 def load_ti_file_flexible(filepath):
     """
     Load a TI file with flexible structure detection
-    Returns: (data_dict, tensor, tensor_path) or None if not a valid TI file
+    Handles both single-vector (1D) and multi-vector (2D) tensors
+    Returns: (data_dict, tensor, tensor_path, is_single_vector) or None if not a valid TI file
     """
     try:
-        data = torch.load(filepath, map_location='cpu')
+        data = torch.load(filepath, map_location='cpu', weights_only=False)
         
         # Handle raw tensor files
-        if torch.is_tensor(data) and len(data.shape) == 2:
-            # Create a minimal TI structure
-            ti_data = {
-                'string_to_param': {'*': data},
-                'string_to_token': {'*': 49408},  # Default token
-                'name': os.path.splitext(os.path.basename(filepath))[0],
-                'step': 0
-            }
-            return (ti_data, data, "raw tensor converted to standard format")
+        if torch.is_tensor(data):
+            if len(data.shape) == 2:
+                # Create a minimal TI structure for 2D tensor
+                ti_data = {
+                    'string_to_param': {'*': data},
+                    'string_to_token': {'*': 49408},  # Default token
+                    'name': os.path.splitext(os.path.basename(filepath))[0],
+                    'step': 0
+                }
+                return (ti_data, data, "raw tensor converted to standard format", False)
+            elif len(data.shape) == 1:
+                # Convert 1D tensor to 2D for consistent processing
+                data_2d = data.unsqueeze(0)  # Add batch dimension
+                ti_data = {
+                    'string_to_param': {'*': data_2d},
+                    'string_to_token': {'*': 49408},  # Default token
+                    'name': os.path.splitext(os.path.basename(filepath))[0],
+                    'step': 0
+                }
+                return (ti_data, data_2d, "raw 1D tensor converted to 2D format", True)
         
         # Handle dictionary files
         if isinstance(data, dict):
             embedding_info = find_embedding_tensor(data)
             if embedding_info:
                 tensor_path, tensor = embedding_info
+                is_single_vector = False
+                
+                # Handle 1D tensors (single vector)
+                if len(tensor.shape) == 1:
+                    is_single_vector = True
+                    # Convert to 2D for consistent processing
+                    tensor = tensor.unsqueeze(0)
+                    print(f"🔄 Converted single vector (1D) to 2D format: {tensor.shape}")
                 
                 # Ensure we have a complete TI structure
                 if 'string_to_param' not in data:
                     # Create missing structure
                     data['string_to_param'] = {'*': tensor}
-                elif '*' not in data['string_to_param']:
-                    data['string_to_param']['*'] = tensor
+                else:
+                    # Update the tensor in the existing structure (might have been converted from 1D)
+                    if isinstance(data['string_to_param'], dict):
+                        # Find the key that contains our tensor and update it
+                        for key, value in data['string_to_param'].items():
+                            if torch.is_tensor(value) and torch.equal(value.squeeze(), tensor.squeeze()):
+                                data['string_to_param'][key] = tensor
+                                break
+                    if '*' not in data['string_to_param']:
+                        data['string_to_param']['*'] = tensor
                 
                 # Add missing metadata if needed
                 if 'string_to_token' not in data:
@@ -229,7 +271,7 @@ def load_ti_file_flexible(filepath):
                 if 'step' not in data:
                     data['step'] = 0
                 
-                return (data, tensor, tensor_path)
+                return (data, tensor, tensor_path, is_single_vector)
         
         return None
         
@@ -238,9 +280,9 @@ def load_ti_file_flexible(filepath):
         return None
 
 
-def get_user_choice():
+def get_user_choice(is_single_vector=False):
     """
-    user input function
+    User input function with enhanced feedback for single-vector files
     """
     import sys
     
@@ -249,23 +291,46 @@ def get_user_choice():
         sys.stdin.flush()
     
     print("\n" + "="*60)
-    print("TI CHANGER - SELECT OPERATION")
+    if is_single_vector:
+        print("TI CHANGER - SINGLE VECTOR FILE OPERATIONS")
+        print("="*60)
+        print("🔵 SINGLE VECTOR DETECTED: Some operations limited or modified")
+    else:
+        print("TI CHANGER - MULTI VECTOR FILE OPERATIONS") 
+        print("="*60)
+        print("🟢 MULTI VECTOR FILE: All operations available")
     print("="*60)
-    print("1. Apply smoothing to all vectors")
-    print("2. Create single mean vector (condensed)")
-    print("3. Apply threshold-based decimation (zero small values)")
-    print("4. Divide all vectors by scalar")
-    print("5. Roll/shift all vectors")
-    print("6. Extract individual vectors to separate files")
-    print("7. Save top N vectors by absolute magnitude")
-    print("8. Clustering-Based Reduction (K-means with Elbow Method)")
-    print("9. Principal Component Analysis (PCA)")
-    print("10. Quantile Transform (Uniform/Gaussian)")
-    print("11. Nonlinear Squashing (tanh)")
-    print("12. L² Normalization")
-    print("13. Max/Min Averaging (single vector from extremes)")
-    print("14. Average specified vectors and combine with remaining")
+    
+    # Mark operations that work differently for single vectors
+    sv_note = " (⚠️  Single vector: creates duplicate)" if is_single_vector else ""
+    mv_only = " (❌ Multi-vector only)" if is_single_vector else ""
+    
+    print(f"1. Apply smoothing to all vectors{sv_note}")
+    print(f"2. Create single mean vector (condensed){mv_only}")
+    print(f"3. Apply threshold-based decimation (zero small values)")
+    print(f"4. Divide all vectors by scalar")
+    print(f"5. Roll/shift all vectors")
+    print(f"6. Extract individual vectors to separate files{mv_only}")
+    print(f"7. Save top N vectors by absolute magnitude{mv_only}")
+    print(f"8. Clustering-Based Reduction (K-means with Elbow Method){mv_only}")
+    print(f"9. Principal Component Analysis (PCA){mv_only}")
+    print(f"10. Quantile Transform (Uniform/Gaussian)")
+    print(f"11. Nonlinear Squashing (tanh)")
+    print(f"12. L² Normalization")
+    print(f"13. Max/Min Averaging (single vector from extremes){mv_only}")
+    print(f"14. Average specified vectors and combine with remaining{mv_only}")
     print("="*60)
+    
+    if is_single_vector:
+        print("\n📌 NOTE: This is a single-vector file. Some operations that require")
+        print("   multiple vectors are unavailable or will work on duplicated vectors.")
+        print("   Recommended operations: 3, 4, 5, 10, 11, 12")
+    
+    # Define which operations are available for single vectors
+    single_vector_ops = ['1', '3', '4', '5', '10', '11', '12']
+    multi_vector_ops = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14']
+    
+    valid_ops = single_vector_ops if is_single_vector else multi_vector_ops
     
     # Improved input handling with retry logic
     max_attempts = 3
@@ -281,8 +346,14 @@ def get_user_choice():
             # Debug: Show what was actually captured (remove this after fixing)
             print(f"Debug: Captured input: '{user_input}' (length: {len(user_input)})")
             
-            if user_input in ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14']:
+            if user_input in valid_ops:
                 return user_input
+            elif user_input in ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14']:
+                if is_single_vector:
+                    print(f"❌ Operation {user_input} is not available for single-vector files.")
+                    print(f"   Available operations: {', '.join(single_vector_ops)}")
+                else:
+                    return user_input
             else:
                 print(f"Invalid input: '{user_input}'. Please enter a number from 1 to 14.")
                 if attempt < max_attempts - 1:
@@ -1931,10 +2002,16 @@ def process_single_file():
         input("\nPress Enter to continue...")
         return False
     
-    data, tensor, tensor_path = flexible_result
+    data, tensor, tensor_path, is_single_vector = flexible_result
     print(f'\n✅ TI loaded successfully from {original_selected_path}')
     print(f'📍 Embedding tensor found at: {tensor_path}')
     print(f'📊 Final data structure keys: {list(data.keys())}')
+    
+    if is_single_vector:
+        print(f'🔵 SINGLE VECTOR FILE: Original 1D tensor converted to 2D for processing')
+        print(f'🔵 Vector will be duplicated where multiple vectors are needed')
+    else:
+        print(f'🟢 MULTI VECTOR FILE: {tensor.shape[0]} vectors available')
     
     # Now we can safely access the tensor since we've validated and normalized the structure
     
@@ -2169,12 +2246,19 @@ def process_single_file():
     Present user with operation choices upfront
     """
     
-    user_input = get_user_choice()
+    user_input = get_user_choice(is_single_vector)
     if user_input is None:
         input("Press Enter to continue...")
         return False
     
     print(f"\nSelected: Option {user_input}")
+    
+    # Handle single-vector restrictions
+    if is_single_vector and user_input in ['2', '6', '7', '8', '9', '13', '14']:
+        print(f"❌ Option {user_input} is not available for single-vector files.")
+        print("   Please select a different operation.")
+        input("Press Enter to continue...")
+        return False
     
     # Handle Option 6 (extract vectors) immediately since it doesn't need processing
     if user_input == "6":
@@ -2252,6 +2336,17 @@ def process_single_file():
     if user_input == "1":
         # SMOOTHING OPERATION
         print("You chose Option 1 - retain all vectors, but with SMOOTHING...")
+        
+        if is_single_vector:
+            print("\n⚠️  SINGLE VECTOR NOTICE:")
+            print("   Since this is a single-vector file, smoothing will be applied to the one vector.")
+            print("   The result will still be a single vector (no duplication for smoothing).")
+            
+            # Ask user if they want to continue
+            continue_choice = input("\nContinue with smoothing? (y/n): ").strip().lower()
+            if continue_choice not in ['y', 'yes']:
+                print("Operation cancelled.")
+                return False
         
         # Get smoothing parameters
         sm_kernel = int(input("SMOOTHING: Enter kernel size (MUST BE ODD eg '3'), or enter '1' to skip smoothing: "))
