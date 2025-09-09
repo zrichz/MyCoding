@@ -319,6 +319,7 @@ def get_user_choice(is_single_vector=False):
     print(f"12. L² Normalization")
     print(f"13. Max/Min Averaging (single vector from extremes){mv_only}")
     print(f"14. Average specified vectors and combine with remaining{mv_only}")
+    print("15. Compare two TI files (vector-by-vector analysis)")
     print("="*60)
     
     if is_single_vector:
@@ -327,8 +328,8 @@ def get_user_choice(is_single_vector=False):
         print("   Recommended operations: 3, 4, 5, 10, 11, 12")
     
     # Define which operations are available for single vectors
-    single_vector_ops = ['1', '3', '4', '5', '10', '11', '12']
-    multi_vector_ops = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14']
+    single_vector_ops = ['1', '3', '4', '5', '10', '11', '12', '15']
+    multi_vector_ops = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15']
     
     valid_ops = single_vector_ops if is_single_vector else multi_vector_ops
     
@@ -341,21 +342,21 @@ def get_user_choice(is_single_vector=False):
             time.sleep(0.1)
             
             print(f"\nAttempt {attempt + 1}: ", end="", flush=True)
-            user_input = input("Choose operation (1-14): ").strip()
+            user_input = input("Choose operation (1-15): ").strip()
             
             # Debug: Show what was actually captured (remove this after fixing)
             print(f"Debug: Captured input: '{user_input}' (length: {len(user_input)})")
             
             if user_input in valid_ops:
                 return user_input
-            elif user_input in ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14']:
+            elif user_input in ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15']:
                 if is_single_vector:
                     print(f"❌ Operation {user_input} is not available for single-vector files.")
                     print(f"   Available operations: {', '.join(single_vector_ops)}")
                 else:
                     return user_input
             else:
-                print(f"Invalid input: '{user_input}'. Please enter a number from 1 to 14.")
+                print(f"Invalid input: '{user_input}'. Please enter a number from 1 to 15.")
                 if attempt < max_attempts - 1:
                     print("Try again...")
                     continue
@@ -367,7 +368,7 @@ def get_user_choice(is_single_vector=False):
                 print("Too many failed attempts. Exiting...")
                 return None
     
-    print("Invalid choice after multiple attempts. Please run the script again and enter 1-14.")
+    print("Invalid choice after multiple attempts. Please run the script again and enter 1-15.")
     return None
 
 
@@ -2692,10 +2693,16 @@ def compare_two_ti_files():
     elif rows == 1:
         axes = axes.reshape(3, -1)
     
-    # Define color maps
-    cmap1 = plt.get_cmap('coolwarm')
-    cmap2 = plt.get_cmap('viridis')
-    cmap_diff = plt.get_cmap('RdBu_r')
+    # Use single diverging colormap for all plots
+    cmap_diverging = plt.get_cmap('RdBu_r')
+    
+    # Calculate global min/max for consistent scaling across all plots
+    global_min = min(np_array1.min(), np_array2.min(), difference_array.min())
+    global_max = max(np_array1.max(), np_array2.max(), difference_array.max())
+    
+    # Ensure symmetric scaling around zero for diverging colormap
+    global_abs_max = max(abs(global_min), abs(global_max))
+    vmin, vmax = -global_abs_max, global_abs_max
     
     # Process each vector
     for i in range(num_vectors):
@@ -2730,26 +2737,26 @@ def compare_two_ti_files():
         heatmap2 = vector2.reshape(heatmap_height, heatmap_width)
         heatmap_diff = vector_diff.reshape(heatmap_height, heatmap_width)
         
-        # Plot File 1 vector
+        # Plot File 1 vector with consistent scaling
         ax1 = axes[base_row, col]
-        im1 = ax1.imshow(heatmap1, cmap=cmap1, aspect='auto')
-        ax1.set_title(f'File 1 - Vector {i+1}\nRange: [{vector1.min():.4f}, {vector1.max():.4f}]', fontsize=8)
+        im1 = ax1.imshow(heatmap1, cmap=cmap_diverging, aspect='auto', vmin=vmin, vmax=vmax)
+        ax1.set_title(f'F1,V{i+1}\n[{vector1.min():.2f}, {vector1.max():.2f}]', fontsize=8)
         ax1.set_xticks([])
         ax1.set_yticks([])
         plt.colorbar(im1, ax=ax1, shrink=0.6)
         
-        # Plot File 2 vector
+        # Plot File 2 vector with consistent scaling
         ax2 = axes[base_row + 1, col]
-        im2 = ax2.imshow(heatmap2, cmap=cmap2, aspect='auto')
-        ax2.set_title(f'File 2 - Vector {i+1}\nRange: [{vector2.min():.4f}, {vector2.max():.4f}]', fontsize=8)
+        im2 = ax2.imshow(heatmap2, cmap=cmap_diverging, aspect='auto', vmin=vmin, vmax=vmax)
+        ax2.set_title(f'F2,V{i+1}\n[{vector2.min():.2f}, {vector2.max():.2f}]', fontsize=8)
         ax2.set_xticks([])
         ax2.set_yticks([])
         plt.colorbar(im2, ax=ax2, shrink=0.6)
         
-        # Plot Difference
+        # Plot Difference with consistent scaling
         ax3 = axes[base_row + 2, col]
-        im3 = ax3.imshow(heatmap_diff, cmap=cmap_diff, aspect='auto')
-        ax3.set_title(f'Difference - Vector {i+1}\nRange: [{vector_diff.min():.4f}, {vector_diff.max():.4f}]', fontsize=8)
+        im3 = ax3.imshow(heatmap_diff, cmap=cmap_diverging, aspect='auto', vmin=vmin, vmax=vmax)
+        ax3.set_title(f'Diff,V{i+1}\n[{vector_diff.min():.2f}, {vector_diff.max():.2f}]', fontsize=8)
         ax3.set_xticks([])
         ax3.set_yticks([])
         plt.colorbar(im3, ax=ax3, shrink=0.6)
@@ -2763,9 +2770,9 @@ def compare_two_ti_files():
         if row < axes.shape[0] and col < axes.shape[1]:
             axes[row, col].set_visible(False)
     
-    # Set overall title
+    # Set overall title with 3 decimal places for statistics
     fig.suptitle(f'TI File Comparison: {file1_name} vs {file2_name}\n'
-                f'MSE: {mse:.8f}, MAE: {mae:.8f}, Correlation: {correlation:.6f}', 
+                f'MSE: {mse:.3f}, MAE: {mae:.3f}, Correlation: {correlation:.3f}', 
                 fontsize=12, y=0.98)
     
     plt.tight_layout(rect=(0, 0, 1, 0.95))
@@ -2855,33 +2862,75 @@ def main():
     print("TI CHANGER MULTIPLE - TEXTUAL INVERSION FILE PROCESSOR")
     print("="*60)
     print("This tool allows you to manipulate and transform textual inversion files.")
-    print("You can process multiple files in sequence.")
+    print("You can process multiple files in sequence or compare two files.")
     print("="*60)
     
     while True:
         print(f"\n{'='*60}")
-        print("STARTING NEW FILE PROCESSING SESSION")
+        print("MAIN MENU - CHOOSE OPERATION TYPE")
+        print("="*60)
+        print("1. Process a single TI file (load, analyze, transform)")
+        print("2. Compare two TI files (vector-by-vector analysis)")
+        print("3. Exit")
         print("="*60)
         
-        # Process a single file
-        success = process_single_file()
+        # Get user choice for operation type
+        while True:
+            try:
+                main_choice = input("Choose operation type (1-3): ").strip()
+                if main_choice in ['1', '2', '3']:
+                    break
+                else:
+                    print("Please enter 1, 2, or 3")
+            except (EOFError, KeyboardInterrupt):
+                print(f"\n\n{'='*60}")
+                print("SESSION INTERRUPTED BY USER")
+                print("="*60)
+                print("Goodbye!")
+                return
         
-        if success:
+        if main_choice == '3':
             print(f"\n{'='*60}")
-            print("FILE PROCESSING COMPLETED SUCCESSFULLY!")
+            print("THANK YOU FOR USING TI CHANGER MULTIPLE!")
             print("="*60)
+            print("Session completed. Goodbye!")
+            return
+        elif main_choice == '2':
+            # Compare two files directly
+            print(f"\n{'='*60}")
+            print("COMPARING TWO TI FILES")
+            print("="*60)
+            print("This will open file dialogs to select two files for comparison.")
+            success = compare_two_ti_files()
+            if success:
+                print("✅ File comparison completed successfully!")
+            else:
+                print("❌ File comparison failed or was cancelled.")
         else:
+            # Process a single file (main_choice == '1')
             print(f"\n{'='*60}")
-            print("FILE PROCESSING WAS CANCELLED OR FAILED")
+            print("STARTING NEW FILE PROCESSING SESSION")
             print("="*60)
+            
+            # Process a single file
+            success = process_single_file()
+            
+            if success:
+                print(f"\n{'='*60}")
+                print("FILE PROCESSING COMPLETED SUCCESSFULLY!")
+                print("="*60)
+            else:
+                print(f"\n{'='*60}")
+                print("FILE PROCESSING WAS CANCELLED OR FAILED")
+                print("="*60)
         
-        # Ask user if they want to process another file
-        print("\nWould you like to process another textual inversion file?")
+        # Ask user if they want to continue
+        print("\nWould you like to perform another operation?")
         while True:
             try:
                 continue_choice = input("Enter 'Y' for Yes or 'N' for No: ").strip().upper()
                 if continue_choice in ['Y', 'YES']:
-                    print("\nStarting new file selection...")
+                    print("\nReturning to main menu...")
                     break
                 elif continue_choice in ['N', 'NO']:
                     print(f"\n{'='*60}")
