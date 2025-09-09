@@ -1924,7 +1924,7 @@ def save_transformed_file(data, original_filename, transformed_array, suffix):
     if not os.path.exists(directory):
         os.makedirs(directory)
     
-    # Save the file
+    # Save the file to the directory
     filepath = os.path.join(directory, final_filename)
     torch.save(new_data, filepath)
     
@@ -2057,7 +2057,7 @@ def process_single_file():
     ax.set_ylim(-y_limit, y_limit)
     
     # Customize the plot with better spacing
-    ax.set_title(f'Vector Statistics for {filename}\n({numvectors} vectors, {np_array.shape[1]} dimensions each)', 
+    ax.set_title(f' Vector Statistics for {filename}\n({numvectors} vectors, {np_array.shape[1]} dimensions each)', 
                 fontsize=10, pad=15)
     ax.set_xlabel('Vector Number', fontsize=9)
     ax.set_ylabel('Value', fontsize=9)
@@ -2258,7 +2258,7 @@ def process_single_file():
         axes[i].set_visible(False)
     
     # Set overall title
-    fig3.suptitle(f'Vector Heatmaps for {filename}\n({numvectors} vectors reshaped to {heatmap_height}×{heatmap_width} for visualization)', 
+    fig3.suptitle(f' Vection Heatmaps for {filename}\n({numvectors} vectors reshaped to {heatmap_height}×{heatmap_width} for visualization)', 
                  fontsize=12, y=0.98)
     
     # Adjust layout
@@ -2351,10 +2351,15 @@ def process_single_file():
         average_specified_vectors(data, filename, numvectors, np_array)
         return True  # Successfully completed processing
     
-    # Handle Option 14 (Average specified vectors) immediately since it doesn't need processing
-    if user_input == "14":
-        print("You chose Option 14 - Average specified vectors and combine with remaining...")
-        average_specified_vectors(data, filename, numvectors, np_array)
+    # Handle Option 15 (Compare two TI files) immediately since it doesn't need the current file
+    if user_input == "15":
+        print("You chose Option 15 - Compare two TI files (vector-by-vector analysis)...")
+        print("Note: This will open new file dialogs to select two files for comparison.")
+        success = compare_two_ti_files()
+        if success:
+            print("✅ File comparison completed successfully!")
+        else:
+            print("❌ File comparison failed or was cancelled.")
         return True  # Successfully completed processing
     
     # ========================================
@@ -2529,6 +2534,319 @@ def process_single_file():
     print(f"✅ The file '{final_filename}' has been saved to the '{directory}' directory.")
     print("\nOperation completed successfully!")
     return True  # Successfully completed processing
+
+
+def compare_two_ti_files():
+    """
+    Compare two TI files vector-by-vector with visualization and save options
+    """
+    import tkinter as tk
+    from tkinter import filedialog
+    import matplotlib.pyplot as plt
+    import matplotlib.colors as mcolors
+    
+    print("="*60)
+    print("TI FILE COMPARISON - VECTOR BY VECTOR ANALYSIS")
+    print("="*60)
+    print("This tool loads two TI files and performs detailed comparison.")
+    print("Provides visualization and options to save averaged/difference files.")
+    print("="*60)
+    
+    # Set up file dialog
+    root = tk.Tk()
+    root.withdraw()
+    root.attributes('-topmost', True)
+    root.geometry("800x600")
+    
+    # Load first file
+    print("\n📁 Select FIRST TI file to compare...")
+    file1_path = filedialog.askopenfilename(
+        title="Select FIRST TI .pt file",
+        filetypes=[("PyTorch TI files", "*.pt"), ("All files", "*.*")],
+        parent=root
+    )
+    
+    if not file1_path:
+        print("❌ No first file selected. Returning to main menu.")
+        return False
+    
+    # Load second file
+    print("\n📁 Select SECOND TI file to compare...")
+    file2_path = filedialog.askopenfilename(
+        title="Select SECOND TI .pt file",
+        filetypes=[("PyTorch TI files", "*.pt"), ("All files", "*.*")],
+        parent=root
+    )
+    
+    if not file2_path:
+        print("❌ No second file selected. Returning to main menu.")
+        return False
+    
+    file1_name = os.path.basename(file1_path)
+    file2_name = os.path.basename(file2_path)
+    
+    print(f"\n🔍 Loading and analyzing files...")
+    print(f"   File 1: {file1_name}")
+    print(f"   File 2: {file2_name}")
+    
+    # Load first file
+    result1 = load_ti_file_flexible(file1_path)
+    if not result1:
+        print(f"❌ Failed to load first file: {file1_name}")
+        return False
+    
+    data1, tensor1, path1, is_single1 = result1
+    np_array1 = tensor1.cpu().detach().numpy()
+    
+    # Load second file
+    result2 = load_ti_file_flexible(file2_path)
+    if not result2:
+        print(f"❌ Failed to load second file: {file2_name}")
+        return False
+    
+    data2, tensor2, path2, is_single2 = result2
+    np_array2 = tensor2.cpu().detach().numpy()
+    
+    print(f"\n✅ Files loaded successfully!")
+    print(f"   File 1: {np_array1.shape} - {'Single vector' if is_single1 else 'Multi-vector'}")
+    print(f"   File 2: {np_array2.shape} - {'Single vector' if is_single2 else 'Multi-vector'}")
+    
+    # Check compatibility
+    if np_array1.shape != np_array2.shape:
+        print(f"\n⚠️  WARNING: Files have different shapes!")
+        print(f"   File 1: {np_array1.shape}")
+        print(f"   File 2: {np_array2.shape}")
+        
+        # Try to make them compatible
+        min_vectors = min(np_array1.shape[0], np_array2.shape[0])
+        min_dims = min(np_array1.shape[1], np_array2.shape[1])
+        
+        print(f"\n🔧 Attempting to make compatible by using:")
+        print(f"   Vectors: {min_vectors} (minimum of both)")
+        print(f"   Dimensions: {min_dims} (minimum of both)")
+        
+        np_array1 = np_array1[:min_vectors, :min_dims]
+        np_array2 = np_array2[:min_vectors, :min_dims]
+        
+        print(f"✅ Trimmed both arrays to: {np_array1.shape}")
+    
+    num_vectors = np_array1.shape[0]
+    num_dims = np_array1.shape[1]
+    
+    # Calculate statistics
+    print(f"\n📊 COMPARISON STATISTICS:")
+    print(f"   Vectors to compare: {num_vectors}")
+    print(f"   Dimensions per vector: {num_dims}")
+    
+    # Calculate differences and averages
+    difference_array = np_array2 - np_array1
+    average_array = (np_array1 + np_array2) / 2.0
+    
+    # Overall statistics
+    file1_range = [np_array1.min(), np_array1.max()]
+    file2_range = [np_array2.min(), np_array2.max()]
+    diff_range = [difference_array.min(), difference_array.max()]
+    avg_range = [average_array.min(), average_array.max()]
+    
+    print(f"\n📈 VALUE RANGES:")
+    print(f"   File 1 range: [{file1_range[0]:.6f}, {file1_range[1]:.6f}]")
+    print(f"   File 2 range: [{file2_range[0]:.6f}, {file2_range[1]:.6f}]")
+    print(f"   Difference range: [{diff_range[0]:.6f}, {diff_range[1]:.6f}]")
+    print(f"   Average range: [{avg_range[0]:.6f}, {avg_range[1]:.6f}]")
+    
+    # Calculate similarity metrics
+    mse = np.mean((np_array1 - np_array2) ** 2)
+    mae = np.mean(np.abs(np_array1 - np_array2))
+    max_diff = np.max(np.abs(np_array1 - np_array2))
+    
+    # Correlation coefficient
+    correlation = np.corrcoef(np_array1.flatten(), np_array2.flatten())[0, 1]
+    
+    print(f"\n🔍 SIMILARITY METRICS:")
+    print(f"   Mean Squared Error (MSE): {mse:.8f}")
+    print(f"   Mean Absolute Error (MAE): {mae:.8f}")
+    print(f"   Maximum Difference: {max_diff:.8f}")
+    print(f"   Correlation Coefficient: {correlation:.6f}")
+    
+    # Visualize the comparison
+    print(f"\n🎨 Generating vector-by-vector visualization...")
+    
+    # Create heatmap visualization
+    heatmap_height = HEATMAP_HEIGHT  # 24
+    heatmap_width = HEATMAP_WIDTH    # 36
+    target_size = heatmap_height * heatmap_width
+    
+    # Calculate grid for subplots
+    cols = min(4, num_vectors)
+    rows = math.ceil(num_vectors / cols)
+    
+    # Create figure with 3 rows per vector (file1, file2, difference)
+    fig_height = rows * 9  # 3 subplots per row * 3 inches each
+    fig_width = cols * 4   # 4 inches per column
+    
+    fig, axes = plt.subplots(rows * 3, cols, figsize=(fig_width, fig_height))
+    
+    # Handle case where we have only one column or row
+    if num_vectors == 1:
+        axes = axes.reshape(-1, 1) if axes.ndim == 1 else axes
+    elif rows == 1:
+        axes = axes.reshape(3, -1)
+    
+    # Define color maps
+    cmap1 = plt.get_cmap('coolwarm')
+    cmap2 = plt.get_cmap('viridis')
+    cmap_diff = plt.get_cmap('RdBu_r')
+    
+    # Process each vector
+    for i in range(num_vectors):
+        col = i % cols
+        base_row = (i // cols) * 3
+        
+        # Get vector data
+        vector1 = np_array1[i].copy()
+        vector2 = np_array2[i].copy()
+        vector_diff = difference_array[i].copy()
+        
+        # Resize vectors to heatmap dimensions
+        if num_dims != target_size:
+            # Pad or truncate to target size
+            if num_dims < target_size:
+                # Pad with zeros
+                padded1 = np.zeros(target_size)
+                padded2 = np.zeros(target_size)
+                padded_diff = np.zeros(target_size)
+                padded1[:num_dims] = vector1
+                padded2[:num_dims] = vector2
+                padded_diff[:num_dims] = vector_diff
+                vector1, vector2, vector_diff = padded1, padded2, padded_diff
+            else:
+                # Truncate
+                vector1 = vector1[:target_size]
+                vector2 = vector2[:target_size]
+                vector_diff = vector_diff[:target_size]
+        
+        # Reshape to 2D heatmap
+        heatmap1 = vector1.reshape(heatmap_height, heatmap_width)
+        heatmap2 = vector2.reshape(heatmap_height, heatmap_width)
+        heatmap_diff = vector_diff.reshape(heatmap_height, heatmap_width)
+        
+        # Plot File 1 vector
+        ax1 = axes[base_row, col]
+        im1 = ax1.imshow(heatmap1, cmap=cmap1, aspect='auto')
+        ax1.set_title(f'File 1 - Vector {i+1}\nRange: [{vector1.min():.4f}, {vector1.max():.4f}]', fontsize=8)
+        ax1.set_xticks([])
+        ax1.set_yticks([])
+        plt.colorbar(im1, ax=ax1, shrink=0.6)
+        
+        # Plot File 2 vector
+        ax2 = axes[base_row + 1, col]
+        im2 = ax2.imshow(heatmap2, cmap=cmap2, aspect='auto')
+        ax2.set_title(f'File 2 - Vector {i+1}\nRange: [{vector2.min():.4f}, {vector2.max():.4f}]', fontsize=8)
+        ax2.set_xticks([])
+        ax2.set_yticks([])
+        plt.colorbar(im2, ax=ax2, shrink=0.6)
+        
+        # Plot Difference
+        ax3 = axes[base_row + 2, col]
+        im3 = ax3.imshow(heatmap_diff, cmap=cmap_diff, aspect='auto')
+        ax3.set_title(f'Difference - Vector {i+1}\nRange: [{vector_diff.min():.4f}, {vector_diff.max():.4f}]', fontsize=8)
+        ax3.set_xticks([])
+        ax3.set_yticks([])
+        plt.colorbar(im3, ax=ax3, shrink=0.6)
+    
+    # Hide unused subplots
+    total_subplots = (rows * 3) * cols
+    used_subplots = num_vectors * 3
+    for i in range(used_subplots, total_subplots):
+        row = i // cols
+        col = i % cols
+        if row < axes.shape[0] and col < axes.shape[1]:
+            axes[row, col].set_visible(False)
+    
+    # Set overall title
+    fig.suptitle(f'TI File Comparison: {file1_name} vs {file2_name}\n'
+                f'MSE: {mse:.8f}, MAE: {mae:.8f}, Correlation: {correlation:.6f}', 
+                fontsize=12, y=0.98)
+    
+    plt.tight_layout(rect=(0, 0, 1, 0.95))
+    plt.show()
+    
+    # Ask user about saving results
+    print(f"\n💾 SAVE OPTIONS:")
+    print(f"1. Save AVERAGE of both files")
+    print(f"2. Save DIFFERENCE of files (File2 - File1)")
+    print(f"3. Save BOTH average and difference")
+    print(f"4. Skip saving and return to menu")
+    
+    while True:
+        try:
+            save_choice = input(f"\nEnter your choice (1-4): ").strip()
+            if save_choice in ['1', '2', '3', '4']:
+                break
+            else:
+                print("Please enter 1, 2, 3, or 4")
+        except (ValueError, KeyboardInterrupt):
+            print("Please enter a valid choice")
+    
+    if save_choice == '4':
+        print("✅ Comparison completed without saving.")
+        return True
+    
+    # Create base filename from the two input files
+    base1 = file1_name.replace('.pt', '')
+    base2 = file2_name.replace('.pt', '')
+    
+    # Create directory if it doesn't exist
+    directory = "textual_inversions"
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    
+    saved_files = []
+    
+    # Save average file
+    if save_choice in ['1', '3']:
+        print(f"\n💾 Saving AVERAGE file...")
+        avg_tensor = torch.tensor(average_array, device='cpu', requires_grad=True)
+        avg_data = data1.copy()  # Use structure from first file
+        avg_data['string_to_param'] = {'*': avg_tensor}
+        
+        avg_filename = f"{base1}_AVG_{base2}.pt"
+        avg_filepath = os.path.join(directory, avg_filename)
+        torch.save(avg_data, avg_filepath)
+        
+        print(f"✅ Average file saved: {avg_filename}")
+        print(f"   Shape: {avg_tensor.shape}")
+        print(f"   Range: [{average_array.min():.6f}, {average_array.max():.6f}]")
+        saved_files.append(avg_filename)
+    
+    # Save difference file
+    if save_choice in ['2', '3']:
+        print(f"\n💾 Saving DIFFERENCE file...")
+        diff_tensor = torch.tensor(difference_array, device='cpu', requires_grad=True)
+        diff_data = data1.copy()  # Use structure from first file
+        diff_data['string_to_param'] = {'*': diff_tensor}
+        
+        diff_filename = f"{base1}_DIFF_{base2}.pt"
+        diff_filepath = os.path.join(directory, diff_filename)
+        torch.save(diff_data, diff_filepath)
+        
+        print(f"✅ Difference file saved: {diff_filename}")
+        print(f"   Shape: {diff_tensor.shape}")
+        print(f"   Range: [{difference_array.min():.6f}, {difference_array.max():.6f}]")
+        saved_files.append(diff_filename)
+    
+    # Summary
+    print(f"\n🎉 COMPARISON SUMMARY:")
+    print(f"   Files compared: {file1_name} vs {file2_name}")
+    print(f"   Vectors compared: {num_vectors}")
+    print(f"   Dimensions: {num_dims}")
+    print(f"   Similarity (correlation): {correlation:.6f}")
+    print(f"   Files saved: {len(saved_files)}")
+    for filename in saved_files:
+        print(f"     - {filename}")
+    
+    print(f"\n✅ Vector-by-vector comparison completed successfully!")
+    return True
 
 
 def main():
