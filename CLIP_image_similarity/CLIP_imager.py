@@ -11,12 +11,51 @@ from scipy.spatial.distance import pdist, squareform
 # Helper to load and preprocess images for CLIP
 from torchvision.transforms import InterpolationMode
 
-preprocess = Compose([
-    Resize(224, interpolation=InterpolationMode.BICUBIC),
-    CenterCrop(224),
-    ToTensor(),
-    Normalize((0.48145466, 0.4578275, 0.40821073), (0.26862954, 0.26130258, 0.27577711))
-])
+def get_preprocess_for_model(model_name):
+    """Get appropriate preprocessing for specific CLIP models"""
+    if model_name == "RN50x4":
+        # RN50x4 expects 288×288 input (not 224×224)
+        return Compose([
+            Resize(320, interpolation=InterpolationMode.BICUBIC),  # Slightly larger for better crop
+            CenterCrop(288),  # Crop to exactly 288×288 as expected
+            ToTensor(),
+            Normalize((0.48145466, 0.4578275, 0.40821073), (0.26862954, 0.26130258, 0.27577711))
+        ])
+    elif model_name == "RN50x16":
+        # RN50x16 likely expects even larger input
+        return Compose([
+            Resize(384, interpolation=InterpolationMode.BICUBIC),
+            CenterCrop(320),  # Larger crop for RN50x16
+            ToTensor(),
+            Normalize((0.48145466, 0.4578275, 0.40821073), (0.26862954, 0.26130258, 0.27577711))
+        ])
+    elif model_name == "RN50x64":
+        # RN50x64 needs even larger preprocessing  
+        return Compose([
+            Resize(512, interpolation=InterpolationMode.BICUBIC),
+            CenterCrop(448),  # Very large crop for RN50x64
+            ToTensor(),
+            Normalize((0.48145466, 0.4578275, 0.40821073), (0.26862954, 0.26130258, 0.27577711))
+        ])
+    elif "@336px" in model_name:
+        # ViT-L/14@336px needs 336x336 input
+        return Compose([
+            Resize(336, interpolation=InterpolationMode.BICUBIC),
+            CenterCrop(336),
+            ToTensor(),
+            Normalize((0.48145466, 0.4578275, 0.40821073), (0.26862954, 0.26130258, 0.27577711))
+        ])
+    else:
+        # Standard preprocessing for ViT and RN50 (224×224)
+        return Compose([
+            Resize(224, interpolation=InterpolationMode.BICUBIC),
+            CenterCrop(224),
+            ToTensor(),
+            Normalize((0.48145466, 0.4578275, 0.40821073), (0.26862954, 0.26130258, 0.27577711))
+        ])
+
+# Default preprocess (for backward compatibility)
+preprocess = get_preprocess_for_model("default")
 
 def load_images_from_folder(folder):
     images = []
@@ -35,7 +74,9 @@ def load_images_from_folder(folder):
 def load_multiple_clip_models(device):
     """Load multiple CLIP models for ensemble approach"""
     models = []
-    model_names = ["ViT-B/32", "ViT-B/16", "RN50"]
+    # Use only the two best-performing models for optimal quality
+    model_names = ["ViT-L/14@336px", "RN50x4"]
+    fallback_models = {"RN50x4": "RN50"}
     
     for model_name in model_names:
         try:
@@ -45,16 +86,29 @@ def load_multiple_clip_models(device):
             print(f"✓ {model_name} loaded successfully")
         except Exception as e:
             print(f"✗ Failed to load {model_name}: {e}")
+            # Try fallback model if available
+            if model_name in fallback_models:
+                fallback_name = fallback_models[model_name]
+                try:
+                    print(f"Trying fallback model {fallback_name}...")
+                    model, _ = clip.load(fallback_name, device=device)
+                    models.append((model, fallback_name))
+                    print(f"✓ {fallback_name} loaded successfully as fallback")
+                except Exception as fallback_e:
+                    print(f"✗ Fallback {fallback_name} also failed: {fallback_e}")
     
     if not models:
         raise RuntimeError("No CLIP models could be loaded!")
     
     return models
 
-def compute_clip_features(images, model, device):
+def compute_clip_features(images, model, device, model_name="default"):
+    # Get model-specific preprocessing
+    model_preprocess = get_preprocess_for_model(model_name)
+    
     features = []
     for img in tqdm(images, desc="Encoding images with CLIP"):
-        image_input = preprocess(img).unsqueeze(0).to(device)
+        image_input = model_preprocess(img).unsqueeze(0).to(device)
         with torch.no_grad():
             feature = model.encode_image(image_input)
             feature = feature / feature.norm(dim=-1, keepdim=True)
@@ -64,15 +118,27 @@ def compute_clip_features(images, model, device):
 def compute_ensemble_features(images, models, device):
     """Compute features using multiple CLIP models and concatenate them"""
     all_features = []
+    successful_models = []
     
     for model, model_name in models:
-        print(f"Computing features with {model_name}...")
-        features = compute_clip_features(images, model, device)
-        all_features.append(features)
+        try:
+            print(f"Computing features with {model_name}...")
+            features = compute_clip_features(images, model, device, model_name)
+            all_features.append(features)
+            successful_models.append(model_name)
+            print(f"✓ {model_name} features computed successfully")
+        except Exception as e:
+            print(f"✗ Failed to compute features with {model_name}: {e}")
+            # Skip this model and continue with others
+            continue
     
-    # Concatenate features from all models
+    if not all_features:
+        raise RuntimeError("No models could compute features successfully!")
+    
+    # Concatenate features from all successful models
     ensemble_features = np.concatenate(all_features, axis=1)
     print(f"Ensemble features shape: {ensemble_features.shape}")
+    print(f"Successfully used models: {', '.join(successful_models)}")
     return ensemble_features
 
 def compute_advanced_similarity(features, method='ensemble'):
@@ -106,17 +172,13 @@ def plot_similarity_matrix(sim_matrix, paths):
     """Plot the full similarity matrix as a 2D heatmap"""
     plt.figure(figsize=(12, 10))
     
-    # Create labels from filenames (shortened)
-    labels = [os.path.basename(path)[:15] + "..." if len(os.path.basename(path)) > 15 
-              else os.path.basename(path) for path in paths]
-    
     # Plot the matrix
     im = plt.imshow(sim_matrix, cmap='jet', interpolation='nearest')
     plt.colorbar(im, label='Similarity Score')
     
-    # Set ticks and labels
-    plt.xticks(range(len(labels)), labels, rotation=45, ha='right', fontsize=8)
-    plt.yticks(range(len(labels)), labels, fontsize=8)
+    # Set ticks without labels - just show image indices
+    plt.xticks(range(len(paths)), [str(i) for i in range(len(paths))], fontsize=8)
+    plt.yticks(range(len(paths)), [str(i) for i in range(len(paths))], fontsize=8)
     
     # Add values to cells (for smaller matrices)
     if len(sim_matrix) <= 20:
