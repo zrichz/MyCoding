@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 from torchvision.transforms import Compose, Resize, CenterCrop, ToTensor, Normalize
 from tqdm import tqdm
 from scipy.spatial.distance import pdist, squareform
+from sklearn.decomposition import PCA
+from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 
 # Helper to load and preprocess images for CLIP
 from torchvision.transforms import InterpolationMode
@@ -227,6 +229,62 @@ def plot_top_pairs(sim_matrix, paths, top_k=8):
     plt.subplots_adjust(top=0.96)
     plt.show()
 
+def create_pca_image_map(features, images, paths, n_components=2):
+    """Create a 2D PCA plot with image thumbnails positioned by their CLIP embeddings."""
+    print(f"\nComputing PCA with {n_components} components...")
+    
+    # Perform PCA
+    pca = PCA(n_components=n_components)
+    pca_result = pca.fit_transform(features)
+    
+    print(f"PCA explained variance ratio: {pca.explained_variance_ratio_}")
+    print(f"Total explained variance: {pca.explained_variance_ratio_.sum():.3f}")
+    
+    # Create the plot
+    fig, ax = plt.subplots(figsize=(16, 12))
+    
+    # Thumbnail size
+    thumbnail_size = 64
+    
+    print("Creating PCA image map with thumbnails...")
+    
+    for i, (pos, path) in enumerate(tqdm(zip(pca_result, paths), desc="Placing thumbnails")):
+        # Load and create thumbnail
+        img = Image.open(path)
+        img_thumb = img.copy()
+        img_thumb.thumbnail((thumbnail_size, thumbnail_size), Image.Resampling.LANCZOS)
+        
+        # Convert PIL to matplotlib format
+        img_array = np.array(img_thumb)
+        
+        # Create OffsetImage
+        imagebox = OffsetImage(img_array, zoom=0.8)
+        
+        # Create AnnotationBbox and add to plot
+        ab = AnnotationBbox(imagebox, (pos[0], pos[1]), frameon=False, pad=0)
+        ax.add_artist(ab)
+    
+    # Customize the plot
+    ax.set_xlabel(f'PC1 ({pca.explained_variance_ratio_[0]:.1%} variance)', fontsize=14)
+    ax.set_ylabel(f'PC2 ({pca.explained_variance_ratio_[1]:.1%} variance)', fontsize=14)
+    ax.set_title(f'CLIP Embedding PCA Map - {len(images)} Images\n(Similar images cluster together)', 
+                 fontsize=16, fontweight='bold')
+    
+    # Set equal aspect ratio and clean up
+    ax.set_aspect('equal', adjustable='box')
+    ax.grid(True, alpha=0.3)
+    
+    # Add some padding around the points
+    x_margin = (pca_result[:, 0].max() - pca_result[:, 0].min()) * 0.1
+    y_margin = (pca_result[:, 1].max() - pca_result[:, 1].min()) * 0.1
+    ax.set_xlim(pca_result[:, 0].min() - x_margin, pca_result[:, 0].max() + x_margin)
+    ax.set_ylim(pca_result[:, 1].min() - y_margin, pca_result[:, 1].max() + y_margin)
+    
+    plt.tight_layout()
+    plt.show()
+    
+    return pca_result, pca
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="CLIP Image Similarity Matrix")
@@ -276,6 +334,9 @@ def main():
     
     # Then plot the top similar pairs with larger thumbnails
     plot_top_pairs(sim_matrix, paths, top_k=8)
+    
+    # Finally, create PCA image map
+    pca_result, pca_model = create_pca_image_map(features, images, paths)
 
 if __name__ == "__main__":
     main()
