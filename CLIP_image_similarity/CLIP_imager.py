@@ -16,15 +16,14 @@ from torchvision.transforms import InterpolationMode
 def get_preprocess_for_model(model_name):
     """Get appropriate preprocessing for specific CLIP models"""
     if model_name == "RN50x4":
-        # RN50x4 expects 288×288 input (not 224×224)
+        # RN50x4 expects 288×288 input
         return Compose([
             Resize(320, interpolation=InterpolationMode.BICUBIC),  # Slightly larger for better crop
-            CenterCrop(288),  # Crop to exactly 288×288 as expected
+            CenterCrop(288),  
             ToTensor(),
             Normalize((0.48145466, 0.4578275, 0.40821073), (0.26862954, 0.26130258, 0.27577711))
         ])
     elif model_name == "RN50x16":
-        # RN50x16 likely expects even larger input
         return Compose([
             Resize(384, interpolation=InterpolationMode.BICUBIC),
             CenterCrop(320),  # Larger crop for RN50x16
@@ -32,10 +31,9 @@ def get_preprocess_for_model(model_name):
             Normalize((0.48145466, 0.4578275, 0.40821073), (0.26862954, 0.26130258, 0.27577711))
         ])
     elif model_name == "RN50x64":
-        # RN50x64 needs even larger preprocessing  
         return Compose([
             Resize(512, interpolation=InterpolationMode.BICUBIC),
-            CenterCrop(448),  # Very large crop for RN50x64
+            CenterCrop(448), 
             ToTensor(),
             Normalize((0.48145466, 0.4578275, 0.40821073), (0.26862954, 0.26130258, 0.27577711))
         ])
@@ -112,9 +110,9 @@ def compute_clip_features(images, model, device, model_name="default"):
     for img in tqdm(images, desc="Encoding images with CLIP"):
         image_input = model_preprocess(img).unsqueeze(0).to(device)
         with torch.no_grad():
-            feature = model.encode_image(image_input)
-            feature = feature / feature.norm(dim=-1, keepdim=True)
-            features.append(feature.cpu().numpy()[0])
+            feature = model.encode_image(image_input) # Encode image
+            feature = feature / feature.norm(dim=-1, keepdim=True) # Normalize
+            features.append(feature.cpu().numpy()[0]) # Convert to numpy array
     return np.stack(features)
 
 def compute_ensemble_features(images, models, device):
@@ -154,9 +152,9 @@ def compute_advanced_similarity(features, method='ensemble'):
         print("Using correlation coefficient similarity")
     elif method == 'ensemble':
         # Combine euclidean and correlation for best results
-        euclidean_distances = pdist(features, 'euclidean')
-        euclidean_sim = 1 - squareform(euclidean_distances) / np.max(euclidean_distances)
-        correlation_sim = np.corrcoef(features)
+        euclidean_distances = pdist(features, 'euclidean') # Compute pairwise Euclidean distances
+        euclidean_sim = 1 - squareform(euclidean_distances) / np.max(euclidean_distances) # Normalize to [0,1]
+        correlation_sim = np.corrcoef(features) # Compute correlation matrix
         
         # Handle NaN values in correlation matrix
         correlation_sim = np.nan_to_num(correlation_sim, nan=0.0)
@@ -221,7 +219,7 @@ def plot_top_pairs(sim_matrix, paths, top_k=8):
         axes[i, 1].imshow(img2)
         axes[i, 1].axis('off')
         # Add similarity score as a centered title for the pair
-        fig.text(0.5, 1 - (i + 0.5) / top_k, f"Similarity: {score:.3f}", 
+        fig.text(0.5, 1 - (i + 0.5) / top_k, f"Similarity: {score:.2f}", 
                 ha='center', va='center', fontsize=14, fontweight='bold')
     
     plt.suptitle('Top Similar Image Pairs', fontsize=18, fontweight='bold', y=0.98)
@@ -238,15 +236,18 @@ def create_pca_image_map(features, images, paths, n_components=2):
     pca_result = pca.fit_transform(features)
     
     print(f"PCA explained variance ratio: {pca.explained_variance_ratio_}")
-    print(f"Total explained variance: {pca.explained_variance_ratio_.sum():.3f}")
+    print(f"Total explained variance: {pca.explained_variance_ratio_.sum():.2f}")
     
     # Create the plot
     fig, ax = plt.subplots(figsize=(16, 12))
+    fig.patch.set_facecolor('#808080')  # Mid-grey background
+    ax.set_facecolor('#808080')         # Mid-grey background for plot area
     
-    # Thumbnail size
     thumbnail_size = 64
     
-    print("Creating PCA image map with thumbnails...")
+    # Adjust zoom based on number of images
+    zoom_level = 0.5 if len(images) > 100 else 0.8
+    print(f"Creating PCA image map with thumbnails (zoom: {zoom_level})...")
     
     for i, (pos, path) in enumerate(tqdm(zip(pca_result, paths), desc="Placing thumbnails")):
         # Load and create thumbnail
@@ -254,11 +255,9 @@ def create_pca_image_map(features, images, paths, n_components=2):
         img_thumb = img.copy()
         img_thumb.thumbnail((thumbnail_size, thumbnail_size), Image.Resampling.LANCZOS)
         
-        # Convert PIL to matplotlib format
-        img_array = np.array(img_thumb)
+        img_array = np.array(img_thumb) # Convert PIL to matplotlib format
         
-        # Create OffsetImage
-        imagebox = OffsetImage(img_array, zoom=0.8)
+        imagebox = OffsetImage(img_array, zoom=zoom_level) # Create OffsetImage
         
         # Create AnnotationBbox and add to plot
         ab = AnnotationBbox(imagebox, (pos[0], pos[1]), frameon=False, pad=0)
@@ -274,15 +273,12 @@ def create_pca_image_map(features, images, paths, n_components=2):
     ax.set_aspect('equal', adjustable='box')
     ax.grid(True, alpha=0.3)
     
-    # Add some padding around the points
+    # Add padding around the points
     x_margin = (pca_result[:, 0].max() - pca_result[:, 0].min()) * 0.1
     y_margin = (pca_result[:, 1].max() - pca_result[:, 1].min()) * 0.1
     ax.set_xlim(pca_result[:, 0].min() - x_margin, pca_result[:, 0].max() + x_margin)
     ax.set_ylim(pca_result[:, 1].min() - y_margin, pca_result[:, 1].max() + y_margin)
-    
-    plt.tight_layout()
     plt.show()
-    
     return pca_result, pca
 
 def main():
@@ -320,23 +316,17 @@ def main():
     
     print(f"Found {len(images)} images")
 
-    # Compute ensemble features from multiple models
-    features = compute_ensemble_features(images, models, device)
+    features = compute_ensemble_features(images, models, device) # Compute ensemble features from multiple models
     
-    # Use advanced similarity computation
-    sim_matrix = compute_advanced_similarity(features, method='ensemble')
+    sim_matrix = compute_advanced_similarity(features, method='ensemble') # Use advanced similarity computation
 
     print("Advanced similarity matrix:")
     print(sim_matrix)
 
-    # Plot the full similarity matrix first
     plot_similarity_matrix(sim_matrix, paths)
-    
-    # Then plot the top similar pairs with larger thumbnails
     plot_top_pairs(sim_matrix, paths, top_k=8)
     
-    # Finally, create PCA image map
-    pca_result, pca_model = create_pca_image_map(features, images, paths)
+    pca_result, pca_model = create_pca_image_map(features, images, paths) # Create 2D PCA image map
 
 if __name__ == "__main__":
     main()
