@@ -55,6 +55,88 @@ class ImageQuarteriser:
         sys.stdout.write(f'\r[{arrow}{spaces}] {current}/{total} ({percent:.1%})')
         sys.stdout.flush()
     
+    def rescale_and_join_images(self, quarters_dir):
+        """Rescale images by 0.9 and join four horizontally to create 2560x1440 images"""
+        print("\n=== Rescaling and Joining Images ===")
+        
+        # Get all images from quarters directory
+        image_files = self.scan_directory(quarters_dir)
+        if not image_files:
+            print("No images found in quarters directory.")
+            return
+        
+        # Create output directory for joined images
+        joined_dir = os.path.join(os.path.dirname(quarters_dir), "joined_2560x1440")
+        os.makedirs(joined_dir, exist_ok=True)
+        print(f"Created joined images directory: {joined_dir}")
+        
+        # Process images in groups of 4
+        num_groups = (len(image_files) + 3) // 4  # Ceiling division
+        print(f"Processing {len(image_files)} images in {num_groups} groups of 4...")
+        
+        for group_idx in range(num_groups):
+            try:
+                start_idx = group_idx * 4
+                end_idx = min(start_idx + 4, len(image_files))
+                group_files = image_files[start_idx:end_idx]
+                
+                print(f"\nProcessing group {group_idx + 1}/{num_groups} ({len(group_files)} images)...")
+                
+                # Load and rescale images
+                rescaled_images = []
+                for img_file in group_files:
+                    img_path = os.path.join(quarters_dir, img_file)
+                    with Image.open(img_path) as img:
+                        # Convert to RGB if necessary
+                        if img.mode != 'RGB':
+                            img = img.convert('RGB')
+                        
+                        # Rescale by 0.9
+                        original_size = img.size
+                        new_width = int(original_size[0] * 0.9)
+                        new_height = int(original_size[1] * 0.9)
+                        rescaled_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                        rescaled_images.append(rescaled_img.copy())
+                        print(f"  Rescaled {img_file}: {original_size} -> {new_width}x{new_height}")
+                
+                # If we have fewer than 4 images, create blank ones to fill
+                target_height = 1440
+                single_width = 2560 // 4  # 640 pixels per image
+                
+                while len(rescaled_images) < 4:
+                    # Create a black image to fill empty slots
+                    blank_img = Image.new('RGB', (single_width, target_height), (0, 0, 0))
+                    rescaled_images.append(blank_img)
+                    print(f"  Added blank image to fill group")
+                
+                # Resize all images to fit exactly in 2560x1440 when joined
+                final_images = []
+                for img in rescaled_images:
+                    # Resize to fit in the 640x1440 slot
+                    resized_img = img.resize((single_width, target_height), Image.Resampling.LANCZOS)
+                    final_images.append(resized_img)
+                
+                # Join four images horizontally
+                joined_img = Image.new('RGB', (2560, 1440))
+                x_offset = 0
+                for img in final_images:
+                    joined_img.paste(img, (x_offset, 0))
+                    x_offset += single_width
+                
+                # Save the joined image
+                output_filename = f"joined_group_{group_idx + 1:03d}.jpg"
+                output_path = os.path.join(joined_dir, output_filename)
+                joined_img.save(output_path, quality=95)
+                
+                print(f"  ✓ Created {output_filename} (2560x1440)")
+                
+            except Exception as e:
+                print(f"  ✗ Error processing group {group_idx + 1}: {str(e)}")
+        
+        print(f"\n✓ Rescaling and joining completed!")
+        print(f"  Created {num_groups} joined images (2560x1440)")
+        print(f"  Output directory: {joined_dir}")
+
     def process_images(self, directory):
         """Process all images in the selected directory"""
         quarters_dir = os.path.join(directory, "quarters")
@@ -142,6 +224,19 @@ class ImageQuarteriser:
             print(f"  Total images processed: {self.processed_images}")
             print(f"  Total quarters created: {self.processed_images * 4}")
             print(f"  Output directory: {quarters_dir}")
+            
+            # Ask user if they want to rescale and join images
+            print("\n" + "="*50)
+            while True:
+                choice = input("Do you want to rescale images by 0.9 and join them into 2560x1440 images? (y/n): ").strip().lower()
+                if choice in ['y', 'yes']:
+                    self.rescale_and_join_images(quarters_dir)
+                    break
+                elif choice in ['n', 'no']:
+                    print("Skipping rescale and join operation.")
+                    break
+                else:
+                    print("Please enter 'y' for yes or 'n' for no.")
         
         except Exception as e:
             print(f"✗ Fatal error: {str(e)}")
