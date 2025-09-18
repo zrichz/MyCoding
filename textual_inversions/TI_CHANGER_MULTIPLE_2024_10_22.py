@@ -28,7 +28,7 @@ plt.rcParams['savefig.dpi'] = 200
 # VISUALIZATION CONFIGURATION
 # ========================================
 # Customizable colormap for heatmap visualizations
-HEATMAP_COLORS = ['#FF0000', "#850000", "#FFFFFF", "#FFFFFF", "#FFFFFF", 
+HEATMAP_COLORS = ['#FF0000', "#850000", "#ACACAC", "#FFFFFF", "#FFFFFF", 
                   "#FFFFFF", "#FFFFFF", "#FFFFFF", "#105C66", "#00B7FF"]
 
 # Alternative color schemes you can use by changing HEATMAP_COLORS above:
@@ -2078,103 +2078,9 @@ def process_single_file():
     # Show the first plot
     plt.show()
     
-    # ========================================
-    # NEW: TOP 5% MAGNITUDE BAR PLOT
-    # ========================================
-    """
-    Display only the top 5% (95%+) magnitude datapoints as bars for each vector
-    Shows only the most significant positive and negative values
-    """
-    
-    print("\nGenerating top 5% magnitude bar visualization...")
-    
-    # Create figure for magnitude bar plots with better spacing
-    fig2, ax2 = plt.subplots(figsize=(15, 8))  # Wider for better visibility of bars
-    
-    # Generate colors for each vector
-    import matplotlib.cm as cm
-    
-    # Use different color strategies based on number of vectors
-    if numvectors <= 10:
-        # Use distinct colors for up to 10 vectors
-        colors = cm.get_cmap('tab10')(np.linspace(0, 1, 10))[:numvectors]
-    else:
-        # Use a continuous colormap for many vectors
-        colors = cm.get_cmap('viridis')(np.linspace(0, 1, numvectors))
-    
-    # Collect all bar data for plotting
-    all_x_positions = []
-    all_bar_values = []
-    all_bar_colors = []
-    all_bar_labels = []
-    
-    # Process each vector to find top 5% magnitude values
-    bar_width = 0.8 / numvectors  # Adjust bar width based on number of vectors
-    
-    for vector_idx in range(numvectors):
-        vector_values = np_array[vector_idx]
-        color = colors[vector_idx]
-        
-        # Calculate absolute magnitudes for this vector
-        abs_magnitudes = np.abs(vector_values)
-        
-        # Find the 95th percentile threshold for this vector
-        threshold_95 = np.percentile(abs_magnitudes, 95)
-        
-        # Get indices where magnitude is above 95th percentile
-        top_5_percent_mask = abs_magnitudes >= threshold_95
-        top_5_percent_indices = np.where(top_5_percent_mask)[0]
-        top_5_percent_values = vector_values[top_5_percent_mask]
-        
-        # Create x positions for this vector's bars (offset by vector index)
-        x_positions = top_5_percent_indices + (vector_idx - numvectors/2 + 0.5) * bar_width
-        
-        # Store data for plotting
-        all_x_positions.extend(x_positions)
-        all_bar_values.extend(top_5_percent_values)
-        all_bar_colors.extend([color] * len(top_5_percent_values))
-        all_bar_labels.extend([f'Vector {vector_idx+1}'] * len(top_5_percent_values))
-        
-        print(f"Vector {vector_idx+1}: {len(top_5_percent_indices)} datapoints above 95th percentile (threshold: {threshold_95:.4f})")
-    
-    # Create the bar plot
-    bars = ax2.bar(all_x_positions, all_bar_values, 
-                   width=bar_width, 
-                   color=all_bar_colors,
-                   alpha=0.8)
-    
-    # Customize the plot
-    ax2.set_title(f'Top 5% Magnitude Values for {filename}\n'
-                 f'({numvectors} vectors × {np_array.shape[1]} dimensions) - Only 95%+ magnitude datapoints shown', 
-                 fontsize=11, pad=15)
-    ax2.set_xlabel('Dimension Index', fontsize=10)
-    ax2.set_ylabel('Vector Value', fontsize=10)
-    ax2.grid(True, alpha=0.3, linestyle='--', axis='y')
-    
-    # Create custom legend showing vector colors
-    if numvectors <= 10:
-        from matplotlib.patches import Patch
-        legend_elements = [Patch(facecolor=colors[i], alpha=0.7, label=f'Vector {i+1}') 
-                          for i in range(numvectors)]
-        ax2.legend(handles=legend_elements, loc='center left', bbox_to_anchor=(1, 0.5), fontsize=9)
-    else:
-        ax2.text(1.02, 0.5, f'{numvectors} vectors\n(color gradient)', 
-                transform=ax2.transAxes, fontsize=9, verticalalignment='center')
-    
-    # Add a horizontal line at y=0 for reference
-    ax2.axhline(y=0, color='black', linestyle='-', linewidth=0.8, alpha=0.7)
-    
-    # Set x-axis limits to show full dimension range
-    ax2.set_xlim(-1, np_array.shape[1])
-    
-    # Improve layout with more white space
-    plt.tight_layout(pad=2.0)
-    
-    # Show the second plot
-    plt.show()
     
     # ========================================
-    # NEW: 2D HEATMAP GRID VISUALIZATION
+    # 2D HEATMAP GRID VISUALIZATION
     # ========================================
     """
     Display each vector as a 2D heatmap reshaped to 36x24 for better visualization
@@ -2239,9 +2145,9 @@ def process_single_file():
                       interpolation='nearest')  # Use raw values without smoothing
         
         # Customize each subplot
-        ax.set_title(f'Vector {i+1}', fontsize=10, pad=5)
-        ax.set_xlabel(f'Dim Width (0-{heatmap_width-1})', fontsize=8)
-        ax.set_ylabel(f'Dim Height (0-{heatmap_height-1})', fontsize=8)
+        ax.set_title(f'V {i+1}', fontsize=10, pad=5)
+        #ax.set_xlabel(f'Dim Width (0-{heatmap_width-1})', fontsize=8)
+        #ax.set_ylabel(f'Dim Height (0-{heatmap_height-1})', fontsize=8)
         
         # Reduce tick density for cleaner look
         ax.set_xticks(np.linspace(0, heatmap_width-1, 5).astype(int))
@@ -2259,15 +2165,12 @@ def process_single_file():
         axes[i].set_visible(False)
     
     # Set overall title
-    fig3.suptitle(f' Vection Heatmaps for {filename}\n({numvectors} vectors reshaped to {heatmap_height}×{heatmap_width} for visualization)', 
+    fig3.suptitle(f' Vector Heatmaps for {filename}\n({numvectors} vectors reshaped for visualization)', 
                  fontsize=12, y=0.98)
     
-    # Adjust layout
     plt.tight_layout(rect=(0, 0, 1, 0.95))
-    
-    # Show the third plot
     plt.show()
-    
+    #-----------
     # Print summary statistics
     print(f"\n📊 Summary Statistics:")
     print(f"   Overall Min: {min(min_values):.6f}")
