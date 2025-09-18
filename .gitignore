@@ -15,8 +15,4 @@ __pycache__/
 machine_learning/data/  
 *.tar.gz  
 *.zip  
-*.dll 
-# Images  
-*.png  
-*.jpg  
-*.jpeg 
+*.dll

@@ -1,4 +1,4 @@
-#!/home/rich/MyCoding/textual_inversions/.venv/bin/python3
+#!/home/rich/myenv/bin/python3
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
@@ -268,6 +268,11 @@ def train_advanced_autoencoder(model, dataloader, n_epochs=50, lr=1e-3, device='
     """Enhanced training with better optimization and loss functions"""
     model.to(device)
     
+    # Clear GPU cache if using CUDA
+    if str(device).startswith('cuda'):
+        torch.cuda.empty_cache()
+        print(f"Initial GPU memory allocated: {torch.cuda.memory_allocated()/1024**2:.1f} MB")
+    
     # Enhanced optimizer with weight decay
     optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
     
@@ -295,7 +300,7 @@ def train_advanced_autoencoder(model, dataloader, n_epochs=50, lr=1e-3, device='
         epoch_losses = {'mse': 0, 'perceptual': 0, 'smoothness': 0, 'total': 0}
         
         for batch_idx, batch in enumerate(dataloader):
-            batch = batch.to(device)
+            batch = batch.to(device, non_blocking=True)
             
             optimizer.zero_grad()
             recon = model(batch)
@@ -334,19 +339,24 @@ def train_advanced_autoencoder(model, dataloader, n_epochs=50, lr=1e-3, device='
             best_loss = avg_loss
             torch.save(model.state_dict(), 'best_model_32x32.pth')
         
-        # Enhanced progress reporting
+        # Enhanced progress reporting with GPU memory info
+        gpu_mem_str = ""
+        if str(device).startswith('cuda'):
+            gpu_mem = torch.cuda.memory_allocated() / 1024**2
+            gpu_mem_str = f" | GPU: {gpu_mem:.0f}MB"
+        
         if epoch > 0:
             diff = avg_loss - losses[-2]
             print(f"Epoch {epoch+1}/{n_epochs} - Total: {avg_loss:.4f} (Δ: {diff:+.3f}) | "
                   f"MSE: {epoch_losses['mse']:.4f} | "
                   f"Perceptual: {epoch_losses['perceptual']:.4f} | "
                   f"Smoothness: {epoch_losses['smoothness']:.4f} | "
-                  f"LR: {optimizer.param_groups[0]['lr']:.2e}")
+                  f"LR: {optimizer.param_groups[0]['lr']:.2e}{gpu_mem_str}")
         else:
             print(f"Epoch {epoch+1}/{n_epochs} - Total: {avg_loss:.4f} | "
                   f"MSE: {epoch_losses['mse']:.4f} | "
                   f"Perceptual: {epoch_losses['perceptual']:.4f} | "
-                  f"Smoothness: {epoch_losses['smoothness']:.4f}")
+                  f"Smoothness: {epoch_losses['smoothness']:.4f}{gpu_mem_str}")
     
     return losses, mse_losses, perceptual_losses, smoothness_losses
 
@@ -458,7 +468,11 @@ def main():
     # Create dataset
     dataset = RingsDataset()
     print(f"Dataset: {len(dataset)} images of size {dataset.img_size}x{dataset.img_size}")
-    dataloader = DataLoader(dataset, batch_size=16, shuffle=True)
+    
+    # Use larger batch size for GPU, smaller for CPU
+    batch_size = 64 if torch.cuda.is_available() else 16
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, pin_memory=torch.cuda.is_available())
+    print(f"Batch size: {batch_size} (optimized for {'GPU' if torch.cuda.is_available() else 'CPU'})")
     
     # Build advanced model
     model = AdvancedAutoencoder(LATENT_DIM)
@@ -468,9 +482,14 @@ def main():
     print(f"Trainable parameters: {trainable_params:,}")
     print(f"Latent dimension: {LATENT_DIM}")
     
-    # Enhanced training
-    device = torch.device('cpu')  # Force CPU usage due to old GPU
+    # Enhanced training with GPU support
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
+    if torch.cuda.is_available():
+        print(f"GPU: {torch.cuda.get_device_name(0)}")
+        print(f"CUDA version: {torch.version.cuda}")
+        print(f"GPU memory: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
+    
     losses, mse_losses, perceptual_losses, smoothness_losses = train_advanced_autoencoder(model, dataloader,
                                                                                            n_epochs=50,
                                                                                              lr=1e-3,
