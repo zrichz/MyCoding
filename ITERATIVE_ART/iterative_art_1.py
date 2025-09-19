@@ -520,8 +520,4 @@ plt.axis('off')
 plt.title(f'Recursive Hinged Rotation - Full Canvas ({CANVAS_W}x{CANVAS_H})')
 plt.show()
 
-# Also save the result
-output_filename = 'iterative_art_result.png'
-out.save(output_filename)
-print(f"Result saved as: {output_filename}")
-
+print("=== COMPLETE ===")
