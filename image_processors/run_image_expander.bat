@@ -10,10 +10,10 @@ echo.
 REM Change to the script directory
 cd /d "%~dp0"
 
-REM Check if virtual environment exists
-if not exist ".venv\Scripts\activate.bat" (
+REM Check if virtual environment exists in parent directory
+if not exist "..\.venv\Scripts\activate.bat" (
     echo ERROR: Virtual environment not found!
-    echo Please make sure the .venv folder exists in the current directory.
+    echo Please make sure the .venv folder exists in the parent directory.
     echo.
     echo To create a virtual environment, run:
     echo   python -m venv .venv
@@ -26,7 +26,7 @@ if not exist ".venv\Scripts\activate.bat" (
 
 REM Activate virtual environment
 echo Activating virtual environment...
-call ".venv\Scripts\activate.bat"
+call "..\.venv\Scripts\activate.bat"
 
 REM Check if activation was successful
 if "%VIRTUAL_ENV%" == "" (

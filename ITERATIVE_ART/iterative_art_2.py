@@ -9,8 +9,8 @@ CANVAS_W, CANVAS_H = 1200, 800
 
 #=======================================================================================
 RECT_W, RECT_H = 680, 340 # Initial rectangle dimensions (2:1 ratio
-rot_angle = 10   # Rotation angle per depth level
-depth = 3       # Set recursion depth here
+rot_angle = 12   # Rotation angle per depth level
+depth = 2       # Set recursion depth here
 #=======================================================================================
 
 def rotate_point_around_center(px, py, cx, cy, angle_degrees):
@@ -111,7 +111,7 @@ def recursive_split_rectangles(canvas, x, y, w, h, depth, angles, colors):
         right_pivot_x = right_pivot_orig_x
         right_pivot_y = right_pivot_orig_y
     
-    print(f"  Step 3: Left pivot at ({left_pivot_x},{left_pivot_y}), Right pivot at ({right_pivot_x},{right_pivot_y})")
+    print(f"  Step 3: Left pivot at ({int(round(left_pivot_x))},{int(round(left_pivot_y))}), Right pivot at ({int(round(right_pivot_x))},{int(round(right_pivot_y))})")
     
     # Draw pivot points
     pivot_size = 4

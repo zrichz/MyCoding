@@ -5,7 +5,8 @@ This script provides a graphical interface for batch processing images to a fixe
 
 Key Features:
 - Select directory containing images for batch processing
-- Automatically expand all images to exactly 720x1600 pixels (width x height)
+- Automatically processes all images to exactly 720x1600 pixels (width x height)
+- Intelligent preprocessing: center crops images wider than 720px horizontally
 - Intelligent expansion: only expands dimensions that are smaller than target
 - Fixed 160px maximum blur applied to expanded regions
 - Fixed 50% luminance reduction (darkening) for natural fade effect
@@ -350,6 +351,13 @@ class ImageExpander:
         try:
             # Load image
             original_image = Image.open(input_path)
+            
+            # Center crop horizontally if image is wider than 720px
+            if original_image.width > 720:
+                # Calculate crop coordinates for center cropping
+                left = (original_image.width - 720) // 2
+                right = left + 720
+                original_image = original_image.crop((left, 0, right, original_image.height))
             
             # Convert image to numpy array
             img_array = np.array(original_image)

@@ -27,14 +27,8 @@ plt.rcParams['savefig.dpi'] = 200
 # ========================================
 # VISUALIZATION CONFIGURATION
 # ========================================
-# Customizable colormap for heatmap visualizations
-HEATMAP_COLORS = ['#FF0000', "#850000", "#ACACAC", "#FFFFFF", "#FFFFFF", 
-                  "#FFFFFF", "#FFFFFF", "#FFFFFF", "#105C66", "#00B7FF"]
-
-# Alternative color schemes you can use by changing HEATMAP_COLORS above:
-# COOL_COLORS = ['#000080', '#0000FF', '#0080FF', '#00FFFF', '#80FFFF', '#FFFFFF', '#FFFF80', '#FFFF00', '#FF8000', '#FF0000']
-# WARM_COLORS = ['#000000', '#330000', '#660000', '#990000', '#CC0000', '#FF0000', '#FF3300', '#FF6600', '#FF9900', '#FFCC00']
-# RAINBOW_COLORS = ['#9400D3', '#4B0082', '#0000FF', '#00FF00', '#FFFF00', '#FF7F00', '#FF0000', '#FF1493', '#00CED1', '#32CD32']
+# Using standard matplotlib divergent colormap for heatmap visualizations
+# Available options: 'RdBu', 'coolwarm', 'seismic', 'RdYlBu', 'bwr'
 
 # Heatmap dimensions (adjust based on your vector size preferences)
 HEATMAP_HEIGHT = 24
@@ -2128,21 +2122,12 @@ def process_single_file():
         # Reshape to 2D heatmap
         heatmap_data = vector_data.reshape(heatmap_height, heatmap_width)
         
-        # Use raw heatmap data without smoothing
+        # Use standard matplotlib divergent colormap with bilinear smoothing
         
-        # Create quantized colormap using configuration
-        bright_colors = HEATMAP_COLORS
-        n_colors = len(bright_colors)
-        quantized_cmap = mcolors.ListedColormap(bright_colors)
-        
-        # Create quantized normalization to enforce discrete color levels
-        boundaries = np.linspace(np.min(vector_data), np.max(vector_data), n_colors + 1)
-        norm = mcolors.BoundaryNorm(boundaries, quantized_cmap.N)
-        
-        # Create heatmap
+        # Create heatmap with bilinear interpolation for smooth visualization
         ax = axes[i]
-        im = ax.imshow(heatmap_data, cmap=quantized_cmap, norm=norm, aspect='auto', 
-                      interpolation='nearest')  # Use raw values without smoothing
+        im = ax.imshow(heatmap_data, cmap='RdBu', aspect='auto', 
+                      interpolation='bilinear')  # Smooth bilinear interpolation
         
         # Customize each subplot
         ax.set_title(f'V {i+1}', fontsize=10, pad=5)
