@@ -1,12 +1,13 @@
 """
 Image Auto-Expander - Batch Processing GUI Application
 
-This script provides a graphical interface for batch processing images to a fixed 720x1600 pixel dimension.
+This script provides a graphical interface for batch processing images to a fixed 720x1600 pixel dimension with configurable initial crop width.
 
 Key Features:
 - Select directory containing images for batch processing
-- Automatically processes all images to exactly 720x1600 pixels (width x height)
-- Intelligent preprocessing: center crops images wider than 720px horizontally
+- Configurable initial crop width (512-720px): crops oversized images horizontally before scaling
+- Automatically scales cropped images to exactly 720x1600 pixels (width x height)
+- Intelligent preprocessing: center crops images wider than selected crop width, then scales to 720px wide
 - Intelligent expansion: only expands dimensions that are smaller than target
 - Fixed 160px maximum blur applied to expanded regions
 - Fixed 50% luminance reduction (darkening) for natural fade effect
@@ -53,6 +54,9 @@ class ImageExpander:
         self.target_width = 720
         self.target_height = 1600
         
+        # Configurable crop width (512-720 in multiples of 16)
+        self.crop_width = 720  # Default value
+        
         # Fixed settings
         self.blur_amount = 160
         self.luminance_drop = 50
@@ -74,9 +78,28 @@ class ImageExpander:
                                   font=("Arial", 10, "bold"))
         info_frame.pack(pady=(0, 20), fill='x')
         
-        settings_text = f"Fixed Settings: 160px blur, 50% luminance reduction\nTarget: 720x1600 pixels"
-        tk.Label(info_frame, text=settings_text, 
-                font=("Arial", 9), justify='center').pack(pady=10)
+        # Crop width setting
+        crop_frame = tk.Frame(info_frame)
+        crop_frame.pack(pady=10)
+        
+        tk.Label(crop_frame, text="Initial Crop Width (then scaled to 720px):", 
+                font=("Arial", 9, "bold")).pack(side=tk.LEFT, padx=(0, 10))
+        
+        # Create crop width variable and dropdown
+        self.crop_width_var = tk.StringVar(value="720")
+        crop_values = [str(x) for x in range(512, 721, 16)]  # 512 to 720 in steps of 16
+        crop_dropdown = tk.OptionMenu(crop_frame, self.crop_width_var, *crop_values, 
+                                     command=self.on_crop_width_change)
+        crop_dropdown.config(font=("Arial", 9))
+        crop_dropdown.pack(side=tk.LEFT, padx=(0, 5))
+        
+        tk.Label(crop_frame, text="pixels", font=("Arial", 9)).pack(side=tk.LEFT)
+        
+        # Fixed settings info
+        settings_text = f"Fixed Settings: 160px blur, 50% luminance reduction\nTarget: 720x1600 pixels (crop width: {self.crop_width}px)"
+        self.settings_label = tk.Label(info_frame, text=settings_text, 
+                                      font=("Arial", 9), justify='center')
+        self.settings_label.pack(pady=(5, 10))
         
         # Button frame
         button_frame = tk.Frame(main_frame)
@@ -125,6 +148,14 @@ class ImageExpander:
         
         # Initial status
         self.log_message("Ready to process images. Select a directory to begin.")
+    
+    def on_crop_width_change(self, value):
+        """Handle crop width dropdown change"""
+        self.crop_width = int(value)
+        # Update the settings label
+        settings_text = f"Fixed Settings: 160px blur, 50% luminance reduction\nTarget: 720x1600 pixels (crop width: {self.crop_width}px)"
+        self.settings_label.config(text=settings_text)
+        self.log_message(f"Crop width changed to {self.crop_width}px")
     
     def log_message(self, message):
         """Add message to status log"""
@@ -352,12 +383,19 @@ class ImageExpander:
             # Load image
             original_image = Image.open(input_path)
             
-            # Center crop horizontally if image is wider than 720px
-            if original_image.width > 720:
+            # Center crop horizontally if image is wider than crop width
+            if original_image.width > self.crop_width:
                 # Calculate crop coordinates for center cropping
-                left = (original_image.width - 720) // 2
-                right = left + 720
+                left = (original_image.width - self.crop_width) // 2
+                right = left + self.crop_width
                 original_image = original_image.crop((left, 0, right, original_image.height))
+            
+            # Scale cropped image to 720px wide while maintaining aspect ratio
+            if original_image.width != 720:
+                # Calculate new height maintaining aspect ratio
+                aspect_ratio = original_image.height / original_image.width
+                new_height = int(720 * aspect_ratio)
+                original_image = original_image.resize((720, new_height), Image.Resampling.LANCZOS)
             
             # Convert image to numpy array
             img_array = np.array(original_image)
@@ -367,8 +405,8 @@ class ImageExpander:
             max_blur = self.blur_amount
             max_luminance_drop = self.luminance_drop
             
-            # Calculate expansion needed
-            width_expansion = max(0, self.target_width - orig_width)
+            # Calculate expansion needed (width should always be 720 after scaling)
+            width_expansion = max(0, 720 - orig_width)
             height_expansion = max(0, self.target_height - orig_height)
             
             # Calculate padding for each side
@@ -377,11 +415,11 @@ class ImageExpander:
             top_pad = height_expansion // 2
             bottom_pad = height_expansion - top_pad
             
-            # Create expanded image array
+            # Create expanded image array (always 720px wide after scaling)
             if len(img_array.shape) == 3:  # Color image
-                expanded_array = np.zeros((self.target_height, self.target_width, img_array.shape[2]), dtype=img_array.dtype)
+                expanded_array = np.zeros((self.target_height, 720, img_array.shape[2]), dtype=img_array.dtype)
             else:  # Grayscale
-                expanded_array = np.zeros((self.target_height, self.target_width), dtype=img_array.dtype)
+                expanded_array = np.zeros((self.target_height, 720), dtype=img_array.dtype)
             
             # Copy original image to center
             y_start = top_pad
