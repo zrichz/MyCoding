@@ -1,0 +1,13 @@
+# Requirements for World's Best Focus Stacker
+opencv-python>=4.5.0
+numpy>=1.20.0
+pillow>=8.0.0
+scipy>=1.7.0
+scikit-image>=0.18.0
+matplotlib>=3.3.0
+customtkinter>=5.0.0
+tqdm>=4.60.0
+
+# Optional dependencies
+# PyWavelets>=1.1.0  # For wavelet-based stacking
+# rawpy>=0.17.0      # For RAW image support

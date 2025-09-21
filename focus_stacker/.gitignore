@@ -1,0 +1,60 @@
+# .gitignore for Focus Stacker Project
+# ===================================
+
+# Virtual Environment (NEVER commit this!)
+focus_env/
+venv/
+env/
+.venv/
+
+# Python Cache and Bytecode
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# Generated Images and Test Files
+*.png
+*.jpg
+*.jpeg
+*.bmp
+*.tiff
+*.gif
+
+# Except essential images (uncomment if you have any)
+# !icon.png
+# !demo_small.png
+
+# Logs and Temporary Files
+*.log
+*.tmp
+*.temp
+focus_stacker.log
+
+# IDE and Editor Files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS Generated Files
+Thumbs.db
+.DS_Store
+Desktop.ini
+
+# Test outputs and debug files
+test_*.png
+debug_test_img_*.png
+demo_*.png
+stacked_result_*.png
+aligned_*.png
+gradient_*.png
+
+# Documentation builds (keep .md files)
+# docs/_build/
+
+# Backup files
+*.bak
+*.backup
+*.old

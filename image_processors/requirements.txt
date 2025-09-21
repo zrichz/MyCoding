@@ -1,0 +1,15 @@
+# Image Processors Collection - Comprehensive Requirements
+
+# Core Image Processing
+Pillow==11.3.0                    # PIL - Python Imaging Library (used in most tools)
+numpy==2.2.6                      # Array operations and mathematical functions
+scipy==1.15.3                     # Scientific computing (ndimage for blur effects)
+
+# Computer Vision & Advanced Processing
+opencv-python==4.12.0.88          # OpenCV for computer vision (seam carving, optical flow)
+scikit-image==0.25.2              # Scientific image processing (CLAHE, color space conversions)
+
+# Interactive Graphics & Gaming
+pygame==2.6.0                     # Game development framework (falling blocks viewer)
+
+# Note: tkinter is included with Python standard library
