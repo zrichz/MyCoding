@@ -1,30 +1,19 @@
 """
 Image Auto-Expander - Batch Processing GUI Application
 
-This script provides a graphical interface for batch processing images to a fixed 720x1600 pixel dimension with configurable initial crop width.
+This script provides a gui for batch processing images to a fixed 720x1600 pixels
+with configurable initial crop width.
 
 Key Features:
-- Select directory containing images for batch processing
+- Select directory containing images
 - Configurable initial crop width (512-720px): crops oversized images horizontally before scaling
 - Automatically scales cropped images to exactly 720x1600 pixels (width x height)
 - Intelligent preprocessing: center crops images wider than selected crop width, then scales to 720px wide
 - Intelligent expansion: only expands dimensions that are smaller than target
-- Fixed 160px maximum blur applied to expanded regions
-- Fixed 50% luminance reduction (darkening) for natural fade effect
-- Dual-axis expansion: applies effects to both horizontal and vertical expansions
-- Batch processing with progress feedback
-- Saves results with timestamp-based naming: YYYYMMDDHHMMSS_nnn_720x1600.ext
-- Automatic conflict resolution with incremented counter (001, 002, 003, etc.)
-- Supports common image formats (PNG, JPEG, BMP, TIFF)
-
-Technical Implementation:
-- Uses scipy.ndimage for directional blur to preserve colors
-- Combines blur and luminance effects for realistic expansion transitions
-- Maintains original image quality and color fidelity
-- Centers original image within the expanded canvas
+- Fixed, 160px maximum blur applied to expanded regions
+- Fixed, 50% luminance reduction for fade effect
 - Generates unique timestamped filenames with conflict resolution
 """
-
 
 from PIL import Image, ImageTk
 import tkinter as tk
@@ -32,7 +21,6 @@ from tkinter import filedialog, messagebox, ttk
 import numpy as np
 from scipy import ndimage
 import os
-from datetime import datetime
 
 # Ensure numpy is properly imported
 try:
