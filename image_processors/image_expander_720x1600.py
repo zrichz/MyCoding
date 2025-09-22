@@ -7,6 +7,7 @@ with configurable initial crop width.
 Key Features:
 - Select directory containing images
 - Configurable initial crop width (512-720px): crops oversized images horizontally before scaling
+- Output format selection: choose between high-quality JPEG (Q=1/100%) or PNG format
 - Automatically scales cropped images to exactly 720x1600 pixels (width x height)
 - Intelligent preprocessing: center crops images wider than selected crop width, then scales to 720px wide
 - Intelligent expansion: only expands dimensions that are smaller than target
@@ -83,6 +84,16 @@ class ImageExpander:
         
         tk.Label(crop_frame, text="pixels", font=("Arial", 9)).pack(side=tk.LEFT)
         
+        # Output format setting
+        format_frame = tk.Frame(info_frame)
+        format_frame.pack(pady=10)
+        
+        self.save_as_jpg = tk.BooleanVar(value=False)  # Default to PNG
+        jpg_checkbox = tk.Checkbutton(format_frame, text="Save as high-quality JPEG (Q=1, otherwise PNG)", 
+                                     variable=self.save_as_jpg, font=("Arial", 9, "bold"),
+                                     command=self.on_format_change)
+        jpg_checkbox.pack(side=tk.LEFT)
+        
         # Fixed settings info
         settings_text = f"Fixed Settings: 160px blur, 50% luminance reduction\nTarget: 720x1600 pixels (crop width: {self.crop_width}px)"
         self.settings_label = tk.Label(info_frame, text=settings_text, 
@@ -144,6 +155,11 @@ class ImageExpander:
         settings_text = f"Fixed Settings: 160px blur, 50% luminance reduction\nTarget: 720x1600 pixels (crop width: {self.crop_width}px)"
         self.settings_label.config(text=settings_text)
         self.log_message(f"Crop width changed to {self.crop_width}px")
+    
+    def on_format_change(self):
+        """Handle output format checkbox change"""
+        format_type = "high-quality JPEG (Q=1)" if self.save_as_jpg.get() else "PNG"
+        self.log_message(f"Output format changed to {format_type}")
     
     def log_message(self, message):
         """Add message to status log"""
@@ -218,7 +234,13 @@ class ImageExpander:
                     
                     # Process the image
                     input_path = os.path.join(self.input_directory, filename)
-                    name, ext = os.path.splitext(filename)
+                    name, orig_ext = os.path.splitext(filename)
+                    
+                    # Determine output format based on user selection
+                    if self.save_as_jpg.get():
+                        ext = ".jpg"
+                    else:
+                        ext = ".png"
                     
                     # Use new timestamp-based filename schema
                     output_filename, output_path = self.generate_timestamp_filename(output_dir, ext)
@@ -475,8 +497,13 @@ class ImageExpander:
             # Convert back to PIL Image
             processed_image = Image.fromarray(expanded_array.astype('uint8'))
             
-            # Save the processed image
-            processed_image.save(output_path)
+            # Save the processed image with format-specific options
+            if output_path.lower().endswith('.jpg') or output_path.lower().endswith('.jpeg'):
+                # Save as highest quality JPEG (quality=100, Q=1 equivalent)
+                processed_image.save(output_path, 'JPEG', quality=100, optimize=True)
+            else:
+                # Save as PNG (default)
+                processed_image.save(output_path, 'PNG', optimize=True)
             
             return True
             
