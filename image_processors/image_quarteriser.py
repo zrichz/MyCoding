@@ -1,7 +1,22 @@
 #!/home/rich/MyCoding/image_processors/.venv/bin/python3
 """
-Image Quarteriser - Split images into four equal quarters
-Uses tkinter for directory selection only, with terminal-based progress
+FUNCTIONALITY SUMMARY:
+======================
+
+Primary Function - Image Splitting:
+- Takes any image and splits it into 4 equal quadrants
+- Creates quarters labeled: _TL (top-left), _TR (top-right), _BL (bottom-left), _BR (bottom-right)
+- Adjusts dims to even numbers if necessary
+- Saves quarters to a 'quarters' subdirectory
+- Example: 'photo.jpg' becomes: photo_TL.jpg, photo_TR.jpg, photo_BL.jpg, photo_BR.jpg
+
+Secondary Function - Rescale & Join (Optional):
+- Rescales all quarter images by 0.9 (90% of original size)
+- Groups quarters into sets of 4 and joins horizontally
+- Creates 2560x1440 widescreen images (640px per quarter)
+- Saves to 'joined_2560x1440' subdirectory
+- Files named: joined_group_001.jpg, joined_group_002.jpg, etc.
+
 """
 
 import os
