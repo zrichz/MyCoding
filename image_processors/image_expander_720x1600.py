@@ -177,7 +177,7 @@ class ImageExpander:
             image_files = self.get_image_files(directory)
             count = len(image_files)
             
-            self.log_message(f"Selected directory: {directory}")
+            self.log_message(f"Selected directory: {os.path.normpath(directory)}")
             self.log_message(f"Found {count} image files")
             self.progress_label.config(text=f"Directory selected: {count} images found")
             
@@ -219,7 +219,7 @@ class ImageExpander:
             # Create output directory
             output_dir = os.path.join(self.input_directory, "processed")
             os.makedirs(output_dir, exist_ok=True)
-            self.log_message(f"Created output directory: {output_dir}")
+            self.log_message(f"Created output directory: {os.path.normpath(output_dir)}")
             
             # Process each image
             successful = 0
@@ -262,12 +262,12 @@ class ImageExpander:
             self.log_message(f"\nBatch processing complete!")
             self.log_message(f"Successfully processed: {successful} images")
             self.log_message(f"Failed: {failed} images")
-            self.log_message(f"Output directory: {output_dir}")
+            self.log_message(f"Output directory: {os.path.normpath(output_dir)}")
             
             if successful > 0:
                 messagebox.showinfo("Processing Complete", 
                                    f"Successfully processed {successful} images!\n"
-                                   f"Output saved to: {output_dir}")
+                                   f"Output saved to: {os.path.normpath(output_dir)}")
             
         except Exception as e:
             self.log_message(f"Error during batch processing: {str(e)}")
