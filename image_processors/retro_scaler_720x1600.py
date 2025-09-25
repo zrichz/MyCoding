@@ -9,7 +9,11 @@ Key Features:
 - Intelligent montage creation: combines images of similar sizes
 - Aspect ratio validation: only creates montages that won't exceed 720px width when scaled to 1600px height
 - Optimal layout calculation (1x2, 1x3, 2x2, 2x3, etc.)
-- Scales final montage to exactly 720x1600 pixels while preserving aspect ratios
+- Intelligent expansion: uses blur and fade effects instead of black bars
+- Fixed 160px maximum blur applied to expanded regions
+- Fixed 50% luminance reduction (darkening) for natural fade effect
+- Dual-axis expansion: applies effects to both horizontal and vertical expansions
+- Preserves aspect ratios during montage creation and scaling
 - Fallback to single image processing when montages aren't feasible
 - Output format selection: high-quality JPEG or PNG
 - Generates unique timestamped filenames
@@ -19,6 +23,7 @@ from PIL import Image, ImageTk
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 import numpy as np
+from scipy import ndimage
 import os
 import math
 from datetime import datetime
@@ -38,6 +43,10 @@ class RetroScaler:
         # Montage settings
         self.max_images_per_montage = 6  # Maximum images to combine
         self.min_images_per_montage = 2  # Minimum images to combine
+        
+        # Blur and fade settings (same as image_expander_720x1600.py)
+        self.blur_amount = 160
+        self.luminance_drop = 50
         
         self.setup_gui()
     
@@ -84,7 +93,7 @@ class RetroScaler:
         jpg_checkbox.pack(side=tk.LEFT)
         
         # Settings info
-        settings_text = "Creates aspect-ratio compliant montages from small images\nTarget: 720x1600 pixels (width limit enforced)"
+        settings_text = f"Creates aspect-ratio compliant montages with intelligent expansion\nTarget: 720x1600 pixels • Blur: {self.blur_amount}px • Fade: {self.luminance_drop}%"
         self.settings_label = tk.Label(info_frame, text=settings_text, 
                                       font=("Arial", 9), justify='center')
         self.settings_label.pack(pady=(5, 10))
@@ -258,6 +267,88 @@ class RetroScaler:
         # No valid montage configuration found
         return False, (1, 1)
     
+    def apply_luminance_reduction(self, image_array, reduction_percent):
+        """Apply luminance reduction (darkening) to an image array"""
+        if reduction_percent <= 0:
+            return image_array
+        
+        # Calculate reduction factor (0-100% becomes 0.0-1.0)
+        reduction_factor = reduction_percent / 100.0
+        
+        # Apply reduction (darken)
+        darkened = image_array.astype(np.float32) * (1.0 - reduction_factor)
+        return np.clip(darkened, 0, 255).astype(np.uint8)
+    
+    def apply_horizontal_blur(self, line_array, blur_amount):
+        """Apply horizontal-only blur to preserve colors"""
+        if blur_amount <= 0:
+            return line_array
+        
+        # Create horizontal Gaussian kernel
+        kernel_size = int(blur_amount * 2) * 2 + 1  # Ensure odd size
+        sigma = blur_amount / 3.0  # Convert blur_amount to sigma
+        
+        # Create 1D horizontal Gaussian kernel
+        x = np.arange(kernel_size) - kernel_size // 2
+        kernel = np.exp(-x**2 / (2 * sigma**2))
+        kernel = kernel / kernel.sum()
+        
+        # Apply horizontal convolution to each color channel
+        if len(line_array.shape) == 2:  # Color image (width, channels)
+            blurred = np.zeros_like(line_array, dtype=np.float32)
+            for channel in range(line_array.shape[1]):
+                # Use mode='nearest' to handle edges properly
+                blurred[:, channel] = ndimage.convolve1d(
+                    line_array[:, channel].astype(np.float32), 
+                    kernel, 
+                    axis=0, 
+                    mode='nearest'
+                )
+            return np.clip(blurred, 0, 255).astype(np.uint8)
+        else:  # Grayscale
+            blurred = ndimage.convolve1d(
+                line_array.astype(np.float32), 
+                kernel, 
+                axis=0, 
+                mode='nearest'
+            )
+            return np.clip(blurred, 0, 255).astype(np.uint8)
+    
+    def apply_vertical_blur(self, column_array, blur_amount):
+        """Apply vertical-only blur to preserve colors"""
+        if blur_amount <= 0:
+            return column_array
+        
+        # Create vertical Gaussian kernel
+        kernel_size = int(blur_amount * 2) * 2 + 1  # Ensure odd size
+        sigma = blur_amount / 3.0  # Convert blur_amount to sigma
+        
+        # Create 1D vertical Gaussian kernel
+        x = np.arange(kernel_size) - kernel_size // 2
+        kernel = np.exp(-x**2 / (2 * sigma**2))
+        kernel = kernel / kernel.sum()
+        
+        # Apply vertical convolution to each color channel
+        if len(column_array.shape) == 2:  # Color image (height, channels)
+            blurred = np.zeros_like(column_array, dtype=np.float32)
+            for channel in range(column_array.shape[1]):
+                # Use mode='nearest' to handle edges properly
+                blurred[:, channel] = ndimage.convolve1d(
+                    column_array[:, channel].astype(np.float32), 
+                    kernel, 
+                    axis=0, 
+                    mode='nearest'
+                )
+            return np.clip(blurred, 0, 255).astype(np.uint8)
+        else:  # Grayscale
+            blurred = ndimage.convolve1d(
+                column_array.astype(np.float32), 
+                kernel, 
+                axis=0, 
+                mode='nearest'
+            )
+            return np.clip(blurred, 0, 255).astype(np.uint8)
+    
     def create_montage(self, image_paths, output_path):
         """Create a montage from a list of image paths"""
         try:
@@ -300,20 +391,110 @@ class RetroScaler:
                 
                 montage.paste(img, (x, y))
             
-            # Scale montage to target dimensions (720x1600)
-            scaled_montage = montage.resize((self.target_width, self.target_height), Image.Resampling.LANCZOS)
+            # Scale montage to fit within 720x1600 while maintaining aspect ratio
+            montage.thumbnail((self.target_width, self.target_height), Image.Resampling.LANCZOS)
+            
+            # Convert montage to numpy array for intelligent expansion
+            montage_array = np.array(montage)
+            orig_height, orig_width = montage_array.shape[:2]
+            
+            # Use fixed settings for blur and fade
+            max_blur = self.blur_amount
+            max_luminance_drop = self.luminance_drop
+            
+            # Calculate expansion needed
+            width_expansion = max(0, self.target_width - orig_width)
+            height_expansion = max(0, self.target_height - orig_height)
+            
+            # Calculate padding for each side
+            left_pad = width_expansion // 2
+            right_pad = width_expansion - left_pad
+            top_pad = height_expansion // 2
+            bottom_pad = height_expansion - top_pad
+            
+            # Create expanded image array
+            if len(montage_array.shape) == 3:  # Color image
+                expanded_array = np.zeros((self.target_height, self.target_width, montage_array.shape[2]), dtype=montage_array.dtype)
+            else:  # Grayscale
+                expanded_array = np.zeros((self.target_height, self.target_width), dtype=montage_array.dtype)
+            
+            # Copy original montage to center
+            y_start = top_pad
+            y_end = y_start + orig_height
+            x_start = left_pad
+            x_end = x_start + orig_width
+            expanded_array[y_start:y_end, x_start:x_end] = montage_array
+            
+            # Process vertical expansion (top)
+            if top_pad > 0:
+                top_line = montage_array[0]  # First line of montage
+                for i in range(top_pad):
+                    # Calculate effects (0 to max at outermost)
+                    progress = (top_pad - i) / top_pad if top_pad > 0 else 0
+                    blur_amount = progress * max_blur
+                    luminance_reduction = progress * max_luminance_drop
+                    
+                    # Apply horizontal blur and luminance reduction
+                    blurred_line = self.apply_horizontal_blur(top_line, blur_amount)
+                    final_line = self.apply_luminance_reduction(blurred_line, luminance_reduction)
+                    expanded_array[i, x_start:x_end] = final_line
+            
+            # Process vertical expansion (bottom)
+            if bottom_pad > 0:
+                bottom_line = montage_array[-1]  # Last line of montage
+                for i in range(bottom_pad):
+                    # Calculate effects (0 to max at outermost)
+                    progress = (i + 1) / bottom_pad if bottom_pad > 0 else 0
+                    blur_amount = progress * max_blur
+                    luminance_reduction = progress * max_luminance_drop
+                    
+                    # Apply horizontal blur and luminance reduction
+                    blurred_line = self.apply_horizontal_blur(bottom_line, blur_amount)
+                    final_line = self.apply_luminance_reduction(blurred_line, luminance_reduction)
+                    expanded_array[y_end + i, x_start:x_end] = final_line
+            
+            # Process horizontal expansion (left)
+            if left_pad > 0:
+                left_column = expanded_array[:, x_start]  # First column of current image
+                for i in range(left_pad):
+                    # Calculate effects (0 to max at outermost)
+                    progress = (left_pad - i) / left_pad if left_pad > 0 else 0
+                    blur_amount = progress * max_blur
+                    luminance_reduction = progress * max_luminance_drop
+                    
+                    # Apply vertical blur and luminance reduction
+                    blurred_column = self.apply_vertical_blur(left_column, blur_amount)
+                    final_column = self.apply_luminance_reduction(blurred_column, luminance_reduction)
+                    expanded_array[:, i] = final_column
+            
+            # Process horizontal expansion (right)
+            if right_pad > 0:
+                right_column = expanded_array[:, x_end - 1]  # Last column of current image
+                for i in range(right_pad):
+                    # Calculate effects (0 to max at outermost)
+                    progress = (i + 1) / right_pad if right_pad > 0 else 0
+                    blur_amount = progress * max_blur
+                    luminance_reduction = progress * max_luminance_drop
+                    
+                    # Apply vertical blur and luminance reduction
+                    blurred_column = self.apply_vertical_blur(right_column, blur_amount)
+                    final_column = self.apply_luminance_reduction(blurred_column, luminance_reduction)
+                    expanded_array[:, x_end + i] = final_column
+            
+            # Convert back to PIL Image
+            processed_image = Image.fromarray(expanded_array.astype('uint8'))
             
             # Save with format-specific options
             if output_path.lower().endswith('.jpg') or output_path.lower().endswith('.jpeg'):
-                scaled_montage.save(output_path, 'JPEG', quality=100, optimize=True)
+                processed_image.save(output_path, 'JPEG', quality=100, optimize=True)
             else:
-                scaled_montage.save(output_path, 'PNG', optimize=True)
+                processed_image.save(output_path, 'PNG', optimize=True)
             
             # Close images to free memory
             for img in images:
                 img.close()
             montage.close()
-            scaled_montage.close()
+            processed_image.close()
             
             return True
             
@@ -322,7 +503,7 @@ class RetroScaler:
             return False
     
     def process_single_image(self, image_path, output_path):
-        """Process a single image by scaling it to 720x1600 with aspect ratio preservation"""
+        """Process a single image using intelligent expansion with blur and fade"""
         try:
             # Load image
             img = Image.open(image_path)
@@ -330,23 +511,104 @@ class RetroScaler:
             # Scale to fit within 720x1600 while maintaining aspect ratio
             img.thumbnail((self.target_width, self.target_height), Image.Resampling.LANCZOS)
             
-            # Create a 720x1600 canvas and center the image
-            canvas = Image.new('RGB', (self.target_width, self.target_height), (0, 0, 0))
+            # Convert image to numpy array for intelligent expansion
+            img_array = np.array(img)
+            orig_height, orig_width = img_array.shape[:2]
             
-            # Calculate position to center the image
-            x = (self.target_width - img.width) // 2
-            y = (self.target_height - img.height) // 2
+            # Use fixed settings for blur and fade
+            max_blur = self.blur_amount
+            max_luminance_drop = self.luminance_drop
             
-            canvas.paste(img, (x, y))
+            # Calculate expansion needed
+            width_expansion = max(0, self.target_width - orig_width)
+            height_expansion = max(0, self.target_height - orig_height)
+            
+            # Calculate padding for each side
+            left_pad = width_expansion // 2
+            right_pad = width_expansion - left_pad
+            top_pad = height_expansion // 2
+            bottom_pad = height_expansion - top_pad
+            
+            # Create expanded image array
+            if len(img_array.shape) == 3:  # Color image
+                expanded_array = np.zeros((self.target_height, self.target_width, img_array.shape[2]), dtype=img_array.dtype)
+            else:  # Grayscale
+                expanded_array = np.zeros((self.target_height, self.target_width), dtype=img_array.dtype)
+            
+            # Copy original image to center
+            y_start = top_pad
+            y_end = y_start + orig_height
+            x_start = left_pad
+            x_end = x_start + orig_width
+            expanded_array[y_start:y_end, x_start:x_end] = img_array
+            
+            # Process vertical expansion (top)
+            if top_pad > 0:
+                top_line = img_array[0]  # First line of original image
+                for i in range(top_pad):
+                    # Calculate effects (0 to max at outermost)
+                    progress = (top_pad - i) / top_pad if top_pad > 0 else 0
+                    blur_amount = progress * max_blur
+                    luminance_reduction = progress * max_luminance_drop
+                    
+                    # Apply horizontal blur and luminance reduction
+                    blurred_line = self.apply_horizontal_blur(top_line, blur_amount)
+                    final_line = self.apply_luminance_reduction(blurred_line, luminance_reduction)
+                    expanded_array[i, x_start:x_end] = final_line
+            
+            # Process vertical expansion (bottom)
+            if bottom_pad > 0:
+                bottom_line = img_array[-1]  # Last line of original image
+                for i in range(bottom_pad):
+                    # Calculate effects (0 to max at outermost)
+                    progress = (i + 1) / bottom_pad if bottom_pad > 0 else 0
+                    blur_amount = progress * max_blur
+                    luminance_reduction = progress * max_luminance_drop
+                    
+                    # Apply horizontal blur and luminance reduction
+                    blurred_line = self.apply_horizontal_blur(bottom_line, blur_amount)
+                    final_line = self.apply_luminance_reduction(blurred_line, luminance_reduction)
+                    expanded_array[y_end + i, x_start:x_end] = final_line
+            
+            # Process horizontal expansion (left)
+            if left_pad > 0:
+                left_column = expanded_array[:, x_start]  # First column of current image
+                for i in range(left_pad):
+                    # Calculate effects (0 to max at outermost)
+                    progress = (left_pad - i) / left_pad if left_pad > 0 else 0
+                    blur_amount = progress * max_blur
+                    luminance_reduction = progress * max_luminance_drop
+                    
+                    # Apply vertical blur and luminance reduction
+                    blurred_column = self.apply_vertical_blur(left_column, blur_amount)
+                    final_column = self.apply_luminance_reduction(blurred_column, luminance_reduction)
+                    expanded_array[:, i] = final_column
+            
+            # Process horizontal expansion (right)
+            if right_pad > 0:
+                right_column = expanded_array[:, x_end - 1]  # Last column of current image
+                for i in range(right_pad):
+                    # Calculate effects (0 to max at outermost)
+                    progress = (i + 1) / right_pad if right_pad > 0 else 0
+                    blur_amount = progress * max_blur
+                    luminance_reduction = progress * max_luminance_drop
+                    
+                    # Apply vertical blur and luminance reduction
+                    blurred_column = self.apply_vertical_blur(right_column, blur_amount)
+                    final_column = self.apply_luminance_reduction(blurred_column, luminance_reduction)
+                    expanded_array[:, x_end + i] = final_column
+            
+            # Convert back to PIL Image
+            processed_image = Image.fromarray(expanded_array.astype('uint8'))
             
             # Save with format-specific options
             if output_path.lower().endswith('.jpg') or output_path.lower().endswith('.jpeg'):
-                canvas.save(output_path, 'JPEG', quality=100, optimize=True)
+                processed_image.save(output_path, 'JPEG', quality=100, optimize=True)
             else:
-                canvas.save(output_path, 'PNG', optimize=True)
+                processed_image.save(output_path, 'PNG', optimize=True)
             
             img.close()
-            canvas.close()
+            processed_image.close()
             
             return True
             
