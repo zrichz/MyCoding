@@ -349,47 +349,145 @@ class RetroScaler:
             )
             return np.clip(blurred, 0, 255).astype(np.uint8)
     
-    def create_montage(self, image_paths, output_path):
-        """Create a montage from a list of image paths"""
+    def validate_images_for_montage(self, image_paths):
+        """Validate that images can be processed for montage creation"""
         try:
-            # Load all images
-            images = []
+            valid_images = []
+            invalid_count = 0
+            
             for path in image_paths:
+                try:
+                    with Image.open(path) as img:
+                        # Check for reasonable dimensions
+                        width, height = img.size
+                        if width <= 0 or height <= 0:
+                            self.log_message(f"Invalid dimensions for {os.path.basename(path)}: {width}x{height}")
+                            invalid_count += 1
+                            continue
+                        
+                        # Check for extremely large images that might cause memory issues
+                        if width > 10000 or height > 10000:
+                            self.log_message(f"Warning: Very large image {os.path.basename(path)}: {width}x{height}")
+                        
+                        # Check that image can be loaded properly
+                        img.load()  # Force image loading
+                        valid_images.append(path)
+                        
+                except Exception as e:
+                    self.log_message(f"Cannot load image {os.path.basename(path)}: {e}")
+                    invalid_count += 1
+            
+            if invalid_count > 0:
+                self.log_message(f"Found {invalid_count} invalid images out of {len(image_paths)}")
+            
+            return valid_images
+            
+        except Exception as e:
+            self.log_message(f"Error during image validation: {e}")
+            return []
+
+    def create_montage(self, image_paths, output_path):
+        """Create a montage from a list of image paths (supports mixed sizes)"""
+        try:
+            # Validate images first
+            valid_paths = self.validate_images_for_montage(image_paths)
+            if not valid_paths:
+                self.log_message("No valid images found for montage creation")
+                return False
+                
+            if len(valid_paths) < len(image_paths):
+                self.log_message(f"Using {len(valid_paths)} valid images out of {len(image_paths)} total")
+            
+            # Load all valid images and get their sizes
+            images = []
+            sizes = []
+            for path in valid_paths:
                 img = Image.open(path)
                 images.append(img)
+                sizes.append(img.size)
             
             if not images:
                 return False
             
-            # Get the size of the first image (assuming all are same size)
-            img_width, img_height = images[0].size
+            # Determine target cell size for the montage
+            # Use the median size as target to balance between too small and too large
+            widths = [size[0] for size in sizes]
+            heights = [size[1] for size in sizes]
+            widths.sort()
+            heights.sort()
             
-            # Check if montage is feasible
-            can_montage, (grid_cols, grid_rows) = self.can_create_montage(img_width, img_height, len(images))
+            # Use median dimensions as target cell size
+            target_cell_width = widths[len(widths) // 2]
+            target_cell_height = heights[len(heights) // 2]
+            
+            self.log_message(f"Using target cell size: {target_cell_width}x{target_cell_height} for montage")
+            
+            # Check if montage is feasible with target cell size
+            can_montage, (grid_cols, grid_rows) = self.can_create_montage(target_cell_width, target_cell_height, len(images))
             
             if not can_montage:
-                self.log_message(f"Cannot create montage: {img_width}x{img_height} images would exceed 720px width when scaled")
-                return False
+                # Try with smallest dimensions as a fallback
+                min_width = min(widths)
+                min_height = min(heights)
+                self.log_message(f"Median size failed, trying minimum size: {min_width}x{min_height}")
+                
+                can_montage, (grid_cols, grid_rows) = self.can_create_montage(min_width, min_height, len(images))
+                
+                if can_montage:
+                    target_cell_width = min_width
+                    target_cell_height = min_height
+                    self.log_message(f"Using minimum size approach: {target_cell_width}x{target_cell_height}")
+                else:
+                    self.log_message(f"Cannot create montage: even {min_width}x{min_height} cells would exceed 720px width when scaled")
+                    return False
             
-            # Create montage dimensions
-            montage_width = img_width * grid_cols
-            montage_height = img_height * grid_rows
+            # Normalize all images to target cell size while preserving aspect ratio
+            normalized_images = []
+            for i, img in enumerate(images):
+                try:
+                    # Create a black background of target cell size
+                    cell_bg = Image.new('RGB', (target_cell_width, target_cell_height), (0, 0, 0))
+                    
+                    # Scale image to fit within cell while maintaining aspect ratio
+                    img_copy = img.copy()
+                    img_copy.thumbnail((target_cell_width, target_cell_height), Image.Resampling.LANCZOS)
+                    
+                    # Center the scaled image in the cell
+                    x_offset = (target_cell_width - img_copy.width) // 2
+                    y_offset = (target_cell_height - img_copy.height) // 2
+                    cell_bg.paste(img_copy, (x_offset, y_offset))
+                    
+                    normalized_images.append(cell_bg)
+                    img_copy.close()
+                    
+                except Exception as e:
+                    self.log_message(f"Error normalizing image {i+1}: {e}")
+                    # Clean up and return failure
+                    for img in images:
+                        img.close()
+                    for norm_img in normalized_images:
+                        norm_img.close()
+                    return False
+            
+            # Create montage dimensions using normalized cell size
+            montage_width = target_cell_width * grid_cols
+            montage_height = target_cell_height * grid_rows
             
             # Create blank montage canvas
             montage = Image.new('RGB', (montage_width, montage_height), (0, 0, 0))
             
-            # Place images in grid
-            for i, img in enumerate(images):
+            # Place normalized images in grid
+            for i, normalized_img in enumerate(normalized_images):
                 if i >= grid_cols * grid_rows:
                     break  # Don't exceed grid capacity
                 
                 col = i % grid_cols
                 row = i // grid_cols
                 
-                x = col * img_width
-                y = row * img_height
+                x = col * target_cell_width
+                y = row * target_cell_height
                 
-                montage.paste(img, (x, y))
+                montage.paste(normalized_img, (x, y))
             
             # Scale montage to fit within 720x1600 while maintaining aspect ratio
             montage.thumbnail((self.target_width, self.target_height), Image.Resampling.LANCZOS)
@@ -493,6 +591,8 @@ class RetroScaler:
             # Close images to free memory
             for img in images:
                 img.close()
+            for normalized_img in normalized_images:
+                normalized_img.close()
             montage.close()
             processed_image.close()
             
@@ -657,98 +757,160 @@ class RetroScaler:
                 messagebox.showerror("Error", "No supported image files found")
                 return
             
-            # Group images by size
-            size_groups = {}
+            # Analyze all images and store their info
+            image_info = []
             for filename in image_files:
                 filepath = os.path.join(self.input_directory, filename)
                 try:
                     with Image.open(filepath) as img:
-                        size = img.size
-                        if size not in size_groups:
-                            size_groups[size] = []
-                        size_groups[size].append(filepath)
+                        image_info.append({
+                            'path': filepath,
+                            'size': img.size,
+                            'filename': filename
+                        })
                 except Exception as e:
                     self.log_message(f"Error processing {filename}: {e}")
             
-            # Create montages for each size group
+            if not image_info:
+                self.log_message("No valid images found for processing")
+                return
+            
+            # Create montages from all available images (mixed sizes allowed)
             total_montages = 0
             successful = 0
             failed = 0
+            images_processed = 0
             
-            for size, file_paths in size_groups.items():
-                img_width, img_height = size
+            while images_processed < len(image_info):
+                # Calculate remaining images
+                remaining_images = len(image_info) - images_processed
                 
-                if len(file_paths) < self.min_images_per_montage:
-                    self.log_message(f"Skipping {img_width}x{img_height} group: only {len(file_paths)} images (need at least {self.min_images_per_montage})")
-                    continue
+                if remaining_images < self.min_images_per_montage:
+                    self.log_message(f"Remaining {remaining_images} images are insufficient for montage (need at least {self.min_images_per_montage})")
+                    break
                 
-                # Check if any montage is possible for this image size
-                can_montage, _ = self.can_create_montage(img_width, img_height, self.min_images_per_montage)
-                if not can_montage:
-                    self.log_message(f"Skipping {img_width}x{img_height} group: would exceed 720px width when scaled to 1600px height")
-                    continue
+                # Determine batch size for this montage (start with minimum and find best fit)
+                best_count = self.min_images_per_montage
                 
-                # Create montages from this size group
-                group_name = f"{img_width}x{img_height}"
-                images_processed = 0
-                
-                while images_processed < len(file_paths):
-                    # Determine how many images to use for this montage
-                    remaining_images = len(file_paths) - images_processed
+                # Test different batch sizes to find the largest feasible one
+                for test_count in range(self.min_images_per_montage, min(self.max_images_per_montage, remaining_images) + 1):
+                    # Test this batch - get sample image sizes from the batch
+                    test_batch = image_info[images_processed:images_processed + test_count]
+                    test_sizes = [info['size'] for info in test_batch]
                     
-                    # Find the optimal number of images for this montage
-                    best_count = 1
-                    for test_count in range(self.min_images_per_montage, min(self.max_images_per_montage, remaining_images) + 1):
-                        can_montage, _ = self.can_create_montage(img_width, img_height, test_count)
-                        if can_montage:
-                            best_count = test_count
-                        else:
-                            break  # Stop at first invalid configuration
+                    # Use the same logic as create_montage for consistency
+                    test_widths = [size[0] for size in test_sizes]
+                    test_heights = [size[1] for size in test_sizes]
+                    test_widths.sort()
+                    test_heights.sort()
                     
-                    # Take images for this montage
-                    end_idx = images_processed + best_count
-                    montage_images = file_paths[images_processed:end_idx]
+                    # Try median dimensions first (matches create_montage logic)
+                    median_width = test_widths[len(test_widths) // 2]
+                    median_height = test_heights[len(test_heights) // 2]
                     
-                    # Determine output format
-                    if self.save_as_jpg.get():
-                        ext = ".jpg"
+                    can_montage, _ = self.can_create_montage(median_width, median_height, test_count)
+                    
+                    # If median fails, try minimum (also matches create_montage fallback)
+                    if not can_montage:
+                        min_width = min(test_widths)
+                        min_height = min(test_heights)
+                        can_montage, _ = self.can_create_montage(min_width, min_height, test_count)
+                    
+                    if can_montage:
+                        best_count = test_count
                     else:
-                        ext = ".png"
-                    
-                    # Generate output filename
-                    if len(montage_images) > 1:
-                        montage_prefix = f"{group_name}_montage_{len(montage_images)}imgs"
+                        break  # Stop at first invalid configuration
+                
+                # Take images for this montage
+                end_idx = images_processed + best_count
+                batch_info = image_info[images_processed:end_idx]
+                montage_paths = [info['path'] for info in batch_info]
+                
+                # Analyze sizes in this batch
+                sizes_in_batch = [info['size'] for info in batch_info]
+                unique_sizes = list(set(sizes_in_batch))
+                
+                # Determine output format
+                if self.save_as_jpg.get():
+                    ext = ".jpg"
+                else:
+                    ext = ".png"
+                
+                # Generate output filename based on batch composition
+                if len(unique_sizes) > 1:
+                    # Mixed sizes - use dimensions of first image and indicate mixed
+                    first_size = batch_info[0]['size']
+                    montage_prefix = f"{first_size[0]}x{first_size[1]}_mixed_montage_{len(montage_paths)}imgs"
+                    self.log_message(f"Creating mixed-size montage with {len(montage_paths)} images:")
+                    for size in unique_sizes:
+                        count = sizes_in_batch.count(size)
+                        self.log_message(f"  - {count} images at {size[0]}x{size[1]}")
+                else:
+                    # Single size
+                    size = unique_sizes[0]
+                    montage_prefix = f"{size[0]}x{size[1]}_montage_{len(montage_paths)}imgs"
+                    self.log_message(f"Creating montage with {len(montage_paths)} images at {size[0]}x{size[1]}")
+                
+                output_filename, output_path = self.generate_timestamp_filename(output_dir, montage_prefix, ext)
+                
+                # Update progress
+                total_montages += 1
+                progress = (images_processed / len(image_info)) * 100
+                self.progress_var.set(min(progress, 100))
+                
+                if len(montage_paths) > 1:
+                    self.progress_label.config(text=f"Creating montage: {output_filename}")
+                    # Try to create montage
+                    if self.create_montage(montage_paths, output_path):
+                        successful += 1
+                        image_names = [os.path.basename(p) for p in montage_paths]
+                        self.log_message(f"✓ Created montage: {output_filename} from {len(montage_paths)} images")
+                        self.log_message(f"  Source images: {', '.join(image_names[:3])}{'...' if len(image_names) > 3 else ''}")
                     else:
-                        montage_prefix = f"{group_name}_single"
-                    output_filename, output_path = self.generate_timestamp_filename(output_dir, montage_prefix, ext)
-                    
-                    # Update progress
-                    total_montages += 1
-                    progress = (total_montages / max(len(size_groups), 1)) * 100
-                    self.progress_var.set(min(progress, 100))
-                    
-                    if len(montage_images) > 1:
-                        self.progress_label.config(text=f"Creating montage: {output_filename}")
-                        # Create montage
-                        if self.create_montage(montage_images, output_path):
-                            successful += 1
-                            image_names = [os.path.basename(p) for p in montage_images]
-                            self.log_message(f"✓ Created montage: {output_filename} from {len(montage_images)} images")
-                            self.log_message(f"  Source images: {', '.join(image_names[:3])}{'...' if len(image_names) > 3 else ''}")
-                        else:
-                            failed += 1
-                            self.log_message(f"✗ Failed to create montage from {group_name} group")
+                        # Montage failed - fall back to processing images individually
+                        self.log_message(f"⚠ Montage creation failed - falling back to individual processing")
+                        fallback_successful = 0
+                        fallback_failed = 0
+                        
+                        for i, image_path in enumerate(montage_paths):
+                            # Generate individual filename
+                            base_name = os.path.splitext(os.path.basename(image_path))[0]
+                            if self.save_as_jpg.get():
+                                fallback_ext = ".jpg"
+                            else:
+                                fallback_ext = ".png"
+                            
+                            fallback_filename, fallback_path = self.generate_timestamp_filename(
+                                output_dir, f"{base_name}_scaled", fallback_ext
+                            )
+                            
+                            self.progress_label.config(text=f"Processing fallback {i+1}/{len(montage_paths)}: {fallback_filename}")
+                            
+                            if self.process_single_image(image_path, fallback_path):
+                                fallback_successful += 1
+                                self.log_message(f"✓ Processed individual image: {fallback_filename}")
+                            else:
+                                fallback_failed += 1
+                                self.log_message(f"✗ Failed to process individual image: {fallback_filename}")
+                        
+                        successful += fallback_successful
+                        failed += fallback_failed
+                        
+                        if fallback_successful > 0:
+                            self.log_message(f"✓ Fallback completed: {fallback_successful} images processed individually")
+                        if fallback_failed > 0:
+                            self.log_message(f"✗ Fallback failures: {fallback_failed} images failed")
+                else:
+                    # Process single image
+                    self.progress_label.config(text=f"Processing single: {output_filename}")
+                    if self.process_single_image(montage_paths[0], output_path):
+                        successful += 1
+                        self.log_message(f"✓ Processed single image: {output_filename}")
                     else:
-                        # Process single image
-                        self.progress_label.config(text=f"Processing single: {output_filename}")
-                        if self.process_single_image(montage_images[0], output_path):
-                            successful += 1
-                            self.log_message(f"✓ Processed single image: {output_filename}")
-                        else:
-                            failed += 1
-                            self.log_message(f"✗ Failed to process single image")
-                    
-                    images_processed = end_idx
+                        failed += 1
+                        self.log_message(f"✗ Failed to process single image")
+                
+                images_processed = end_idx
             
             # Final results
             self.progress_var.set(100)
