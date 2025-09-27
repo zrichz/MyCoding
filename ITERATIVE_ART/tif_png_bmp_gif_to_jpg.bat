@@ -1,5 +1,5 @@
-rem copy this file to the folder with PNGs, BMPs, and GIFs and run it
-rem Converts any PNG, BMP, and GIF files found, into high-quality JPG files
+rem copy this file to the folder with PNGs, BMPs, GIFs, and TIFs and run it
+rem Converts any PNG, BMP, GIF, and TIF files found, into high-quality JPG files
 
 @echo off
 cd /d "%~dp0"
@@ -19,8 +19,16 @@ rem Check for GIF files
 dir /b *.gif >nul 2>&1
 if not errorlevel 1 set "found_files=1"
 
+rem Check for TIF files
+dir /b *.tif >nul 2>&1
+if not errorlevel 1 set "found_files=1"
+
+rem Check for TIFF files (alternative extension)
+dir /b *.tiff >nul 2>&1
+if not errorlevel 1 set "found_files=1"
+
 if "%found_files%"=="0" (
-  echo No PNG, BMP, or GIF files found in "%~dp0".
+  echo No PNG, BMP, GIF, or TIF files found in "%~dp0".
   pause
   exit /b 0
 )
@@ -43,6 +51,18 @@ for %%I in (*.bmp) do (
 rem Convert GIF files
 for %%I in (*.gif) do (
   echo Converting GIF: "%%~nxI" -> "%%~nI.jpg"
+  ffmpeg -y -loglevel error -i "%%~fI" -q:v 1 "%%~nI.jpg"
+)
+
+rem Convert TIF files
+for %%I in (*.tif) do (
+  echo Converting TIF: "%%~nxI" -> "%%~nI.jpg"
+  ffmpeg -y -loglevel error -i "%%~fI" -q:v 1 "%%~nI.jpg"
+)
+
+rem Convert TIFF files (alternative extension)
+for %%I in (*.tiff) do (
+  echo Converting TIFF: "%%~nxI" -> "%%~nI.jpg"
   ffmpeg -y -loglevel error -i "%%~fI" -q:v 1 "%%~nI.jpg"
 )
 
