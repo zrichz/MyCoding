@@ -1,12 +1,15 @@
 #!/bin/bash
 # Image Pair Combiner Launcher for Linux
-# PIL-only version - no external dependencies required
+# Uses .venv environment
 
 cd "$(dirname "$0")"
 
 echo "Starting Image Pair Combiner GUI..."
 
-python3 image_pair_combiner.py
+# Activate virtual environment and run
+source .venv/bin/activate
+python image_pair_combiner.py
+deactivate
 
 echo "Image Pair Combiner closed."
 echo "Press Enter to close this window..."

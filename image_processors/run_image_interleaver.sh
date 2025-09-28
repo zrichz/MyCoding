@@ -1,12 +1,15 @@
 #!/bin/bash
 # Image Interleaver Launcher for Linux
-# PIL-only version - no external dependencies required
+# Uses .venv environment
 
 cd "$(dirname "$0")"
 
 echo "Starting Image Interleaver GUI..."
 
-python3 image_interleaver.py
+# Activate virtual environment and run
+source .venv/bin/activate
+python image_interleaver.py
+deactivate
 
 echo "Image Interleaver closed."
 echo "Press Enter to close this window..."
