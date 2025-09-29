@@ -6,22 +6,20 @@ cd "$(dirname "$0")"
 
 echo "Starting Image Painter GUI..."
 
-# Try to activate virtual environment, fallback to system python if not found
+# Use the local .venv in image_processors directory
 if [ -f ".venv/bin/activate" ]; then
-    echo "Using virtual environment..."
+    echo "Using local virtual environment..."
     source .venv/bin/activate
     python image_painter.py
     deactivate
-elif [ -f "../.venv/bin/activate" ]; then
-    echo "Using parent directory virtual environment..."
-    source ../.venv/bin/activate
+else
+    echo "Virtual environment not found at .venv/"
+    echo "Creating virtual environment and installing packages..."
+    python3 -m venv .venv
+    source .venv/bin/activate
+    pip install numpy pillow
     python image_painter.py
     deactivate
-else
-    echo "No virtual environment found, using system Python..."
-    echo "Installing required packages if needed..."
-    pip3 install --user numpy pillow 2>/dev/null || echo "Packages already installed or install failed"
-    python3 image_painter.py
 fi
 
 echo "Image Painter closed."
