@@ -41,7 +41,7 @@ class CannyBatchProcessor:
         
         # Description - Larger font for better visibility
         desc_label = tk.Label(self.root, 
-                             text="Select a directory with images to apply Canny edge detection\nResults will be saved in a 'canny' subdirectory",
+                             text="Select a directory with images to apply Canny edge detection\nResults will be inverted (black lines on white) and saved in 'canny' subdirectory",
                              font=("Arial", 13), justify=tk.CENTER)
         desc_label.pack(pady=15)
         
@@ -91,15 +91,8 @@ class CannyBatchProcessor:
                                  width=10, font=("Arial", 12))
         high_spinbox.pack(side=tk.RIGHT)
         
-        # Aperture size
-        aperture_frame = ttk.Frame(params_frame)
-        aperture_frame.pack(fill='x', pady=8)
-        
-        tk.Label(aperture_frame, text="Aperture Size:", font=("Arial", 12, "bold")).pack(side=tk.LEFT)
-        self.aperture_size = tk.IntVar(value=3)
-        aperture_spinbox = tk.Spinbox(aperture_frame, from_=3, to=7, increment=2, 
-                                     textvariable=self.aperture_size, width=10, font=("Arial", 12))
-        aperture_spinbox.pack(side=tk.RIGHT)
+        # Use default aperture size of 3 (removed UI control)
+        self.aperture_size = 3
         
         # Processing controls - Make them more prominent
         controls_frame = ttk.LabelFrame(self.root, text="Processing Controls", padding=20)
@@ -210,10 +203,13 @@ class CannyBatchProcessor:
             edges = cv2.Canny(blurred, 
                              self.low_threshold.get(), 
                              self.high_threshold.get(), 
-                             apertureSize=self.aperture_size.get())
+                             apertureSize=self.aperture_size)
             
-            # Save the result
-            cv2.imwrite(output_path, edges)
+            # Invert the image (white edges on black background -> black edges on white background)
+            inverted_edges = cv2.bitwise_not(edges)
+            
+            # Save the inverted result
+            cv2.imwrite(output_path, inverted_edges)
             
             return True, "Success"
             
