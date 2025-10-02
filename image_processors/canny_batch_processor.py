@@ -16,7 +16,7 @@ class CannyBatchProcessor:
     def __init__(self, root):
         self.root = root
         self.root.title("Canny Batch Processor")
-        self.root.geometry("800x700")  # Larger window for 1920x1080 screen
+        self.root.geometry("800x550")  # Compact window size
         
         # Center the window on screen
         self.root.update_idletasks()
@@ -34,20 +34,15 @@ class CannyBatchProcessor:
         self.setup_ui()
         
     def setup_ui(self):
-        # Main title - Larger font for 1920x1080
-        title_label = tk.Label(self.root, text="Canny Edge Detection Batch Processor", 
-                              font=("Arial", 20, "bold"), fg="navy")
-        title_label.pack(pady=25)
-        
-        # Description - Larger font for better visibility
-        desc_label = tk.Label(self.root, 
-                             text="Select a directory with images to apply Canny edge detection\nResults will be inverted (black lines on white) and saved in 'canny' subdirectory",
-                             font=("Arial", 13), justify=tk.CENTER)
-        desc_label.pack(pady=15)
+        # Compact info line
+        info_label = tk.Label(self.root, 
+                             text="Results will be inverted (black lines on white) and saved in 'canny' subdirectory",
+                             font=("Arial", 9), fg="gray")
+        info_label.pack(pady=5)
         
         # Directory selection frame
         dir_frame = ttk.LabelFrame(self.root, text="Directory Selection", padding=20)
-        dir_frame.pack(pady=20, padx=30, fill='x')
+        dir_frame.pack(pady=10, padx=30, fill='x')
         
         # Input directory
         input_frame = ttk.Frame(dir_frame)
