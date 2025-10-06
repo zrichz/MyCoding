@@ -526,20 +526,34 @@ class BiomorphGenerator:
                             multi_cycle = (cycle1 + cycle2 + cycle3) // 3
                             
                             # Strategy 3: Position-based variation for spatial coherence
-                            # Create smooth spatial gradients based on pixel position
-                            positions = np.arange(len(escaped_iterations))
-                            spatial_wave1 = ((positions * 3.7) % palette_size).astype(int)  # Increased frequency
-                            spatial_wave2 = ((positions * 2.3) % palette_size).astype(int)  # Different frequency
-                            spatial_wave3 = ((positions * 5.1) % palette_size).astype(int)  # Third wave
-                            spatial_blend = (spatial_wave1 + spatial_wave2 + spatial_wave3) // 3
+                            # Create smooth spatial gradients based on actual 2D pixel coordinates
+                            # Get the 2D coordinates of escaped pixels
+                            y_coords, x_coords = np.where(escaped_mask)
+                            
+                            # Create non-linear spatial waves to avoid banding
+                            # Use sine/cosine functions with different phases and frequencies
+                            import math
+                            
+                            # Convert coordinates to normalized range [0,1]
+                            norm_x = x_coords / width
+                            norm_y = y_coords / height
+                            
+                            # Create multiple non-linear wave patterns with different frequencies
+                            wave1 = np.sin(norm_x * 2 * math.pi * 3.7 + norm_y * 2 * math.pi * 2.3) * 0.5 + 0.5
+                            wave2 = np.cos(norm_x * 2 * math.pi * 1.9 + norm_y * 2 * math.pi * 4.1) * 0.5 + 0.5
+                            wave3 = np.sin(norm_x * 2 * math.pi * 5.1 - norm_y * 2 * math.pi * 1.7) * 0.5 + 0.5
+                            
+                            # Combine waves with smooth blending
+                            spatial_blend = ((wave1 + wave2 + wave3) / 3 * palette_size).astype(int) % palette_size
                             
                             # Strategy 4: Fractal-inspired recursive coloring
                             # Use the iteration value itself to create nested patterns
                             fractal_indices = ((escaped_iterations * escaped_iterations * 13) % palette_size)
                             
                             # Strategy 5: Smooth interpolation between discrete values
-                            # Add sub-pixel precision through position-based interpolation
-                            smooth_offset = (positions % 256) / 256.0 * 20  # Smooth variation
+                            # Add sub-pixel precision based on actual coordinates
+                            coord_hash = (x_coords * 73 + y_coords * 101) % 256  # Pseudo-random but deterministic
+                            smooth_offset = coord_hash / 256.0 * 5  # Subtle variation
                             smooth_indices = ((escaped_iterations - 1 + smooth_offset) * palette_size / 10).astype(int) % palette_size
                             
                             # Combine all strategies with optimized weights for maximum color variation
@@ -818,6 +832,7 @@ class BiomorphGenerator:
                         # Handle escaped points with same aggressive coloring
                         escaped_mask = (hires_data > 0)
                         if np.any(escaped_mask):
+                            import math  # Import math for trigonometric functions
                             escaped_iterations = hires_data[escaped_mask]
                             
                             # Apply same ultra-aggressive color mapping
@@ -829,14 +844,22 @@ class BiomorphGenerator:
                             cycle3 = ((escaped_iterations * 31) % palette_size)
                             multi_cycle = (cycle1 + cycle2 + cycle3) // 3
                             
-                            positions = np.arange(len(escaped_iterations))
-                            spatial_wave1 = ((positions * 3.7) % palette_size).astype(int)
-                            spatial_wave2 = ((positions * 2.3) % palette_size).astype(int)
-                            spatial_wave3 = ((positions * 5.1) % palette_size).astype(int)
-                            spatial_blend = (spatial_wave1 + spatial_wave2 + spatial_wave3) // 3
+                            # Get 2D coordinates for high-res version too
+                            y_coords_hires, x_coords_hires = np.where(escaped_mask)
+                            
+                            # Use same non-linear spatial waves for high-res version
+                            norm_x_hires = x_coords_hires / 2400  # High-res width
+                            norm_y_hires = y_coords_hires / 1600  # High-res height
+                            
+                            wave1_hires = np.sin(norm_x_hires * 2 * math.pi * 3.7 + norm_y_hires * 2 * math.pi * 2.3) * 0.5 + 0.5
+                            wave2_hires = np.cos(norm_x_hires * 2 * math.pi * 1.9 + norm_y_hires * 2 * math.pi * 4.1) * 0.5 + 0.5
+                            wave3_hires = np.sin(norm_x_hires * 2 * math.pi * 5.1 - norm_y_hires * 2 * math.pi * 1.7) * 0.5 + 0.5
+                            
+                            spatial_blend = ((wave1_hires + wave2_hires + wave3_hires) / 3 * palette_size).astype(int) % palette_size
                             
                             fractal_indices = ((escaped_iterations * escaped_iterations * 13) % palette_size)
-                            smooth_offset = (positions % 256) / 256.0 * 20
+                            coord_hash_hires = (x_coords_hires * 73 + y_coords_hires * 101) % 256
+                            smooth_offset = coord_hash_hires / 256.0 * 5
                             smooth_indices = ((escaped_iterations - 1 + smooth_offset) * palette_size / 10).astype(int) % palette_size
                             
                             final_indices = (
