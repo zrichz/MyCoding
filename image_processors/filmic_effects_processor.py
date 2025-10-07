@@ -16,7 +16,7 @@ class FilmicEffectsProcessor:
     def __init__(self, root):
         self.root = root
         self.root.title("Filmic Effects Processor - 720x1600")
-        self.root.geometry("2500x1400")
+        self.root.geometry("2000x1400")
         self.root.configure(bg='#2b2b2b')
         
         # Variables
