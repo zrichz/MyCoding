@@ -16,8 +16,8 @@ class FilmicEffectsProcessor:
     def __init__(self, root):
         self.root = root
         self.root.title("Filmic Effects Processor - 720x1600")
-        self.root.geometry("2000x1400")
-        self.root.configure(bg='#2b2b2b')
+        self.root.geometry("2500x1400")
+        self.root.configure(bg='#808080')
         
         # Variables
         self.input_directory = None
@@ -35,6 +35,7 @@ class FilmicEffectsProcessor:
         self.grain_edge_boost = tk.DoubleVar(value=1.8)
         self.vignette_strength = tk.DoubleVar(value=0.10)
         self.saturation_reduction = tk.DoubleVar(value=0.0)
+        self.chromatic_aberration = tk.DoubleVar(value=0.0)
         
         self.setup_ui()
         
@@ -43,12 +44,22 @@ class FilmicEffectsProcessor:
         main_frame = ttk.Frame(self.root, padding=15)
         main_frame.pack(fill='both', expand=True)
         
-        # Configure style for dark theme
+        # Configure style for mid-grey theme
         style = ttk.Style()
         style.theme_use('clam')
-        style.configure('Dark.TFrame', background='#2b2b2b')
-        style.configure('Dark.TLabel', background='#2b2b2b', foreground='white')
-        style.configure('Dark.TButton', background='#404040', foreground='white')
+        style.configure('Dark.TFrame', background='#808080')
+        style.configure('Dark.TLabel', background='#808080', foreground='black')
+        style.configure('Dark.TButton', background='#606060', foreground='white')
+        
+        # Configure slider style with bright blue background and white button
+        style.configure('Blue.Horizontal.TScale', 
+                       background='#0080FF',  # Bright blue background
+                       troughcolor='#0080FF',  # Bright blue trough
+                       sliderthickness=20,     # Thicker slider for visibility
+                       sliderrelief='raised')
+        style.map('Blue.Horizontal.TScale',
+                 background=[('active', '#FFFFFF'), ('pressed', '#FFFFFF')],  # White slider button
+                 troughcolor=[('active', '#0080FF'), ('pressed', '#0080FF')])  # Keep blue trough
         
         # Directory selection
         dir_frame = ttk.LabelFrame(main_frame, text="Image Directory", padding=10)
@@ -71,10 +82,10 @@ class FilmicEffectsProcessor:
         
         ttk.Label(grain_frame, text="Film Grain Intensity:", 
                  font=("Arial", 10, "bold"), width=20).pack(side=tk.LEFT)
-        grain_scale = ttk.Scale(grain_frame, from_=0.0, to=0.07, 
+        grain_scale = ttk.Scale(grain_frame, from_=0.0, to=0.28, 
                                variable=self.grain_intensity, orient='horizontal', 
-                               length=300, command=self.update_preview)
-        grain_scale.pack(side=tk.LEFT, padx=10, fill='x', expand=True)
+                               length=800, style='Blue.Horizontal.TScale')
+        grain_scale.pack(side=tk.LEFT, padx=10)
         
         self.grain_label = ttk.Label(grain_frame, text="0.03", width=6)
         self.grain_label.pack(side=tk.RIGHT, padx=5)
@@ -87,8 +98,8 @@ class FilmicEffectsProcessor:
                  font=("Arial", 10, "bold"), width=20).pack(side=tk.LEFT)
         edge_scale = ttk.Scale(edge_frame, from_=1.0, to=3.0, 
                               variable=self.grain_edge_boost, orient='horizontal', 
-                              length=300, command=self.update_preview)
-        edge_scale.pack(side=tk.LEFT, padx=10, fill='x', expand=True)
+                              length=800, style='Blue.Horizontal.TScale')
+        edge_scale.pack(side=tk.LEFT, padx=10)
         
         self.edge_label = ttk.Label(edge_frame, text="1.8", width=6)
         self.edge_label.pack(side=tk.RIGHT, padx=5)
@@ -101,8 +112,8 @@ class FilmicEffectsProcessor:
                  font=("Arial", 10, "bold"), width=20).pack(side=tk.LEFT)
         vignette_scale = ttk.Scale(vignette_frame, from_=0.0, to=0.375, 
                                   variable=self.vignette_strength, orient='horizontal', 
-                                  length=300, command=self.update_preview)
-        vignette_scale.pack(side=tk.LEFT, padx=10, fill='x', expand=True)
+                                  length=800, style='Blue.Horizontal.TScale')
+        vignette_scale.pack(side=tk.LEFT, padx=10)
         
         self.vignette_label = ttk.Label(vignette_frame, text="0.10", width=6)
         self.vignette_label.pack(side=tk.RIGHT, padx=5)
@@ -113,19 +124,34 @@ class FilmicEffectsProcessor:
         
         ttk.Label(saturation_frame, text="Saturation Reduction:", 
                  font=("Arial", 10, "bold"), width=20).pack(side=tk.LEFT)
-        saturation_scale = ttk.Scale(saturation_frame, from_=0.0, to=0.40, 
+        saturation_scale = ttk.Scale(saturation_frame, from_=0.0, to=1.0, 
                                     variable=self.saturation_reduction, orient='horizontal', 
-                                    length=300, command=self.update_preview)
-        saturation_scale.pack(side=tk.LEFT, padx=10, fill='x', expand=True)
+                                    length=800, style='Blue.Horizontal.TScale')
+        saturation_scale.pack(side=tk.LEFT, padx=10)
         
         self.saturation_label = ttk.Label(saturation_frame, text="0.00", width=6)
         self.saturation_label.pack(side=tk.RIGHT, padx=5)
+        
+        # Chromatic aberration controls
+        aberration_frame = ttk.Frame(control_frame)
+        aberration_frame.pack(fill='x', pady=5)
+        
+        ttk.Label(aberration_frame, text="Chromatic Aberration:", 
+                 font=("Arial", 10, "bold"), width=20).pack(side=tk.LEFT)
+        aberration_scale = ttk.Scale(aberration_frame, from_=0.0, to=1.0, 
+                                    variable=self.chromatic_aberration, orient='horizontal', 
+                                    length=800, style='Blue.Horizontal.TScale')
+        aberration_scale.pack(side=tk.LEFT, padx=10)
+        
+        self.aberration_label = ttk.Label(aberration_frame, text="0.00", width=6)
+        self.aberration_label.pack(side=tk.RIGHT, padx=5)
         
         # Update labels when scales change
         grain_scale.configure(command=self.update_grain_label)
         edge_scale.configure(command=self.update_edge_label)
         vignette_scale.configure(command=self.update_vignette_label)
         saturation_scale.configure(command=self.update_saturation_label)
+        aberration_scale.configure(command=self.update_aberration_label)
         
         # Preview and processing controls
         action_frame = ttk.Frame(main_frame)
@@ -157,15 +183,15 @@ class FilmicEffectsProcessor:
         preview_frame.pack(fill='both', expand=True)
         
         # Container for both preview canvases
-        canvas_container = tk.Frame(preview_frame, bg='#2b2b2b')
+        canvas_container = tk.Frame(preview_frame, bg='#808080')
         canvas_container.pack(expand=True, fill='both')
         
         # Original image canvas (left side)
-        original_frame = tk.Frame(canvas_container, bg='#2b2b2b')
+        original_frame = tk.Frame(canvas_container, bg='#808080')
         original_frame.pack(side=tk.LEFT, padx=10)
         
         original_label = tk.Label(original_frame, text="Original (Top Half)", 
-                                 bg='#2b2b2b', fg='white', font=("Arial", 12, "bold"))
+                                 bg='#808080', fg='black', font=("Arial", 12, "bold"))
         original_label.pack(pady=5)
         
         self.original_canvas = tk.Canvas(original_frame, width=720, height=800, 
@@ -174,11 +200,11 @@ class FilmicEffectsProcessor:
         self.original_canvas.pack()
         
         # Processed image canvas (right side)
-        processed_frame = tk.Frame(canvas_container, bg='#2b2b2b')
+        processed_frame = tk.Frame(canvas_container, bg='#808080')
         processed_frame.pack(side=tk.LEFT, padx=10)
         
         processed_label = tk.Label(processed_frame, text="With Filmic Effects", 
-                                  bg='#2b2b2b', fg='white', font=("Arial", 12, "bold"))
+                                  bg='#808080', fg='black', font=("Arial", 12, "bold"))
         processed_label.pack(pady=5)
         
         self.processed_canvas = tk.Canvas(processed_frame, width=720, height=800, 
@@ -204,6 +230,11 @@ class FilmicEffectsProcessor:
     def update_saturation_label(self, value):
         """Update saturation reduction label"""
         self.saturation_label.config(text=f"{float(value):.2f}")
+        self.update_preview()
+        
+    def update_aberration_label(self, value):
+        """Update chromatic aberration label"""
+        self.aberration_label.config(text=f"{float(value):.2f}")
         self.update_preview()
         
     def select_directory(self):
@@ -293,6 +324,69 @@ class FilmicEffectsProcessor:
         
         return noise
         
+    def apply_film_grain_rgb(self, image, intensity, edge_boost):
+        """Apply film grain to RGB image as final processing step"""
+        if intensity == 0.0:
+            return image
+            
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+            
+        # Convert to numpy array
+        rgb_array = np.array(image, dtype=np.float32)
+        width, height = image.size
+        
+        # Create grain noise for all RGB channels
+        grain = np.random.normal(0, intensity, (height, width, 3))
+        
+        # Create edge mask for enhanced grain at edges
+        center_x, center_y = width // 2, height // 2
+        y, x = np.ogrid[:height, :width]
+        
+        # Distance from center (normalized)
+        distance = np.sqrt((x - center_x)**2 + (y - center_y)**2)
+        max_distance = np.sqrt(center_x**2 + center_y**2)
+        edge_factor = (distance / max_distance) ** 0.8
+        
+        # Apply edge enhancement to all RGB channels
+        for i in range(3):
+            grain[:, :, i] *= (1 + edge_factor * (edge_boost - 1))
+        
+        # Scale grain for RGB (larger range than HSV)
+        grain *= 25.0  # Scale for 0-255 RGB range
+        
+        # Apply grain to RGB channels
+        rgb_array += grain
+        
+        # Clamp to valid RGB range
+        rgb_array = np.clip(rgb_array, 0, 255)
+        
+        # Convert back to PIL Image
+        return Image.fromarray(rgb_array.astype(np.uint8), mode='RGB')
+        
+    def apply_saturation_reduction_rgb(self, image, reduction):
+        """Apply saturation reduction to RGB image as final processing step"""
+        if reduction == 0.0:
+            return image
+            
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+            
+        # Convert to HSV for saturation adjustment
+        hsv_image = image.convert('HSV')
+        hsv_array = np.array(hsv_image, dtype=np.float32)
+        
+        # Apply saturation reduction
+        saturation_factor = 1.0 - reduction
+        hsv_array[:, :, 1] *= saturation_factor
+        
+        # Clamp saturation values
+        hsv_array[:, :, 1] = np.clip(hsv_array[:, :, 1], 0, 255)
+        
+        # Convert back to RGB
+        hsv_result = Image.fromarray(hsv_array.astype(np.uint8), mode='HSV')
+        return hsv_result.convert('RGB')
+        
     def create_vignette(self, width, height, strength):
         """Create circular vignette effect"""
         center_x, center_y = width // 2, height // 2
@@ -311,6 +405,75 @@ class FilmicEffectsProcessor:
         
         return vignette
         
+    def apply_chromatic_aberration(self, image, strength):
+        """Apply chromatic aberration effect by shifting red/blue channels"""
+        if strength == 0.0:
+            return image
+            
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+        
+        width, height = image.size
+        center_x, center_y = width // 2, height // 2
+        
+        # Split into RGB channels
+        r, g, b = image.split()
+        r_array = np.array(r)
+        g_array = np.array(g)
+        b_array = np.array(b)
+        
+        # Create distance map from center
+        y, x = np.ogrid[:height, :width]
+        distance = np.sqrt((x - center_x)**2 + (y - center_y)**2)
+        
+        # Create aberration factor based on distance
+        # No effect within radius 300, full effect at radius 800+
+        aberration_factor = np.zeros_like(distance)
+        mask = distance > 300
+        aberration_factor[mask] = np.minimum((distance[mask] - 300) / (800 - 300), 1.0)
+
+        # Calculate shift amount (30 pixels at full strength)
+        shift_amount = aberration_factor * strength * 30.0
+        
+        # Create shifted versions of red and blue channels
+        r_shifted = r_array.copy()
+        b_shifted = b_array.copy()
+        
+        # Apply horizontal shifts using numpy roll for efficiency
+        max_shift = int(np.ceil(np.max(shift_amount)))
+        if max_shift > 0:
+            # Calculate integer shift for each pixel
+            x_shift = np.round(shift_amount).astype(int)
+            
+            # Create shifted versions by processing different shift amounts
+            for shift_val in range(1, max_shift + 1):
+                # Find pixels that need this shift amount
+                shift_mask = (x_shift == shift_val)
+                
+                if np.any(shift_mask):
+                    # For red channel (shift right)
+                    red_rolled = np.roll(r_array, shift_val, axis=1)
+                    # Zero out the left edge that wrapped around
+                    red_rolled[:, :shift_val] = r_array[:, :shift_val]
+                    # Apply only where mask is true
+                    r_shifted = np.where(shift_mask, red_rolled, r_shifted)
+                    
+                    # For blue channel (shift left)  
+                    blue_rolled = np.roll(b_array, -shift_val, axis=1)
+                    # Zero out the right edge that wrapped around
+                    blue_rolled[:, -shift_val:] = b_array[:, -shift_val:]
+                    # Apply only where mask is true
+                    b_shifted = np.where(shift_mask, blue_rolled, b_shifted)
+        
+        # Recombine channels
+        result = Image.merge('RGB', (
+            Image.fromarray(r_shifted.astype(np.uint8)),
+            Image.fromarray(g_array.astype(np.uint8)),
+            Image.fromarray(b_shifted.astype(np.uint8))
+        ))
+        
+        return result
+        
     def apply_filmic_effects(self, image):
         """Apply film grain, vignette, and saturation effects to image"""
         if image.mode != 'RGB':
@@ -326,21 +489,7 @@ class FilmicEffectsProcessor:
         hsv_array[:, :, 1] /= 255.0  # S: 0-1 (represents 0-100%)
         hsv_array[:, :, 2] /= 255.0  # V: 0-1 (represents 0-100%)
         
-        # Create and apply film grain to saturation and brightness only
-        grain = self.create_film_grain(width, height, 
-                                     self.grain_intensity.get(), 
-                                     self.grain_edge_boost.get())
-        
-        # Apply grain to saturation (channel 1) and brightness (channel 2)
-        # Hue (channel 0) remains unchanged
-        hsv_array[:, :, 1] += grain[:, :, 0]  # Saturation noise
-        hsv_array[:, :, 2] += grain[:, :, 1]  # Brightness noise
-        
-        # Apply saturation reduction
-        saturation_factor = 1.0 - self.saturation_reduction.get()
-        hsv_array[:, :, 1] *= saturation_factor
-        
-        # Create and apply vignette to brightness only
+        # Create and apply vignette to brightness only (no saturation reduction here anymore)
         vignette = self.create_vignette(width, height, self.vignette_strength.get())
         hsv_array[:, :, 2] *= vignette
         
@@ -356,7 +505,20 @@ class FilmicEffectsProcessor:
         
         # Convert back to RGB
         hsv_result = Image.fromarray(hsv_array.astype(np.uint8), mode='HSV')
-        return hsv_result.convert('RGB')
+        rgb_result = hsv_result.convert('RGB')
+        
+        # Apply chromatic aberration
+        aberration_result = self.apply_chromatic_aberration(rgb_result, self.chromatic_aberration.get())
+        
+        # Apply film grain
+        grain_result = self.apply_film_grain_rgb(aberration_result, 
+                                               self.grain_intensity.get(), 
+                                               self.grain_edge_boost.get())
+        
+        # Apply saturation reduction as the final processing step
+        final_result = self.apply_saturation_reduction_rgb(grain_result, self.saturation_reduction.get())
+        
+        return final_result
         
     def update_preview(self, event=None):
         """Update preview with current effects showing top half at 1:1 scale"""
