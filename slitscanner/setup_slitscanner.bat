@@ -1,6 +1,6 @@
 @echo off
-title Slitscanner Application
-echo Starting Slitscanner Application...
+title Setup Slitscanner Dependencies
+echo Setting up Slitscanner dependencies...
 echo.
 
 :: Navigate to the MyCoding root directory to access .venv
@@ -18,26 +18,30 @@ if not exist ".venv\Scripts\activate.bat" (
 echo Activating virtual environment...
 call .venv\Scripts\activate.bat
 
-:: Navigate to slitscanner directory
+:: Install slitscanner requirements
+echo.
+echo Installing slitscanner requirements...
+echo.
 cd slitscanner
+pip install -r requirements.txt
 
-:: Check if main.py exists
-if not exist "main.py" (
-    echo ERROR: main.py not found in slitscanner directory
+if %ERRORLEVEL% neq 0 (
+    echo.
+    echo ERROR: Failed to install requirements
     pause
     exit /b 1
 )
 
-:: Run the slitscanner application
-echo Running slitscanner application...
 echo.
-python main.py
+echo ========================================
+echo Slitscanner dependencies installed successfully!
+echo ========================================
+echo.
+echo You can now run the slitscanner using:
+echo   run_slitscanner.bat
+echo.
 
 :: Deactivate virtual environment
-echo.
-echo Deactivating virtual environment...
 deactivate
 
-echo.
-echo Slitscanner application finished.
 pause
