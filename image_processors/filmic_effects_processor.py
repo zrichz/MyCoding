@@ -30,7 +30,7 @@ class FilmicEffectsProcessor:
         self.original_photo_ref = None
         self.processed_photo_ref = None
         
-        # Effect parameters
+        # Effect parameter defaults
         self.grain_intensity = tk.DoubleVar(value=0.03)
         self.grain_edge_boost = tk.DoubleVar(value=1.8)
         self.vignette_strength = tk.DoubleVar(value=0.10)
