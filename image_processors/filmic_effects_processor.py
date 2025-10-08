@@ -16,7 +16,7 @@ class FilmicEffectsProcessor:
     def __init__(self, root):
         self.root = root
         self.root.title("Filmic Effects Processor - 720x1600")
-        self.root.geometry("2500x1400")
+        self.root.geometry("1600x1400")
         self.root.configure(bg='#808080')
         
         # Variables
@@ -31,11 +31,11 @@ class FilmicEffectsProcessor:
         self.processed_photo_ref = None
         
         # Effect parameters
-        self.grain_intensity = tk.DoubleVar(value=0.03)
+        self.grain_intensity = tk.DoubleVar(value=0.20)
         self.grain_edge_boost = tk.DoubleVar(value=1.8)
-        self.vignette_strength = tk.DoubleVar(value=0.10)
-        self.saturation_reduction = tk.DoubleVar(value=0.0)
-        self.chromatic_aberration = tk.DoubleVar(value=0.0)
+        self.vignette_strength = tk.DoubleVar(value=0.3)
+        self.saturation_reduction = tk.DoubleVar(value=0.3)
+        self.chromatic_aberration = tk.DoubleVar(value=0.08)
         
         self.setup_ui()
         
@@ -51,11 +51,11 @@ class FilmicEffectsProcessor:
         style.configure('Dark.TLabel', background='#808080', foreground='black')
         style.configure('Dark.TButton', background='#606060', foreground='white')
         
-        # Configure slider style with bright blue background and white button
+        # Configure slider style...
         style.configure('Blue.Horizontal.TScale', 
-                       background='#0080FF',  # Bright blue background
-                       troughcolor='#0080FF',  # Bright blue trough
-                       sliderthickness=20,     # Thicker slider for visibility
+                       background="#2C7078",  
+                       troughcolor='#0080FF',  
+                       sliderthickness=20,     
                        sliderrelief='raised')
         style.map('Blue.Horizontal.TScale',
                  background=[('active', '#FFFFFF'), ('pressed', '#FFFFFF')],  # White slider button
@@ -85,10 +85,11 @@ class FilmicEffectsProcessor:
         grain_scale = ttk.Scale(grain_frame, from_=0.0, to=0.28, 
                                variable=self.grain_intensity, orient='horizontal', 
                                length=800, style='Blue.Horizontal.TScale')
-        grain_scale.pack(side=tk.LEFT, padx=10)
+        grain_scale.pack(side=tk.LEFT, padx=(10, 15))
         
-        self.grain_label = ttk.Label(grain_frame, text="0.03", width=6)
-        self.grain_label.pack(side=tk.RIGHT, padx=5)
+        self.grain_label = ttk.Label(grain_frame, text="0.20", width=8,
+                                    font=("Arial", 11, "bold"))
+        self.grain_label.pack(side=tk.LEFT)
         
         # Edge boost controls
         edge_frame = ttk.Frame(control_frame)
@@ -99,10 +100,11 @@ class FilmicEffectsProcessor:
         edge_scale = ttk.Scale(edge_frame, from_=1.0, to=3.0, 
                               variable=self.grain_edge_boost, orient='horizontal', 
                               length=800, style='Blue.Horizontal.TScale')
-        edge_scale.pack(side=tk.LEFT, padx=10)
+        edge_scale.pack(side=tk.LEFT, padx=(10, 15))
         
-        self.edge_label = ttk.Label(edge_frame, text="1.8", width=6)
-        self.edge_label.pack(side=tk.RIGHT, padx=5)
+        self.edge_label = ttk.Label(edge_frame, text="1.8", width=8,
+                                   font=("Arial", 11, "bold"))
+        self.edge_label.pack(side=tk.LEFT)
         
         # Vignette controls
         vignette_frame = ttk.Frame(control_frame)
@@ -113,10 +115,11 @@ class FilmicEffectsProcessor:
         vignette_scale = ttk.Scale(vignette_frame, from_=0.0, to=0.375, 
                                   variable=self.vignette_strength, orient='horizontal', 
                                   length=800, style='Blue.Horizontal.TScale')
-        vignette_scale.pack(side=tk.LEFT, padx=10)
+        vignette_scale.pack(side=tk.LEFT, padx=(10, 15))
         
-        self.vignette_label = ttk.Label(vignette_frame, text="0.10", width=6)
-        self.vignette_label.pack(side=tk.RIGHT, padx=5)
+        self.vignette_label = ttk.Label(vignette_frame, text="0.30", width=8,
+                                       font=("Arial", 11, "bold"))
+        self.vignette_label.pack(side=tk.LEFT)
         
         # Saturation controls
         saturation_frame = ttk.Frame(control_frame)
@@ -127,10 +130,11 @@ class FilmicEffectsProcessor:
         saturation_scale = ttk.Scale(saturation_frame, from_=0.0, to=1.0, 
                                     variable=self.saturation_reduction, orient='horizontal', 
                                     length=800, style='Blue.Horizontal.TScale')
-        saturation_scale.pack(side=tk.LEFT, padx=10)
+        saturation_scale.pack(side=tk.LEFT, padx=(10, 15))
         
-        self.saturation_label = ttk.Label(saturation_frame, text="0.00", width=6)
-        self.saturation_label.pack(side=tk.RIGHT, padx=5)
+        self.saturation_label = ttk.Label(saturation_frame, text="0.30", width=8,
+                                         font=("Arial", 11, "bold"))
+        self.saturation_label.pack(side=tk.LEFT)
         
         # Chromatic aberration controls
         aberration_frame = ttk.Frame(control_frame)
@@ -141,10 +145,11 @@ class FilmicEffectsProcessor:
         aberration_scale = ttk.Scale(aberration_frame, from_=0.0, to=1.0, 
                                     variable=self.chromatic_aberration, orient='horizontal', 
                                     length=800, style='Blue.Horizontal.TScale')
-        aberration_scale.pack(side=tk.LEFT, padx=10)
+        aberration_scale.pack(side=tk.LEFT, padx=(10, 15))
         
-        self.aberration_label = ttk.Label(aberration_frame, text="0.00", width=6)
-        self.aberration_label.pack(side=tk.RIGHT, padx=5)
+        self.aberration_label = ttk.Label(aberration_frame, text="0.08", width=8,
+                                         font=("Arial", 11, "bold"))
+        self.aberration_label.pack(side=tk.LEFT)
         
         # Update labels when scales change
         grain_scale.configure(command=self.update_grain_label)
@@ -178,28 +183,38 @@ class FilmicEffectsProcessor:
         self.progress_bar = ttk.Progressbar(main_frame, length=400, mode='determinate')
         self.progress_bar.pack(pady=5)
         
-        # Preview area with side-by-side comparison
-        preview_frame = ttk.LabelFrame(main_frame, text="Preview Comparison (Top Half 1:1)", padding=10)
+        # Preview area with side-by-side comparison and synchronized scrolling
+        preview_frame = ttk.LabelFrame(main_frame, text="Preview Comparison (1:1 Scale - Scroll to see full image)", padding=10)
         preview_frame.pack(fill='both', expand=True)
         
         # Container for both preview canvases
         canvas_container = tk.Frame(preview_frame, bg='#808080')
         canvas_container.pack(expand=True, fill='both')
         
-        # Original image canvas (left side)
+        # Original image canvas (left side) with scrollbar
         original_frame = tk.Frame(canvas_container, bg='#808080')
         original_frame.pack(side=tk.LEFT, padx=10)
         
-        original_label = tk.Label(original_frame, text="Original (Top Half)", 
+        original_label = tk.Label(original_frame, text="Original (720x1600)", 
                                  bg='#808080', fg='black', font=("Arial", 12, "bold"))
         original_label.pack(pady=5)
         
-        self.original_canvas = tk.Canvas(original_frame, width=720, height=800, 
+        # Create frame for canvas and scrollbar
+        original_canvas_frame = tk.Frame(original_frame, bg='#808080')
+        original_canvas_frame.pack()
+        
+        self.original_canvas = tk.Canvas(original_canvas_frame, width=720, height=800, 
                                         bg='#1a1a1a', highlightthickness=1, 
                                         highlightbackground='#555555')
-        self.original_canvas.pack()
+        self.original_canvas.pack(side=tk.LEFT)
         
-        # Processed image canvas (right side)
+        # Vertical scrollbar for original canvas
+        original_scrollbar = tk.Scrollbar(original_canvas_frame, orient='vertical', 
+                                         command=self.sync_scroll)
+        original_scrollbar.pack(side=tk.RIGHT, fill='y')
+        self.original_canvas.configure(yscrollcommand=original_scrollbar.set)
+        
+        # Processed image canvas (right side) with scrollbar
         processed_frame = tk.Frame(canvas_container, bg='#808080')
         processed_frame.pack(side=tk.LEFT, padx=10)
         
@@ -207,10 +222,24 @@ class FilmicEffectsProcessor:
                                   bg='#808080', fg='black', font=("Arial", 12, "bold"))
         processed_label.pack(pady=5)
         
-        self.processed_canvas = tk.Canvas(processed_frame, width=720, height=800, 
+        # Create frame for canvas and scrollbar
+        processed_canvas_frame = tk.Frame(processed_frame, bg='#808080')
+        processed_canvas_frame.pack()
+        
+        self.processed_canvas = tk.Canvas(processed_canvas_frame, width=720, height=800, 
                                          bg='#1a1a1a', highlightthickness=1, 
                                          highlightbackground='#555555')
-        self.processed_canvas.pack()
+        self.processed_canvas.pack(side=tk.LEFT)
+        
+        # Vertical scrollbar for processed canvas
+        processed_scrollbar = tk.Scrollbar(processed_canvas_frame, orient='vertical', 
+                                          command=self.sync_scroll)
+        processed_scrollbar.pack(side=tk.RIGHT, fill='y')
+        self.processed_canvas.configure(yscrollcommand=processed_scrollbar.set)
+        
+        # Store scrollbar references for synchronization
+        self.original_scrollbar = original_scrollbar
+        self.processed_scrollbar = processed_scrollbar
         
     def update_grain_label(self, value):
         """Update grain intensity label"""
@@ -284,6 +313,9 @@ class FilmicEffectsProcessor:
                 return
                 
             self.progress_var.set(f"Preview: {image_path.name} ({self.current_preview_index + 1}/{len(self.image_files)})")
+            
+            # Set flag to indicate this is a new image load (should reset scroll to top)
+            self._is_new_image_load = True
             self.update_preview()
             
         except Exception as e:
@@ -521,35 +553,52 @@ class FilmicEffectsProcessor:
         return final_result
         
     def update_preview(self, event=None):
-        """Update preview with current effects showing top half at 1:1 scale"""
+        """Update preview with current effects showing full 1600px images at 1:1 scale with scrolling"""
         if not self.preview_image:
             return
             
         try:
-            # Crop to top half (720x800 from 720x1600)
-            top_half_original = self.preview_image.crop((0, 0, 720, 800))
+            # Save current scroll position before updating
+            current_scroll_pos = self.original_canvas.yview()
             
-            # Apply effects to full image first, then crop
+            # Use full image (720x1600)
+            original_full = self.preview_image
+            
+            # Apply effects to full image
             processed_full = self.apply_filmic_effects(self.preview_image)
-            top_half_processed = processed_full.crop((0, 0, 720, 800))
-            
             self.processed_preview = processed_full
             
             # Convert to PhotoImage for display at 1:1 scale
-            original_photo = ImageTk.PhotoImage(top_half_original)
-            processed_photo = ImageTk.PhotoImage(top_half_processed)
+            original_photo = ImageTk.PhotoImage(original_full)
+            processed_photo = ImageTk.PhotoImage(processed_full)
             
             # Clear canvases and display images
             self.original_canvas.delete("all")
             self.processed_canvas.delete("all")
             
-            # Display images centered in canvases
-            self.original_canvas.create_image(360, 400, image=original_photo)
-            self.processed_canvas.create_image(360, 400, image=processed_photo)
+            # Display full images at top-left (0,0) for proper scrolling
+            self.original_canvas.create_image(0, 0, image=original_photo, anchor='nw')
+            self.processed_canvas.create_image(0, 0, image=processed_photo, anchor='nw')
+            
+            # Configure scroll regions for full image height (1600px)
+            self.original_canvas.configure(scrollregion=(0, 0, 720, 1600))
+            self.processed_canvas.configure(scrollregion=(0, 0, 720, 1600))
             
             # Keep references to prevent garbage collection
             self.original_photo_ref = original_photo
             self.processed_photo_ref = processed_photo
+            
+            # Restore previous scroll position (only reset to top if this is a new image load)
+            if hasattr(self, '_is_new_image_load') and self._is_new_image_load:
+                # Reset to top for new image
+                self.original_canvas.yview_moveto(0)
+                self.processed_canvas.yview_moveto(0)
+                self._is_new_image_load = False
+            else:
+                # Preserve scroll position for slider updates
+                if len(current_scroll_pos) >= 2:
+                    self.original_canvas.yview_moveto(current_scroll_pos[0])
+                    self.processed_canvas.yview_moveto(current_scroll_pos[0])
             
         except Exception as e:
             print(f"Preview error: {e}")
@@ -621,6 +670,23 @@ class FilmicEffectsProcessor:
         except Exception as e:
             self.root.after(0, lambda: messagebox.showerror("Processing Error", 
                                                            f"An error occurred during processing: {str(e)}"))
+    
+    def sync_scroll(self, *args):
+        """Synchronize scrolling between both preview canvases"""
+        # Get the scroll position from whichever scrollbar was moved
+        if args[0] == 'scroll':
+            # Apply the same scroll to both canvases
+            self.original_canvas.yview(*args)
+            self.processed_canvas.yview(*args)
+        elif args[0] == 'moveto':
+            # Move both canvases to the same position
+            self.original_canvas.yview_moveto(args[1])
+            self.processed_canvas.yview_moveto(args[1])
+        
+        # Update both scrollbars to show the same position
+        pos = self.original_canvas.yview()
+        self.original_scrollbar.set(*pos)
+        self.processed_scrollbar.set(*pos)
 
 def main():
     # Check if required packages are available
