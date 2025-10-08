@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """
-Filmic Effects Processor - Applies film grain and vignette effects to 720x1600 images
+Fil        # Effect parameters
+        self.grain_intensity = tk.DoubleVar(value=0.03)
+        self.vignette_strength = tk.DoubleVar(value=0.10)
+        self.saturation_reduction = tk.DoubleVar(value=0.0)
+        self.chromatic_aberration = tk.DoubleVar(value=0.0)fects Processor - Applies film grain and vignette effects to 720x1600 images
 Creates cinematic effects with edge-enhanced grain and circular vignetting
 """
 
@@ -82,7 +86,7 @@ class FilmicEffectsProcessor:
         
         ttk.Label(grain_frame, text="Film Grain Intensity:", 
                  font=("Arial", 10, "bold"), width=20).pack(side=tk.LEFT)
-        grain_scale = ttk.Scale(grain_frame, from_=0.0, to=0.28, 
+        grain_scale = ttk.Scale(grain_frame, from_=0.0, to=0.56, 
                                variable=self.grain_intensity, orient='horizontal', 
                                length=800, style='Blue.Horizontal.TScale')
         grain_scale.pack(side=tk.LEFT, padx=(10, 15))
@@ -91,28 +95,13 @@ class FilmicEffectsProcessor:
                                     font=("Arial", 11, "bold"))
         self.grain_label.pack(side=tk.LEFT)
         
-        # Edge boost controls
-        edge_frame = ttk.Frame(control_frame)
-        edge_frame.pack(fill='x', pady=5)
-        
-        ttk.Label(edge_frame, text="Edge Grain Boost:", 
-                 font=("Arial", 10, "bold"), width=20).pack(side=tk.LEFT)
-        edge_scale = ttk.Scale(edge_frame, from_=1.0, to=3.0, 
-                              variable=self.grain_edge_boost, orient='horizontal', 
-                              length=800, style='Blue.Horizontal.TScale')
-        edge_scale.pack(side=tk.LEFT, padx=(10, 15))
-        
-        self.edge_label = ttk.Label(edge_frame, text="1.8", width=8,
-                                   font=("Arial", 11, "bold"))
-        self.edge_label.pack(side=tk.LEFT)
-        
         # Vignette controls
         vignette_frame = ttk.Frame(control_frame)
         vignette_frame.pack(fill='x', pady=5)
         
         ttk.Label(vignette_frame, text="Vignette Strength:", 
                  font=("Arial", 10, "bold"), width=20).pack(side=tk.LEFT)
-        vignette_scale = ttk.Scale(vignette_frame, from_=0.0, to=0.375, 
+        vignette_scale = ttk.Scale(vignette_frame, from_=0.0, to=0.75, 
                                   variable=self.vignette_strength, orient='horizontal', 
                                   length=800, style='Blue.Horizontal.TScale')
         vignette_scale.pack(side=tk.LEFT, padx=(10, 15))
@@ -153,7 +142,6 @@ class FilmicEffectsProcessor:
         
         # Update labels when scales change
         grain_scale.configure(command=self.update_grain_label)
-        edge_scale.configure(command=self.update_edge_label)
         vignette_scale.configure(command=self.update_vignette_label)
         saturation_scale.configure(command=self.update_saturation_label)
         aberration_scale.configure(command=self.update_aberration_label)
@@ -246,11 +234,6 @@ class FilmicEffectsProcessor:
         self.grain_label.config(text=f"{float(value):.2f}")
         self.update_preview()
         
-    def update_edge_label(self, value):
-        """Update edge boost label"""
-        self.edge_label.config(text=f"{float(value):.1f}")
-        self.update_preview()
-        
     def update_vignette_label(self, value):
         """Update vignette strength label"""
         self.vignette_label.config(text=f"{float(value):.2f}")
@@ -333,30 +316,7 @@ class FilmicEffectsProcessor:
             self.current_preview_index += 1
             self.load_preview()
             
-    def create_film_grain(self, width, height, intensity, edge_boost):
-        """Create film grain effect with edge enhancement for saturation and brightness only"""
-        # Create base noise for saturation and brightness (2 channels)
-        noise = np.random.normal(0, intensity, (height, width, 2))
-        
-        # Create edge mask for enhanced grain at edges
-        center_x, center_y = width // 2, height // 2
-        y, x = np.ogrid[:height, :width]
-        
-        # Distance from center (normalized)
-        distance = np.sqrt((x - center_x)**2 + (y - center_y)**2)
-        max_distance = np.sqrt(center_x**2 + center_y**2)
-        edge_factor = (distance / max_distance) ** 0.8
-        
-        # Apply edge enhancement to both saturation and brightness noise
-        for i in range(2):  # Saturation and brightness channels
-            noise[:, :, i] *= (1 + edge_factor * (edge_boost - 1))
-        
-        # Clamp values (smaller range for HSV adjustments)
-        noise = np.clip(noise, -0.3, 0.3)
-        
-        return noise
-        
-    def apply_film_grain_rgb(self, image, intensity, edge_boost):
+    def apply_film_grain_rgb(self, image, intensity):
         """Apply film grain to RGB image as final processing step"""
         if intensity == 0.0:
             return image
@@ -368,21 +328,8 @@ class FilmicEffectsProcessor:
         rgb_array = np.array(image, dtype=np.float32)
         width, height = image.size
         
-        # Create grain noise for all RGB channels
+        # Create uniform grain noise for all RGB channels
         grain = np.random.normal(0, intensity, (height, width, 3))
-        
-        # Create edge mask for enhanced grain at edges
-        center_x, center_y = width // 2, height // 2
-        y, x = np.ogrid[:height, :width]
-        
-        # Distance from center (normalized)
-        distance = np.sqrt((x - center_x)**2 + (y - center_y)**2)
-        max_distance = np.sqrt(center_x**2 + center_y**2)
-        edge_factor = (distance / max_distance) ** 0.8
-        
-        # Apply edge enhancement to all RGB channels
-        for i in range(3):
-            grain[:, :, i] *= (1 + edge_factor * (edge_boost - 1))
         
         # Scale grain for RGB (larger range than HSV)
         grain *= 25.0  # Scale for 0-255 RGB range
@@ -544,8 +491,7 @@ class FilmicEffectsProcessor:
         
         # Apply film grain
         grain_result = self.apply_film_grain_rgb(aberration_result, 
-                                               self.grain_intensity.get(), 
-                                               self.grain_edge_boost.get())
+                                               self.grain_intensity.get())
         
         # Apply saturation reduction as the final processing step
         final_result = self.apply_saturation_reduction_rgb(grain_result, self.saturation_reduction.get())
@@ -612,7 +558,7 @@ class FilmicEffectsProcessor:
         # Confirm processing
         result = messagebox.askyesno("Confirm Processing", 
                                    f"Process {len(self.image_files)} images with filmic effects?\n\n"
-                                   f"Images will be saved with '_filmic' suffix.")
+                                   f"Images will be saved in 'filmic' subdirectory with '_filmic' suffix.")
         if not result:
             return
             
@@ -646,8 +592,12 @@ class FilmicEffectsProcessor:
                     # Apply effects
                     processed = self.apply_filmic_effects(image)
                     
-                    # Create output filename
-                    output_path = image_path.parent / f"{image_path.stem}_filmic{image_path.suffix}"
+                    # Create filmic subdirectory if it doesn't exist
+                    filmic_dir = image_path.parent / "filmic"
+                    filmic_dir.mkdir(exist_ok=True)
+                    
+                    # Create output filename in filmic subdirectory
+                    output_path = filmic_dir / f"{image_path.stem}_filmic{image_path.suffix}"
                     
                     # Save processed image
                     processed.save(output_path, quality=95 if image_path.suffix.lower() in ['.jpg', '.jpeg'] else None)
@@ -665,7 +615,7 @@ class FilmicEffectsProcessor:
             # Show completion message
             self.root.after(0, lambda: messagebox.showinfo("Processing Complete", 
                                                           f"Successfully processed {processed_count} images!\n\n"
-                                                          f"Output files saved with '_filmic' suffix."))
+                                                          f"Output files saved in 'filmic' subdirectory with '_filmic' suffix."))
             
         except Exception as e:
             self.root.after(0, lambda: messagebox.showerror("Processing Error", 
