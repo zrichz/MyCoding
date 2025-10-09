@@ -14,7 +14,7 @@ class FilmicEffectsProcessor:
         self.root = root
         self.root.title("Filmic Effects Processor - 720x1600")
         self.root.geometry("1600x1400")
-        self.root.configure(bg='#808080')
+        self.root.configure(bg="#EBE1D2")
         
         # Variables
         self.input_directory = None
@@ -33,6 +33,7 @@ class FilmicEffectsProcessor:
         self.vignette_strength = tk.DoubleVar(value=0.3)
         self.saturation_reduction = tk.DoubleVar(value=0.3)
         self.chromatic_aberration = tk.DoubleVar(value=0.08)
+        self.vintage_border = tk.BooleanVar(value=False)
         
         self.setup_ui()
         
@@ -132,6 +133,17 @@ class FilmicEffectsProcessor:
         self.aberration_label = ttk.Label(aberration_frame, text="0.08", width=8,
                                          font=("Arial", 11, "bold"))
         self.aberration_label.pack(side=tk.LEFT)
+        
+        # Vintage border checkbox
+        border_frame = ttk.Frame(control_frame)
+        border_frame.pack(fill='x', pady=10)
+        
+        vintage_border_check = tk.Checkbutton(border_frame, text="Vintage Photo Border (12px white with rounded corners)", 
+                                             variable=self.vintage_border, command=self.update_preview,
+                                             bg='#808080', fg='black', selectcolor='#606060',
+                                             activebackground='#808080', activeforeground='black',
+                                             font=("Arial", 10, "bold"))
+        vintage_border_check.pack(anchor='w')
         
         # Update labels when scales change
         grain_scale.configure(command=self.update_grain_label)
@@ -482,7 +494,10 @@ class FilmicEffectsProcessor:
         # Apply chromatic aberration, grain, and saturation reduction
         aberration_result = self.apply_chromatic_aberration(rgb_result, self.chromatic_aberration.get())
         grain_result = self.apply_film_grain_rgb(aberration_result, self.grain_intensity.get())
-        final_result = self.apply_saturation_reduction_rgb(grain_result, self.saturation_reduction.get())
+        saturation_result = self.apply_saturation_reduction_rgb(grain_result, self.saturation_reduction.get())
+        
+        # Apply vintage border as the final step
+        final_result = self.create_vintage_border(saturation_result)
         
         return final_result
         
@@ -626,6 +641,83 @@ class FilmicEffectsProcessor:
         self.original_scrollbar.set(*pos)
         self.processed_scrollbar.set(*pos)
 
+    def create_vintage_border(self, image):
+        """Create a white border with rounded corners to simulate old photograph edges"""
+        if not self.vintage_border.get():
+            return image
+            
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+        
+        width, height = image.size
+        border_width = 12
+        corner_radius = 6  # Half of border width
+        
+        # Create a copy of the image to work with
+        bordered_image = image.copy()
+        
+        # Convert to numpy array for easier manipulation
+        img_array = np.array(bordered_image)
+        
+        # Create coordinate grids
+        y, x = np.ogrid[:height, :width]
+        
+        # Start with no border (all False)
+        border_mask = np.zeros((height, width), dtype=bool)
+        
+        # Create the border area (outer rectangle minus inner rectangle with rounded corners)
+        # Outer rectangle is the full image (0,0) to (width, height)
+        # Inner rectangle with rounded corners
+        
+        inner_left = border_width
+        inner_right = width - border_width
+        inner_top = border_width
+        inner_bottom = height - border_width
+        
+        # Create mask for the central rectangular area (will be carved out with rounded corners)
+        central_rect = (x >= inner_left) & (x < inner_right) & (y >= inner_top) & (y < inner_bottom)
+        
+        # Create rounded corner cutouts from the central rectangle
+        # Top-left corner cutout
+        tl_corner_x, tl_corner_y = inner_left, inner_top
+        tl_distance = np.sqrt((x - tl_corner_x)**2 + (y - tl_corner_y)**2)
+        tl_cutout = (x >= inner_left) & (x < inner_left + corner_radius) & \
+                   (y >= inner_top) & (y < inner_top + corner_radius) & \
+                   (tl_distance < corner_radius)
+        
+        # Top-right corner cutout
+        tr_corner_x, tr_corner_y = inner_right, inner_top
+        tr_distance = np.sqrt((x - tr_corner_x)**2 + (y - tr_corner_y)**2)
+        tr_cutout = (x >= inner_right - corner_radius) & (x < inner_right) & \
+                   (y >= inner_top) & (y < inner_top + corner_radius) & \
+                   (tr_distance < corner_radius)
+        
+        # Bottom-left corner cutout
+        bl_corner_x, bl_corner_y = inner_left, inner_bottom
+        bl_distance = np.sqrt((x - bl_corner_x)**2 + (y - bl_corner_y)**2)
+        bl_cutout = (x >= inner_left) & (x < inner_left + corner_radius) & \
+                   (y >= inner_bottom - corner_radius) & (y < inner_bottom) & \
+                   (bl_distance < corner_radius)
+        
+        # Bottom-right corner cutout
+        br_corner_x, br_corner_y = inner_right, inner_bottom
+        br_distance = np.sqrt((x - br_corner_x)**2 + (y - br_corner_y)**2)
+        br_cutout = (x >= inner_right - corner_radius) & (x < inner_right) & \
+                   (y >= inner_bottom - corner_radius) & (y < inner_bottom) & \
+                   (br_distance < corner_radius)
+        
+        # Create the final inner area with rounded corners
+        inner_area_with_rounded_corners = central_rect & ~(tl_cutout | tr_cutout | bl_cutout | br_cutout)
+        
+        # Border is everything that's NOT the inner area
+        border_mask = ~inner_area_with_rounded_corners
+        
+        # Apply warm very light grey border where mask is True
+        img_array[border_mask] = [230, 225, 215]  # Warm very light grey (#EBE1D2)
+        
+        # Convert back to PIL Image
+        return Image.fromarray(img_array)
+        
 def main():
     # Check if required packages are available
     missing_packages = []
