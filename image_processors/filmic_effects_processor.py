@@ -1,12 +1,5 @@
 #!/usr/bin/env python3
-"""
-Fil        # Effect parameters
-        self.grain_intensity = tk.DoubleVar(value=0.03)
-        self.vignette_strength = tk.DoubleVar(value=0.10)
-        self.saturation_reduction = tk.DoubleVar(value=0.0)
-        self.chromatic_aberration = tk.DoubleVar(value=0.0)fects Processor - Applies film grain and vignette effects to 720x1600 images
-Creates cinematic effects with edge-enhanced grain and circular vignetting
-"""
+# Filmic effects Processor - Applies film grain and vignette effects to 720x1600 images
 
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
@@ -69,7 +62,7 @@ class FilmicEffectsProcessor:
         dir_frame = ttk.LabelFrame(main_frame, text="Image Directory", padding=10)
         dir_frame.pack(fill='x', pady=(0, 10))
         
-        ttk.Button(dir_frame, text="📁 Select Directory", 
+        ttk.Button(dir_frame, text="Select Directory", 
                   command=self.select_directory).pack(side=tk.LEFT, padx=(0, 10))
         
         self.dir_label = ttk.Label(dir_frame, text="No directory selected", 
@@ -150,7 +143,7 @@ class FilmicEffectsProcessor:
         action_frame = ttk.Frame(main_frame)
         action_frame.pack(fill='x', pady=(0, 10))
         
-        ttk.Button(action_frame, text="🔍 Load Preview", 
+        ttk.Button(action_frame, text="Load Preview", 
                   command=self.load_preview).pack(side=tk.LEFT, padx=(0, 10))
         
         ttk.Button(action_frame, text="◀ Previous", 
@@ -159,7 +152,7 @@ class FilmicEffectsProcessor:
         ttk.Button(action_frame, text="Next ▶", 
                   command=self.next_preview).pack(side=tk.LEFT, padx=(0, 10))
         
-        ttk.Button(action_frame, text="🎬 Process All Images", 
+        ttk.Button(action_frame, text="Process All Images", 
                   command=self.process_all_images, 
                   style='Accent.TButton').pack(side=tk.RIGHT)
         
@@ -172,7 +165,7 @@ class FilmicEffectsProcessor:
         self.progress_bar.pack(pady=5)
         
         # Preview area with side-by-side comparison and synchronized scrolling
-        preview_frame = ttk.LabelFrame(main_frame, text="Preview Comparison (1:1 Scale - Scroll to see full image)", padding=10)
+        preview_frame = ttk.LabelFrame(main_frame, text="Comparison (1:1 Scale)", padding=10)
         preview_frame.pack(fill='both', expand=True)
         
         # Container for both preview canvases
@@ -183,7 +176,7 @@ class FilmicEffectsProcessor:
         original_frame = tk.Frame(canvas_container, bg='#808080')
         original_frame.pack(side=tk.LEFT, padx=10)
         
-        original_label = tk.Label(original_frame, text="Original (720x1600)", 
+        original_label = tk.Label(original_frame, text="Original", 
                                  bg='#808080', fg='black', font=("Arial", 12, "bold"))
         original_label.pack(pady=5)
         
@@ -206,7 +199,7 @@ class FilmicEffectsProcessor:
         processed_frame = tk.Frame(canvas_container, bg='#808080')
         processed_frame.pack(side=tk.LEFT, padx=10)
         
-        processed_label = tk.Label(processed_frame, text="With Filmic Effects", 
+        processed_label = tk.Label(processed_frame, text="Processed", 
                                   bg='#808080', fg='black', font=("Arial", 12, "bold"))
         processed_label.pack(pady=5)
         
@@ -317,7 +310,7 @@ class FilmicEffectsProcessor:
             self.load_preview()
             
     def apply_film_grain_rgb(self, image, intensity):
-        """Apply film grain to RGB image as final processing step"""
+        # Apply film grain to RGB image as final step
         if intensity == 0.0:
             return image
             
@@ -344,7 +337,7 @@ class FilmicEffectsProcessor:
         return Image.fromarray(rgb_array.astype(np.uint8), mode='RGB')
         
     def apply_saturation_reduction_rgb(self, image, reduction):
-        """Apply saturation reduction to RGB image as final processing step"""
+        # Apply saturation reduction to RGB image as final processing step
         if reduction == 0.0:
             return image
             
@@ -486,14 +479,9 @@ class FilmicEffectsProcessor:
         hsv_result = Image.fromarray(hsv_array.astype(np.uint8), mode='HSV')
         rgb_result = hsv_result.convert('RGB')
         
-        # Apply chromatic aberration
+        # Apply chromatic aberration, grain, and saturation reduction
         aberration_result = self.apply_chromatic_aberration(rgb_result, self.chromatic_aberration.get())
-        
-        # Apply film grain
-        grain_result = self.apply_film_grain_rgb(aberration_result, 
-                                               self.grain_intensity.get())
-        
-        # Apply saturation reduction as the final processing step
+        grain_result = self.apply_film_grain_rgb(aberration_result, self.grain_intensity.get())
         final_result = self.apply_saturation_reduction_rgb(grain_result, self.saturation_reduction.get())
         
         return final_result
@@ -558,7 +546,7 @@ class FilmicEffectsProcessor:
         # Confirm processing
         result = messagebox.askyesno("Confirm Processing", 
                                    f"Process {len(self.image_files)} images with filmic effects?\n\n"
-                                   f"Images will be saved in 'filmic' subdirectory with '_filmic' suffix.")
+                                   f"Images will be saved in 'filmic' subdirectory with a '_filmic' suffix.")
         if not result:
             return
             
