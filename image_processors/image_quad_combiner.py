@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Image Pair Combiner - Combines images horizontally in pairs, crops to square, and scales down
-Takes pairs of 720x1600 images, combines them to 1440x1600, crops to 1440x1440 from top, then scales to 512x512
+Image Quad Combiner - Creates horizontal montages of 4 images and scales to fit 2560x1440
+Takes groups of four 720x1600 images, combines them horizontally to 2880x1600, 
+then scales with Lanczos to fit 2560x1440 while maintaining aspect ratio.
 PIL-only version - no external dependencies required.
 """
 
@@ -11,10 +12,10 @@ from PIL import Image, ImageTk
 import os
 from pathlib import Path
 
-class ImagePairCombiner:
+class ImageQuadCombiner:
     def __init__(self, root):
         self.root = root
-        self.root.title("Image Pair Combiner - Horizontal Combine & Scale")
+        self.root.title("Image Quad Combiner - 4-Image Horizontal Combiner")
         self.root.geometry("800x600")
         
         # Center the window on screen
@@ -33,7 +34,7 @@ class ImagePairCombiner:
         
     def setup_ui(self):
         # Main title
-        title_label = tk.Label(self.root, text="Image Pair Combiner", 
+        title_label = tk.Label(self.root, text="Image Quad Combiner", 
                               font=("Arial", 20, "bold"))
         title_label.pack(pady=20)
         
@@ -62,7 +63,7 @@ class ImagePairCombiner:
         output_label = tk.Label(output_frame, text="Output Directory:", font=("Arial", 12, "bold"))
         output_label.pack(anchor='w')
         
-        self.output_path_label = tk.Label(output_frame, text="Will be created as 'input_dir/512x512pairs'", 
+        self.output_path_label = tk.Label(output_frame, text="Will be created as 'input_dir/quad_combos'", 
                                          bg="lightblue", relief="sunken", font=("Arial", 10))
         self.output_path_label.pack(fill='x', pady=5)
         
@@ -74,14 +75,14 @@ class ImagePairCombiner:
         info_text.pack(fill='both', expand=True)
         
         info_content = """Process Description:
-• Combines pairs of images horizontally (720x1600 → 1440x1600)
-• Crops combined image to 1440x1440 from the top
-• Scales result down to 512x512
-• Saves as PNG files with "_combined" suffix
-• Output saved to input_directory/512x512pairs/
+• Combines 4 images horizontally (720x1600 each → 2880x1600 combo)
+• Scales with Lanczos to fit 2560x1440 while maintaining aspect ratio
+• Final size: 2560x1422 (preserves 2880:1600 ratio)
+• Saves as PNG files with "_combo" suffix
+• Output saved to input_directory/quad_combos/
 
 Supported formats: PNG, JPG, JPEG, BMP, TIFF, GIF
-Images are processed in alphabetical order."""
+Images are processed in groups of 4 in alphabetical order."""
         
         info_text.insert(tk.END, info_content)
         info_text.configure(state='disabled')
@@ -116,7 +117,7 @@ Images are processed in alphabetical order."""
             self.input_path_label.configure(text=directory)
             
             # Update output path display
-            output_path = os.path.join(directory, "512x512pairs")
+            output_path = os.path.join(directory, "quad_combos")
             self.output_path_label.configure(text=output_path)
             
             self.scan_images()
@@ -138,91 +139,97 @@ Images are processed in alphabetical order."""
         
         # Update file count display
         count = len(self.image_files)
-        pairs = count // 2
-        remaining = count % 2
+        quads = count // 4
+        remaining = count % 4
         
         if count == 0:
             self.file_count_label.configure(text="No supported images found")
         else:
-            text = f"Found {count} images → {pairs} pairs"
+            text = f"Found {count} images → {quads} quad combos"
             if remaining > 0:
-                text += f" ({remaining} image will be skipped)"
+                text += f" ({remaining} images will be skipped)"
             self.file_count_label.configure(text=text)
     
     def update_ui_state(self):
         """Update UI state based on selections"""
-        ready = (self.input_dir and len(self.image_files) >= 2)
+        ready = (self.input_dir and len(self.image_files) >= 4)
         self.process_btn.configure(state="normal" if ready else "disabled")
         
         if ready:
-            pairs = len(self.image_files) // 2
-            self.status_label.configure(text=f"Ready to process {pairs} image pairs")
+            quads = len(self.image_files) // 4
+            self.status_label.configure(text=f"Ready to process {quads} quad combos")
         elif not self.input_dir:
             self.status_label.configure(text="Select input directory")
-        elif len(self.image_files) < 2:
-            self.status_label.configure(text="Need at least 2 images in input directory")
+        elif len(self.image_files) < 4:
+            self.status_label.configure(text="Need at least 4 images in input directory")
     
     def process_images(self):
-        """Process all image pairs"""
-        if not self.input_dir or len(self.image_files) < 2:
-            messagebox.showerror("Error", "Please select input directory with at least 2 images")
+        """Process all image quads"""
+        if not self.input_dir or len(self.image_files) < 4:
+            messagebox.showerror("Error", "Please select input directory with at least 4 images")
             return
         
         try:
-            pairs = len(self.image_files) // 2
+            quads = len(self.image_files) // 4
             processed = 0
             errors = 0
             
             # Create output directory
-            output_dir = Path(self.input_dir) / "512x512pairs"
+            output_dir = Path(self.input_dir) / "quad_combos"
             output_dir.mkdir(exist_ok=True)
             
             self.status_label.configure(text="Processing images...")
             self.root.update()
             
-            # Process pairs
-            for i in range(0, len(self.image_files), 2):
-                if i + 1 >= len(self.image_files):
-                    break  # Skip last image if odd number
+            # Process quads (groups of 4)
+            for i in range(0, len(self.image_files), 4):
+                if i + 3 >= len(self.image_files):
+                    break  # Skip if less than 4 images remaining
                 
                 try:
-                    img1_path = self.image_files[i]
-                    img2_path = self.image_files[i + 1]
+                    # Load 4 images
+                    img_paths = self.image_files[i:i+4]
+                    images = []
                     
-                    # Load images
-                    img1 = Image.open(img1_path)
-                    img2 = Image.open(img2_path)
+                    for img_path in img_paths:
+                        img = Image.open(img_path)
+                        # Convert to RGB if needed
+                        if img.mode != 'RGB':
+                            img = img.convert('RGB')
+                        images.append(img)
                     
-                    # Convert to RGB if needed
-                    if img1.mode != 'RGB':
-                        img1 = img1.convert('RGB')
-                    if img2.mode != 'RGB':
-                        img2 = img2.convert('RGB')
-                    
-                    # Combine horizontally
-                    combined_width = img1.width + img2.width
-                    combined_height = max(img1.height, img2.height)
-                    combined = Image.new('RGB', (combined_width, combined_height))
+                    # Create horizontal montage (2880x1600 from four 720x1600 images)
+                    montage_width = sum(img.width for img in images)  # Should be 2880
+                    montage_height = max(img.height for img in images)  # Should be 1600
+                    montage = Image.new('RGB', (montage_width, montage_height))
                     
                     # Paste images side by side
-                    combined.paste(img1, (0, 0))
-                    combined.paste(img2, (img1.width, 0))
+                    x_offset = 0
+                    for img in images:
+                        montage.paste(img, (x_offset, 0))
+                        x_offset += img.width
                     
-                    # Crop to square from top (1440x1440 assuming 720+720 width)
-                    crop_size = min(combined.width, combined.height)
-                    cropped = combined.crop((0, 0, crop_size, crop_size))
+                    # Scale to fit 2560x1440 while maintaining 2880:1600 aspect ratio
+                    # Original ratio is 2880:1600 = 1.8:1
+                    # Calculate scaling to fit within 2560x1440
+                    scale_x = 2560 / montage_width
+                    scale_y = 1440 / montage_height
+                    scale = min(scale_x, scale_y)
                     
-                    # Scale to 512x512
-                    final = cropped.resize((512, 512), Image.Resampling.LANCZOS)
+                    new_width = int(montage_width * scale)
+                    new_height = int(montage_height * scale)
                     
-                    # Generate output filename
-                    base_name = img1_path.stem
-                    output_path = output_dir / f"{base_name}_combined.png"
+                    # Scale with Lanczos resampling
+                    final = montage.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                    
+                    # Generate output filename using first image's name
+                    base_name = img_paths[0].stem
+                    output_path = output_dir / f"{base_name}_combo.png"
                     
                     # Ensure unique filename
                     counter = 1
                     while output_path.exists():
-                        output_path = output_dir / f"{base_name}_combined_{counter}.png"
+                        output_path = output_dir / f"{base_name}_combo_{counter}.png"
                         counter += 1
                     
                     # Save
@@ -230,20 +237,20 @@ Images are processed in alphabetical order."""
                     processed += 1
                     
                     # Update progress
-                    self.status_label.configure(text=f"Processing... {processed}/{pairs} pairs complete")
+                    self.status_label.configure(text=f"Processing... {processed}/{quads} combos complete")
                     self.root.update()
                     
                 except Exception as e:
-                    print(f"Error processing pair {i//2 + 1}: {str(e)}")
+                    print(f"Error processing quad {i//4 + 1}: {str(e)}")
                     errors += 1
             
             # Show results
             if errors == 0:
-                self.status_label.configure(text=f"Complete! Processed {processed} image pairs")
-                messagebox.showinfo("Success", f"Successfully processed {processed} image pairs!\nSaved to: {output_dir}")
+                self.status_label.configure(text=f"Complete! Processed {processed} quad combos")
+                messagebox.showinfo("Success", f"Successfully processed {processed} quad combos!\nSaved to: {output_dir}")
             else:
-                self.status_label.configure(text=f"Complete with {errors} errors. {processed} pairs processed")
-                messagebox.showwarning("Partial Success", f"Processed {processed} pairs with {errors} errors.\nSaved to: {output_dir}")
+                self.status_label.configure(text=f"Complete with {errors} errors. {processed} combos processed")
+                messagebox.showwarning("Partial Success", f"Processed {processed} combos with {errors} errors.\nSaved to: {output_dir}")
                 
         except Exception as e:
             messagebox.showerror("Processing Error", f"Error during processing: {str(e)}")
@@ -255,7 +262,7 @@ Images are processed in alphabetical order."""
         self.image_files = []
         
         self.input_path_label.configure(text="No directory selected")
-        self.output_path_label.configure(text="Will be created as 'input_dir/512x512pairs'")
+        self.output_path_label.configure(text="Will be created as 'input_dir/quad_combos'")
         self.file_count_label.configure(text="No images found")
         self.status_label.configure(text="Select input directory to begin")
         
@@ -263,7 +270,7 @@ Images are processed in alphabetical order."""
 
 def main():
     root = tk.Tk()
-    app = ImagePairCombiner(root)
+    app = ImageQuadCombiner(root)
     root.mainloop()
 
 if __name__ == "__main__":

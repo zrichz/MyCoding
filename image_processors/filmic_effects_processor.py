@@ -398,7 +398,7 @@ class FilmicEffectsProcessor:
             image = image.convert('RGB')
         
         width, height = image.size
-        center_x, center_y = width // 2, height // 2
+        center_x, center_y = 360, 360 # deliberately higher in image
         
         # Split into RGB channels
         r, g, b = image.split()
