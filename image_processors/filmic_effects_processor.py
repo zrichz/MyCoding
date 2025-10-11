@@ -34,6 +34,14 @@ class FilmicEffectsProcessor:
         self.saturation_reduction = tk.DoubleVar(value=0.3)
         self.chromatic_aberration = tk.DoubleVar(value=0.08)
         self.vintage_border = tk.BooleanVar(value=False)
+        self.unsharp_sharpening = tk.BooleanVar(value=False)
+        self.auto_contrast_stretch = tk.BooleanVar(value=False)
+        
+        # Internal parameters (not exposed in GUI)
+        self.unsharp_radius = 2.0        # Gaussian blur radius for unsharp mask
+        self.unsharp_amount = 1.4        # Sharpening strength multiplier
+        self.unsharp_threshold = 3       # Minimum contrast threshold
+        self.contrast_percentile = 1.8   # Percentile for auto-contrast (% on each end)
         
         self.setup_ui()
         
@@ -145,6 +153,22 @@ class FilmicEffectsProcessor:
                                              font=("Arial", 10, "bold"))
         vintage_border_check.pack(anchor='w')
         
+        # Unsharp sharpening checkbox
+        unsharp_check = tk.Checkbutton(border_frame, text="Unsharp Sharpening (Enhanced detail and edge definition)", 
+                                      variable=self.unsharp_sharpening, command=self.update_preview,
+                                      bg='#808080', fg='black', selectcolor='#606060',
+                                      activebackground='#808080', activeforeground='black',
+                                      font=("Arial", 10, "bold"))
+        unsharp_check.pack(anchor='w', pady=(5, 0))
+        
+        # Auto-contrast stretch checkbox
+        contrast_check = tk.Checkbutton(border_frame, text="Auto-Contrast Stretch (Optimize dynamic range and contrast)", 
+                                       variable=self.auto_contrast_stretch, command=self.update_preview,
+                                       bg='#808080', fg='black', selectcolor='#606060',
+                                       activebackground='#808080', activeforeground='black',
+                                       font=("Arial", 10, "bold"))
+        contrast_check.pack(anchor='w', pady=(5, 0))
+        
         # Update labels when scales change
         grain_scale.configure(command=self.update_grain_label)
         vignette_scale.configure(command=self.update_vignette_label)
@@ -201,6 +225,11 @@ class FilmicEffectsProcessor:
                                         highlightbackground='#555555')
         self.original_canvas.pack(side=tk.LEFT)
         
+        # Bind mouse wheel scrolling to original canvas
+        self.original_canvas.bind("<MouseWheel>", self.on_mousewheel)
+        self.original_canvas.bind("<Button-4>", self.on_mousewheel)  # Linux scroll up
+        self.original_canvas.bind("<Button-5>", self.on_mousewheel)  # Linux scroll down
+        
         # Vertical scrollbar for original canvas
         original_scrollbar = tk.Scrollbar(original_canvas_frame, orient='vertical', 
                                          command=self.sync_scroll)
@@ -223,6 +252,11 @@ class FilmicEffectsProcessor:
                                          bg='#1a1a1a', highlightthickness=1, 
                                          highlightbackground='#555555')
         self.processed_canvas.pack(side=tk.LEFT)
+        
+        # Bind mouse wheel scrolling to processed canvas
+        self.processed_canvas.bind("<MouseWheel>", self.on_mousewheel)
+        self.processed_canvas.bind("<Button-4>", self.on_mousewheel)  # Linux scroll up
+        self.processed_canvas.bind("<Button-5>", self.on_mousewheel)  # Linux scroll down
         
         # Vertical scrollbar for processed canvas
         processed_scrollbar = tk.Scrollbar(processed_canvas_frame, orient='vertical', 
@@ -496,8 +530,23 @@ class FilmicEffectsProcessor:
         grain_result = self.apply_film_grain_rgb(aberration_result, self.grain_intensity.get())
         saturation_result = self.apply_saturation_reduction_rgb(grain_result, self.saturation_reduction.get())
         
+        # Apply unsharp sharpening if enabled
+        if self.unsharp_sharpening.get():
+            sharpening_result = self.apply_unsharp_sharpening(saturation_result)
+        else:
+            sharpening_result = saturation_result
+        
+        # Apply auto-contrast stretch if enabled
+        if self.auto_contrast_stretch.get():
+            contrast_result = self.apply_auto_contrast_stretch(sharpening_result)
+        else:
+            contrast_result = sharpening_result
+        
         # Apply vintage border as the final step
-        final_result = self.create_vintage_border(saturation_result)
+        if self.vintage_border.get():
+            final_result = self.create_vintage_border(contrast_result)
+        else:
+            final_result = contrast_result
         
         return final_result
         
@@ -640,6 +689,36 @@ class FilmicEffectsProcessor:
         pos = self.original_canvas.yview()
         self.original_scrollbar.set(*pos)
         self.processed_scrollbar.set(*pos)
+    
+    def on_mousewheel(self, event):
+        """Handle mouse wheel scrolling for synchronized canvas scrolling"""
+        # Calculate scroll amount based on wheel delta
+        # On Windows, event.delta is typically 120 or -120
+        # On Linux, event.num is 4 (up) or 5 (down)
+        
+        if event.num == 4 or event.delta > 0:
+            # Scroll up
+            delta = -1
+        elif event.num == 5 or event.delta < 0:
+            # Scroll down
+            delta = 1
+        else:
+            return
+        
+        # Get current scroll position
+        current_top, current_bottom = self.original_canvas.yview()
+        
+        # Calculate new scroll position (scroll 3 units at a time for smooth scrolling)
+        scroll_units = 3
+        self.original_canvas.yview_scroll(delta * scroll_units, "units")
+        self.processed_canvas.yview_scroll(delta * scroll_units, "units")
+        
+        # Update both scrollbars to show the same position
+        pos = self.original_canvas.yview()
+        self.original_scrollbar.set(*pos)
+        self.processed_scrollbar.set(*pos)
+        
+        return "break"  # Prevent event from propagating
 
     def create_vintage_border(self, image):
         """Create a white border with rounded corners to simulate old photograph edges"""
@@ -717,6 +796,70 @@ class FilmicEffectsProcessor:
         
         # Convert back to PIL Image
         return Image.fromarray(img_array)
+    
+    def apply_unsharp_sharpening(self, image):
+        """Apply unsharp mask sharpening to the image using internal parameters."""
+        try:
+            from PIL import ImageFilter
+            
+            # Use internal parameters (not exposed in GUI)
+            radius = self.unsharp_radius  # 2.0
+            amount = self.unsharp_amount  # 1.5 (150%)
+            threshold = self.unsharp_threshold  # 3
+            
+            # Apply unsharp mask filter
+            sharpened = image.filter(ImageFilter.UnsharpMask(
+                radius=int(radius),  # Convert to integer
+                percent=int(amount * 100),  # Convert to percentage
+                threshold=int(threshold)  # Convert to integer
+            ))
+            
+            return sharpened
+            
+        except Exception as e:
+            print(f"Error applying unsharp sharpening: {e}")
+            return image
+    
+    def apply_auto_contrast_stretch(self, image):
+        """Apply automatic contrast stretching using percentile-based approach."""
+        try:
+            import numpy as np
+            
+            # Convert to numpy array
+            img_array = np.array(image)
+            
+            # Use internal parameter (not exposed in GUI)
+            percentile = self.contrast_percentile  # 2.0
+            
+            # Calculate percentiles for each channel
+            low_percentiles = np.percentile(img_array, percentile, axis=(0, 1))
+            high_percentiles = np.percentile(img_array, 100 - percentile, axis=(0, 1))
+            
+            # Stretch contrast for each channel
+            stretched_array = np.zeros_like(img_array, dtype=np.float32)
+            
+            for i in range(img_array.shape[2]):  # For each color channel
+                channel = img_array[:, :, i].astype(np.float32)
+                low_val = float(low_percentiles[i])
+                high_val = float(high_percentiles[i])
+                
+                # Avoid division by zero
+                if high_val > low_val:
+                    # Stretch to full 0-255 range
+                    stretched_channel = (channel - low_val) * 255.0 / (high_val - low_val)
+                    stretched_channel = np.clip(stretched_channel, 0, 255)
+                else:
+                    stretched_channel = channel
+                
+                stretched_array[:, :, i] = stretched_channel
+            
+            # Convert back to uint8 and PIL Image
+            stretched_array = stretched_array.astype(np.uint8)
+            return Image.fromarray(stretched_array)
+            
+        except Exception as e:
+            print(f"Error applying auto contrast stretch: {e}")
+            return image
         
 def main():
     # Check if required packages are available
