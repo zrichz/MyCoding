@@ -39,9 +39,9 @@ class FilmicEffectsProcessor:
         
         # Internal parameters (not exposed in GUI)
         self.unsharp_radius = 2.0        # Gaussian blur radius for unsharp mask
-        self.unsharp_amount = 1.4        # Sharpening strength multiplier
+        self.unsharp_amount = 1.3        # Sharpening strength multiplier
         self.unsharp_threshold = 3       # Minimum contrast threshold
-        self.contrast_percentile = 1.8   # Percentile for auto-contrast (% on each end)
+        self.contrast_percentile = 0.5   # Percentile for auto-contrast (% on each end)
         
         self.setup_ui()
         
