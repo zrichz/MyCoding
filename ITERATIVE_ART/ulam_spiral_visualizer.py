@@ -314,27 +314,22 @@ class UlamSpiralVisualizer:
                     
                     # Set color: white (255) for primes, black (0) for composites
                     if self.prime_data[grid_y, grid_x]:
-                        color = 255  # White
+                        color = [255, 255, 255]  # White
                     else:
-                        color = 0    # Black
+                        color = [0, 0, 0]        # Black
                     
                     # Fill 2x2 block
-                    image_array[pixel_y:pixel_y+2, pixel_x:pixel_x+2] = [color, color, color]
+                    image_array[pixel_y:pixel_y+2, pixel_x:pixel_x+2] = color
             
-            # Save using matplotlib for consistency
-            save_figure, save_ax = plt.subplots(figsize=(save_width/100, save_height/100))
-            save_ax.imshow(image_array, origin='upper', interpolation='nearest')
-            save_ax.set_xlim(0, save_width)
-            save_ax.set_ylim(0, save_height)
-            save_ax.axis('off')
+            # Save directly using PIL for exact pixel control
+            from PIL import Image as PILImage
             
-            # Save at exactly 100 DPI to get pixel-perfect dimensions
+            # Convert numpy array to PIL Image
+            pil_image = PILImage.fromarray(image_array, mode='RGB')
+            
+            # Save with no compression or modification
             filename = f"ulam_spiral_{self.grid_size}x{self.grid_size}_start{self.start_number}.png"
-            save_figure.savefig(filename, dpi=100, bbox_inches='tight', 
-                              pad_inches=0, facecolor='none', edgecolor='none')
-            
-            # Clean up
-            plt.close(save_figure)
+            pil_image.save(filename, format='PNG', optimize=False)
             
             self.progress_var.set(f"Pixel-exact image saved as {filename}")
             self.progress_bar.stop()
