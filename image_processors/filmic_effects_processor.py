@@ -28,14 +28,14 @@ class FilmicEffectsProcessor:
         self.processed_photo_ref = None
         
         # Effect parameters
-        self.grain_intensity = tk.DoubleVar(value=0.20)
+        self.grain_intensity = tk.DoubleVar(value=0.22)
         self.grain_edge_boost = tk.DoubleVar(value=1.8)
-        self.vignette_strength = tk.DoubleVar(value=0.3)
-        self.saturation_reduction = tk.DoubleVar(value=0.3)
-        self.chromatic_aberration = tk.DoubleVar(value=0.08)
-        self.vintage_border = tk.BooleanVar(value=False)
-        self.unsharp_sharpening = tk.BooleanVar(value=False)
-        self.auto_contrast_stretch = tk.BooleanVar(value=False)
+        self.vignette_strength = tk.DoubleVar(value=0.34)
+        self.saturation_reduction = tk.DoubleVar(value=0.30)
+        self.chromatic_aberration = tk.DoubleVar(value=0.09)
+        self.vintage_border = tk.BooleanVar(value=True)
+        self.unsharp_sharpening = tk.BooleanVar(value=True)
+        self.auto_contrast_stretch = tk.BooleanVar(value=True)
         
         # Internal parameters (not exposed in GUI)
         self.unsharp_radius = 1.0        # Gaussian blur radius for unsharp mask
@@ -93,7 +93,7 @@ class FilmicEffectsProcessor:
                                length=800, style='Blue.Horizontal.TScale')
         grain_scale.pack(side=tk.LEFT, padx=(10, 15))
         
-        self.grain_label = ttk.Label(grain_frame, text="0.20", width=8,
+        self.grain_label = ttk.Label(grain_frame, text="0.22", width=8,
                                     font=("Arial", 11, "bold"))
         self.grain_label.pack(side=tk.LEFT)
         
@@ -108,7 +108,7 @@ class FilmicEffectsProcessor:
                                   length=800, style='Blue.Horizontal.TScale')
         vignette_scale.pack(side=tk.LEFT, padx=(10, 15))
         
-        self.vignette_label = ttk.Label(vignette_frame, text="0.30", width=8,
+        self.vignette_label = ttk.Label(vignette_frame, text="0.34", width=8,
                                        font=("Arial", 11, "bold"))
         self.vignette_label.pack(side=tk.LEFT)
         
@@ -138,7 +138,7 @@ class FilmicEffectsProcessor:
                                     length=800, style='Blue.Horizontal.TScale')
         aberration_scale.pack(side=tk.LEFT, padx=(10, 15))
         
-        self.aberration_label = ttk.Label(aberration_frame, text="0.08", width=8,
+        self.aberration_label = ttk.Label(aberration_frame, text="0.09", width=8,
                                          font=("Arial", 11, "bold"))
         self.aberration_label.pack(side=tk.LEFT)
         
