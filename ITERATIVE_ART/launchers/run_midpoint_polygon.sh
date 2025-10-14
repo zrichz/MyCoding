@@ -1,11 +1,11 @@
 #!/bin/bash
-# Run Triangle Network Visualizer with image_processors virtual environment
+# Run Iterative Midpoint Polygon Generator with image_processors virtual environment
 
 # Get the directory of this script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Path to the image_processors virtual environment
-VENV_PATH="$SCRIPT_DIR/../image_processors/.venv"
+VENV_PATH="$SCRIPT_DIR/../../image_processors/.venv"
 
 # Check if virtual environment exists
 if [ ! -d "$VENV_PATH" ]; then
@@ -18,7 +18,7 @@ fi
 echo "Activating virtual environment..."
 source "$VENV_PATH/bin/activate"
 
-echo "Running Triangle Network Visualizer..."
-python "$SCRIPT_DIR/triangle_network_visualizer.py"
+echo "Running Iterative Midpoint Polygon Generator..."
+python "$SCRIPT_DIR/../iterative_midpoint_polygon.py"
 
 echo "Done."
