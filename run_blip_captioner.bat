@@ -1,0 +1,26 @@
+@echo off
+REM Run BLIP Image Captioner with venv_mycoding virtual environment
+
+REM Get the directory of this script
+set SCRIPT_DIR=%~dp0
+
+REM Path to the venv_mycoding virtual environment  
+set VENV_PATH=%SCRIPT_DIR%venv_mycoding
+
+REM Check if virtual environment exists
+if not exist "%VENV_PATH%" (
+    echo Error: Virtual environment not found at %VENV_PATH%
+    echo Please create the virtual environment first or install dependencies globally.
+    pause
+    exit /b 1
+)
+
+REM Activate virtual environment and run the script
+echo Activating virtual environment...
+call "%VENV_PATH%\Scripts\activate.bat"
+
+echo Running BLIP Image Captioner...
+python "%SCRIPT_DIR%BLIP_image_captioner.py"
+
+echo Done.
+pause
