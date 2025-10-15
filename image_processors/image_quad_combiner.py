@@ -104,10 +104,11 @@ Images are processed in groups of 4 in alphabetical order."""
                               command=self.clear_selections, width=10)
         clear_btn.pack(side=tk.LEFT, padx=10)
         
-        # Status label
-        self.status_label = tk.Label(self.root, text="Select input and output directories to begin", 
-                                    font=("Arial", 10))
-        self.status_label.pack(pady=10)
+        # Status label with more prominent styling for better visibility
+        self.status_label = tk.Label(self.root, text="Select input directory to begin", 
+                                    font=("Arial", 11, "bold"), fg="blue", 
+                                    relief="sunken", bg="lightgray", padx=10, pady=5)
+        self.status_label.pack(pady=15)
         
     def select_input_directory(self):
         """Select input directory containing images"""
@@ -178,7 +179,7 @@ Images are processed in groups of 4 in alphabetical order."""
             output_dir = Path(self.input_dir) / "quad_combos"
             output_dir.mkdir(exist_ok=True)
             
-            self.status_label.configure(text="Processing images...")
+            self.status_label.configure(text=f"Starting to process {quads} quad combos...")
             self.root.update()
             
             # Process quads (groups of 4)
@@ -186,17 +187,30 @@ Images are processed in groups of 4 in alphabetical order."""
                 if i + 3 >= len(self.image_files):
                     break  # Skip if less than 4 images remaining
                 
+                current_quad = (i // 4) + 1
+                
                 try:
-                    # Load 4 images
+                    # Update status to show current quad being processed
+                    self.status_label.configure(text=f"Processing quad {current_quad} of {quads} - Loading images...")
+                    self.root.update()
+                    
+                    # Load 4 images with individual progress feedback
                     img_paths = self.image_files[i:i+4]
                     images = []
                     
-                    for img_path in img_paths:
+                    for idx, img_path in enumerate(img_paths, 1):
+                        self.status_label.configure(text=f"Processing quad {current_quad} of {quads} - Loading image {idx}/4...")
+                        self.root.update()
+                        
                         img = Image.open(img_path)
                         # Convert to RGB if needed
                         if img.mode != 'RGB':
                             img = img.convert('RGB')
                         images.append(img)
+                    
+                    # Update status for combining step
+                    self.status_label.configure(text=f"Processing quad {current_quad} of {quads} - Combining images...")
+                    self.root.update()
                     
                     # Create horizontal montage (2880x1600 from four 720x1600 images)
                     montage_width = sum(img.width for img in images)  # Should be 2880
@@ -208,6 +222,10 @@ Images are processed in groups of 4 in alphabetical order."""
                     for img in images:
                         montage.paste(img, (x_offset, 0))
                         x_offset += img.width
+                    
+                    # Update status for scaling step
+                    self.status_label.configure(text=f"Processing quad {current_quad} of {quads} - Scaling to fit 2560x1440...")
+                    self.root.update()
                     
                     # Scale to fit 2560x1440 while maintaining 2880:1600 aspect ratio
                     # Original ratio is 2880:1600 = 1.8:1
@@ -221,6 +239,10 @@ Images are processed in groups of 4 in alphabetical order."""
                     
                     # Scale with Lanczos resampling
                     final = montage.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                    
+                    # Update status for saving step
+                    self.status_label.configure(text=f"Processing quad {current_quad} of {quads} - Saving combo image...")
+                    self.root.update()
                     
                     # Generate output filename using first image's name
                     base_name = img_paths[0].stem
@@ -236,21 +258,33 @@ Images are processed in groups of 4 in alphabetical order."""
                     final.save(output_path, "PNG")
                     processed += 1
                     
-                    # Update progress
-                    self.status_label.configure(text=f"Processing... {processed}/{quads} combos complete")
+                    # Update progress with completion status
+                    self.status_label.configure(text=f"✓ Completed quad {current_quad} of {quads} - {processed} combos finished")
                     self.root.update()
                     
                 except Exception as e:
-                    print(f"Error processing quad {i//4 + 1}: {str(e)}")
+                    # Update status to show error for this quad
+                    self.status_label.configure(text=f"❌ Error processing quad {current_quad} of {quads}: {str(e)[:50]}...")
+                    self.root.update()
+                    print(f"Error processing quad {current_quad}: {str(e)}")
                     errors += 1
             
-            # Show results
+            # Show final results with detailed feedback
             if errors == 0:
-                self.status_label.configure(text=f"Complete! Processed {processed} quad combos")
-                messagebox.showinfo("Success", f"Successfully processed {processed} quad combos!\nSaved to: {output_dir}")
+                self.status_label.configure(text=f"🎉 All done! Successfully processed {processed} quad combos")
+                messagebox.showinfo("Success", 
+                                  f"✅ Processing Complete!\n\n"
+                                  f"Successfully processed: {processed} quad combos\n"
+                                  f"Total images combined: {processed * 4}\n"
+                                  f"Saved to: {output_dir}")
             else:
-                self.status_label.configure(text=f"Complete with {errors} errors. {processed} combos processed")
-                messagebox.showwarning("Partial Success", f"Processed {processed} combos with {errors} errors.\nSaved to: {output_dir}")
+                self.status_label.configure(text=f"⚠️ Completed with {errors} errors - {processed} combos processed successfully")
+                messagebox.showwarning("Partial Success", 
+                                     f"⚠️ Processing completed with some issues\n\n"
+                                     f"Successfully processed: {processed} quad combos\n"
+                                     f"Failed: {errors} quad combos\n"
+                                     f"Total images processed: {processed * 4}\n"
+                                     f"Saved to: {output_dir}")
                 
         except Exception as e:
             messagebox.showerror("Processing Error", f"Error during processing: {str(e)}")

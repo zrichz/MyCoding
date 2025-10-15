@@ -7,17 +7,18 @@ Images are divided into a 6x6 grid of blocks that fade in from black over random
 between 2-5 seconds, followed by gaussian blur removal to reveal the sharp image.
 
 Key Features:
-- Select directory containing images for sequential viewing
-- 6x6 grid system (36 blocks total, regardless of image size)
-- Blocks fade in from black over random 2-5 second intervals
+- Automatic directory selection dialog at startup
+- Progressive reveal through 16x32 grid system (512 blocks total, regardless of image size)
+- Blocks fade in from black over random 5-15 second intervals
 - Gaussian blur effect that removes after fade-in completes
 - Keyboard controls for navigation with auto-starting animations
+- Arrow keys can skip current animation to move immediately to next/previous image
 - Automatic progression through image directory
 
 Controls:
 - SPACE: Start/pause reveal animation
-- RIGHT ARROW / N: Next image (auto-starts animation)
-- LEFT ARROW / P: Previous image (auto-starts animation)
+- RIGHT ARROW / N: Next image (skips current animation if running, auto-starts new animation)
+- LEFT ARROW / P: Previous image (skips current animation if running, auto-starts new animation)
 - R: Restart current image animation
 - ESC / Q: Quit application
 
@@ -47,8 +48,8 @@ class ProgressiveBlock:
         self.color_surface = color_surface
         self.block_width = block_width
         self.block_height = block_height
-        
-        # Fade-in timing (2-5 seconds)
+
+        # Fade-in timing (5-15 seconds)
         self.fade_duration = random.uniform(5000, 15000)  # milliseconds
         self.fade_start_time = 0
         self.fade_delay = random.uniform(0, 5000)  # Random delay before starting
@@ -160,7 +161,7 @@ class ProgressiveImageViewer:
         
         # Grid settings - eg: 6x6
         self.grid_cols = 16
-        self.grid_rows = 16
+        self.grid_rows = 32
         
         # Colors
         self.bg_color = (128, 128, 128)  # Mid-grey
@@ -188,7 +189,8 @@ class ProgressiveImageViewer:
         self.fps = 60
         
         # UI state
-        self.showing_instructions = True
+        self.showing_instructions = False
+        self.directory_selected = False
         
     def select_directory(self):
         """Select directory containing images using file dialog"""
@@ -355,6 +357,23 @@ class ProgressiveImageViewer:
         if all_complete:
             self.animation_complete = True
     
+    def skip_animation(self):
+        """Skip the current animation by completing all blocks immediately"""
+        if self.blocks and self.animation_running:
+            for block in self.blocks:
+                # Force complete the fade-in
+                block.fade_started = True
+                block.fade_complete = True 
+                block.alpha = 1.0
+                
+                # Force complete the blur removal
+                block.blur_removal_started = True
+                block.blur_removal_complete = True
+                block.blur_amount = 0.0
+            
+            self.animation_complete = True
+            self.animation_running = False
+    
     def next_image(self):
         """Move to next image"""
         if self.image_files and self.current_image_index < len(self.image_files) - 1:
@@ -432,12 +451,7 @@ class ProgressiveImageViewer:
                 return False
                 
             elif event.type == pygame.KEYDOWN:
-                if self.showing_instructions:
-                    self.showing_instructions = False
-                    if not self.select_directory():
-                        return False
-                        
-                elif event.key == pygame.K_ESCAPE or event.key == pygame.K_q:
+                if event.key == pygame.K_ESCAPE or event.key == pygame.K_q:
                     return False
                     
                 elif event.key == pygame.K_SPACE:
@@ -448,9 +462,15 @@ class ProgressiveImageViewer:
                             self.animation_running = not self.animation_running
                             
                 elif event.key == pygame.K_RIGHT or event.key == pygame.K_n:
+                    # Skip current animation and move to next image immediately
+                    if self.animation_running and not self.animation_complete:
+                        self.skip_animation()
                     self.next_image()
                     
                 elif event.key == pygame.K_LEFT or event.key == pygame.K_p:
+                    # Skip current animation and move to previous image immediately
+                    if self.animation_running and not self.animation_complete:
+                        self.skip_animation()
                     self.previous_image()
                     
                 elif event.key == pygame.K_r:
@@ -477,6 +497,13 @@ class ProgressiveImageViewer:
     
     def run(self):
         """Main game loop"""
+        # Automatically show directory selection at startup
+        if not self.directory_selected:
+            if not self.select_directory():
+                pygame.quit()
+                return
+            self.directory_selected = True
+        
         running = True
         
         while running:
