@@ -1,7 +1,6 @@
 import tkinter as tk
 from tkinter import filedialog
 from PIL import Image
-import numpy as np
 import os
 
 def process_image():
@@ -9,19 +8,32 @@ def process_image():
 	root.withdraw()
 	file_path = filedialog.askopenfilename(
 		title="Select an image",
-		filetypes=[("Image files", "*.png;*.jpg;*.jpeg;*.bmp;*.tiff")]
+		filetypes=[
+			("Image files", "*.png *.jpg *.jpeg *.bmp *.tiff"),
+			("PNG files", "*.png"),
+			("JPEG files", "*.jpg *.jpeg"),
+			("All files", "*.*")
+		]
 	)
 	if not file_path:
 		print("No file selected.")
 		return
 
 	img = Image.open(file_path).convert("RGB")
-	arr = np.array(img)
-	# Calculate average of red and blue channels
-	avg_rb = ((arr[..., 0].astype(np.uint16) + arr[..., 2].astype(np.uint16)) // 2).astype(np.uint8)
-	arr[..., 1] = avg_rb  # Replace green channel
-
-	new_img = Image.fromarray(arr)
+	width, height = img.size
+	
+	# Get pixel data and process each pixel
+	pixels = list(img.getdata())
+	new_pixels = []
+	
+	for r, g, b in pixels:
+		# Calculate average of red and blue channels for new green value
+		avg_rb = (r + b) // 2
+		new_pixels.append((r, avg_rb, b))
+	
+	# Create new image with modified pixels
+	new_img = Image.new("RGB", (width, height))
+	new_img.putdata(new_pixels)
 	base, ext = os.path.splitext(file_path)
 	new_path = f"{base}_green_average{ext}"
 	new_img.save(new_path)

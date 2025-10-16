@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Linux/Ubuntu launcher for TI Changer Multiple
+# Linux/Ubuntu launcher for TI Changer
 # This script runs the TI Changer with the appropriate Python environment
 
-echo "Running TI Changer Multiple..."
+echo "Running TI Changer..."
 echo "Operating System: $(uname -s)"
 echo ""
 
@@ -60,7 +60,7 @@ echo "Starting TI Changer Multiple..."
 echo "----------------------------------------"
 
 # Run the Python script
-$PYTHON_CMD "TI_CHANGER_MULTIPLE_2024_10_22.py"
+$PYTHON_CMD "TI_CHANGER.py"
 
 # Check exit status
 if [ $? -eq 0 ]; then
