@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Demo script for the Seam Carving Width Reducer application
 This script demonstrates the non-GUI version of seam carving

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Seam Carving Width Adjuster
 A GUI application that adjusts image width using seam carving algorithm

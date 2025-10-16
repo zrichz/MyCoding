@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # Filmic effects Processor - Applies film grain and vignette effects to 720x1600 images
 
 import tkinter as tk

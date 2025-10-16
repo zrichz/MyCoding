@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Ulam Spiral Visualizer
 Creates a visual representation of the Ulam Spiral where prime numbers are arranged in a spiral pattern.

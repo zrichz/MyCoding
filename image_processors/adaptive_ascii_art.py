@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Adaptive ASCII Art Generator - Creates ASCII art with variable character sizes based on luminance variance
 Uses adaptive subdivision to create smaller chunks in high-variance areas and larger chunks in uniform areas

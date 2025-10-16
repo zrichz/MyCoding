@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Image Interleaver - Combines 4 images by interleaving chunks in a user-defined pattern
 Each chunk in the output is divided into 4 quadrants, each containing a sub-chunk from one of the 4 input images:

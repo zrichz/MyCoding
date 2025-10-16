@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Interactive Image Cropper
 A GUI application for batch cropping images with interactive selection.

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 DEBLUR - Image Deblurring Application
 Main entry point for the deblurring application.

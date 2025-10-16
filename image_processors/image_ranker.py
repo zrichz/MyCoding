@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Image Ranker - Compare all image pairs to build comprehensive rankings
 Uses tournament-style pairwise comparisons to rank all images in a directory
