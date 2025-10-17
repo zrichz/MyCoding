@@ -510,32 +510,52 @@ class AdaptiveAsciiArt:
             ascii_img = Image.new('RGB', (768, 768), 'white')
             draw = ImageDraw.Draw(ascii_img)
             
-            # Require IBM EGA font for authentic ASCII art - check multiple locations
-            font_locations = [
+            # Try to find IBM EGA font for authentic ASCII art - check multiple locations
+            ibm_ega_locations = [
                 "C:/Windows/Fonts/Ac437_IBM_EGA_8x8.ttf",  # System fonts
                 os.path.expanduser("~/AppData/Local/Microsoft/Windows/Fonts/Ac437_IBM_EGA_8x8.ttf"),  # User fonts
                 "C:/Windows/System32/Fonts/Ac437_IBM_EGA_8x8.ttf"  # Alternative system location
             ]
             
-            ibm_ega_font_path = None
-            for font_path in font_locations:
+            # Fallback fonts if IBM EGA is not available
+            fallback_fonts = [
+                "C:/Windows/Fonts/consola.ttf",  # Consolas (monospace)
+                "C:/Windows/Fonts/cour.ttf",     # Courier New
+                "C:/Windows/Fonts/lucon.ttf",    # Lucida Console
+                "C:/Windows/Fonts/arial.ttf"     # Arial (not monospace but widely available)
+            ]
+            
+            base_font_path = None
+            font_name = "Unknown"
+            
+            # First try to find IBM EGA font
+            for font_path in ibm_ega_locations:
                 if os.path.exists(font_path):
-                    ibm_ega_font_path = font_path
+                    base_font_path = font_path
+                    font_name = "IBM EGA 8x8"
                     break
             
-            if not ibm_ega_font_path:
-                self.progress_bar.stop()
-                error_msg = "IBM EGA font not found!\n\n"
-                error_msg += "Required font: Ac437_IBM_EGA_8x8.ttf\n"
-                error_msg += "Checked locations:\n"
-                for loc in font_locations:
-                    error_msg += f"  • {loc}\n"
-                error_msg += "\nThis font is required for authentic ASCII art rendering."
-                messagebox.showerror("Missing Required Font", error_msg)
-                self.progress_var.set("Error: IBM EGA font not found")
-                return
+            # If IBM EGA not found, try fallback fonts
+            if not base_font_path:
+                for font_path in fallback_fonts:
+                    if os.path.exists(font_path):
+                        base_font_path = font_path
+                        if "consola" in font_path:
+                            font_name = "Consolas"
+                        elif "cour" in font_path:
+                            font_name = "Courier New"
+                        elif "lucon" in font_path:
+                            font_name = "Lucida Console"
+                        elif "arial" in font_path:
+                            font_name = "Arial"
+                        break
             
-            base_font_path = ibm_ega_font_path
+            # If no fonts found at all, use PIL's default font
+            if not base_font_path:
+                font_name = "PIL Default"
+                print(f"Warning: Using PIL default font - ASCII art quality may be reduced")
+            else:
+                print(f"Using font: {font_name} ({base_font_path})")
             
             # Draw chunks with optional colored backgrounds and ASCII characters
             for chunk in chunks:
@@ -587,11 +607,14 @@ class AdaptiveAsciiArt:
                 # print(f"Chunk {chunk['size']}px -> Base multiplier: {base_multiplier}x -> Final: {final_multiplier}x -> Font: {font_size}px")
                 
                 try:
-                    # Load IBM EGA font with exact size
-                    font = ImageFont.truetype(base_font_path, font_size)
+                    # Load font with exact size if available, otherwise use default
+                    if base_font_path:
+                        font = ImageFont.truetype(base_font_path, font_size)
+                    else:
+                        font = ImageFont.load_default()
                 except Exception as e:
-                    # If font loading fails, show error
-                    messagebox.showerror("Font Error", f"Failed to load IBM EGA font at size {font_size}: {str(e)}")
+                    # If font loading fails, use default font
+                    print(f"Warning: Failed to load font at size {font_size}: {str(e)}")
                     font = ImageFont.load_default()
                 
                 # Draw character at chunk center with chosen text color
