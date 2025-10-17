@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Clifford Pickover Biomorphs Generator - Interactive fractal generator with GUI controls
 Based on the classic DOS BASIC radiolarian biomorph algorithm

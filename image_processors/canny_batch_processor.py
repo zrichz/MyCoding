@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Canny Batch Processor - Apply Canny edge detection to all images in a directory
 Processes all images in a selected directory and saves Canny edge detection results

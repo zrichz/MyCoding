@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Image Painter - Load image and analyze RGB gradient directions
 Shows original image thumbnail (512x512) and blurred gradient directions for R, G, B channels (256x256 each)

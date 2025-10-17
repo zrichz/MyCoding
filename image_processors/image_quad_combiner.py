@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Image Quad Combiner - Creates horizontal montages of 4 images and scales to fit 2560x1440
 Takes groups of four 720x1600 images, combines them horizontally to 2880x1600, 

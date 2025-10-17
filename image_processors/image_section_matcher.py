@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Image Section Matcher - Creates new images by matching 16x16 sections between two source images
 Loads two 512x512 images, divides into sections, and finds best-fit matches using similarity matrices

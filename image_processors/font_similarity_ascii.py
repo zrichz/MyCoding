@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Font Similarity ASCII Art Generator - Creates ASCII art using least-squares error similarity
 Renders each character as 8x8 bitmap and finds best match for each image chunk using LSE

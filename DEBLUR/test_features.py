@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Quick test of the enhanced Gaussian deblur features.
 """

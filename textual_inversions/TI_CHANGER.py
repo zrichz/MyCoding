@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 TI Changer - Convert and manipulate textual inversion files
 """

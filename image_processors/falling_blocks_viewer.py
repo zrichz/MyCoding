@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Progressive Image Viewer - Interactive Image Display Tool
 

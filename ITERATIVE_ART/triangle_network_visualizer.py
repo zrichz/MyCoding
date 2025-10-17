@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Triangle Network Visualizer
 Creates 100 random points and connects them based on distance threshold.
