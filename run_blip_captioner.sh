@@ -1,11 +1,11 @@
 #!/bin/bash
-# Run BLIP Image Captioner with venv_mycoding virtual environment
+# Run BLIP Image Captioner with image_processors virtual environment
 
 # Get the directory of this script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Path to the venv_mycoding virtual environment
-VENV_PATH="$SCRIPT_DIR/venv_mycoding"
+# Path to the image_processors virtual environment
+VENV_PATH="$SCRIPT_DIR/image_processors/.venv"
 
 # Check if virtual environment exists
 if [ ! -d "$VENV_PATH" ]; then

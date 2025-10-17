@@ -1,11 +1,11 @@
 @echo off
-REM Run BLIP Image Captioner with venv_mycoding virtual environment
+REM Run BLIP Image Captioner with image_processors virtual environment
 
 REM Get the directory of this script
 set SCRIPT_DIR=%~dp0
 
-REM Path to the venv_mycoding virtual environment  
-set VENV_PATH=%SCRIPT_DIR%venv_mycoding
+REM Path to the image_processors virtual environment
+set VENV_PATH=%SCRIPT_DIR%image_processors\.venv
 
 REM Check if virtual environment exists
 if not exist "%VENV_PATH%" (
