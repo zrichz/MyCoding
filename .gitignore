@@ -2,10 +2,6 @@
 # Virtual Environments  
 focus_env/  
 .venv/  
-venv/
-venv_*/
-venv_mycoding/
-env/ 
 # Python Cache  
 __pycache__/  
 *.pyc  
