@@ -15,12 +15,15 @@ if not exist ".venv\Scripts\activate.bat" (
 call .venv\Scripts\activate.bat
 
 echo.
-echo Virtual environment activated!
+echo *******************************************************
+echo *******   Virtual environment activated!   ************
 echo Python executable: %cd%\.venv\Scripts\python.exe
 echo Current directory: %cd%
 echo.
-echo You can now run any Python scripts in this environment.
-echo To deactivate, simply type: deactivate
+echo *******************************************************
+echo *****   You can now run any Python scripts in this environment.
+echo *****  To deactivate, simply type: deactivate
+echo *******************************************************
 echo.
 
 cmd /k
