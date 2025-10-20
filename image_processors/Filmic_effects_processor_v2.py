@@ -1,4 +1,4 @@
-# Filmic effects Processor - Applies film grain and vignette effects to 720x1600 images
+# Filmic Effects Processor v2 - Applies film grain and vignette effects to 720x1600 images
 
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
@@ -8,10 +8,19 @@ import os
 import threading
 from pathlib import Path
 
+# Face detection imports
+try:
+    import cv2
+    import mediapipe as mp
+    FACE_DETECTION_AVAILABLE = True
+except ImportError:
+    FACE_DETECTION_AVAILABLE = False
+    print("Warning: Face detection not available. Install opencv-python and mediapipe for face-centered effects.")
+
 class FilmicEffectsProcessor:
     def __init__(self, root):
         self.root = root
-        self.root.title("Filmic Effects Processor - 720x1600")
+        self.root.title("Filmic Effects Processor v2 - 720x1600")
         self.root.geometry("1600x1400")
         self.root.configure(bg="#EBE1D2")
         
@@ -26,20 +35,27 @@ class FilmicEffectsProcessor:
         self.original_photo_ref = None
         self.processed_photo_ref = None
         
+        # Default values for effects
+        self.DEFAULT_GRAIN = 0.22
+        self.DEFAULT_VIGNETTE = 0.34
+        self.DEFAULT_SATURATION = 0.30
+        self.DEFAULT_CHROMATIC = 0.09
+        
         # Effect parameters
-        self.grain_intensity = tk.DoubleVar(value=0.22)
+        self.grain_intensity = tk.DoubleVar(value=self.DEFAULT_GRAIN)
         self.grain_edge_boost = tk.DoubleVar(value=1.8)
-        self.vignette_strength = tk.DoubleVar(value=0.34)
-        self.saturation_reduction = tk.DoubleVar(value=0.30)
-        self.chromatic_aberration = tk.DoubleVar(value=0.09)
-        self.foveated_pixels = tk.DoubleVar(value=0.0)
+        self.vignette_strength = tk.DoubleVar(value=self.DEFAULT_VIGNETTE)
+        self.saturation_reduction = tk.DoubleVar(value=self.DEFAULT_SATURATION)
+        self.chromatic_aberration = tk.DoubleVar(value=self.DEFAULT_CHROMATIC)
         
         # Effect enable/disable toggles
         self.grain_enabled = tk.BooleanVar(value=True)
         self.vignette_enabled = tk.BooleanVar(value=True)
         self.saturation_enabled = tk.BooleanVar(value=True)
         self.chromatic_enabled = tk.BooleanVar(value=True)
-        self.foveated_enabled = tk.BooleanVar(value=False)
+        
+        # Chromatic aberration center display toggle
+        self.show_ca_center = tk.BooleanVar(value=False)
         
         # Other options
         self.vintage_border = tk.BooleanVar(value=True)
@@ -51,6 +67,26 @@ class FilmicEffectsProcessor:
         self.unsharp_amount = 1.3        # Sharpening strength multiplier
         self.unsharp_threshold = 3       # Minimum contrast threshold
         self.contrast_percentile = 0.5   # Percentile for auto-contrast (% on each end)
+        
+        # Face detection setup
+        self.face_mesh = None
+        if FACE_DETECTION_AVAILABLE:
+            try:
+                mp_face_mesh = mp.solutions.face_mesh
+                self.face_mesh = mp_face_mesh.FaceMesh(
+                    static_image_mode=True,
+                    max_num_faces=1,
+                    refine_landmarks=True,
+                    min_detection_confidence=0.5,
+                    min_tracking_confidence=0.5
+                )
+            except Exception as e:
+                print(f"Face detection initialization failed: {e}")
+                self.face_mesh = None
+        
+        # Default center point (fallback)
+        self.effect_center = (360, 360)
+        self.face_detected = False  # Track if face was detected for current image
         
         self.setup_ui()
         
@@ -87,12 +123,38 @@ class FilmicEffectsProcessor:
                                   foreground="gray")
         self.dir_label.pack(side=tk.LEFT)
         
+        # Face detection status indicator
+        face_detection_text = "✓ Face Detection" if FACE_DETECTION_AVAILABLE else "✗ Face Detection"
+        face_detection_color = "green" if FACE_DETECTION_AVAILABLE else "red"
+        face_status_label = ttk.Label(dir_frame, text=face_detection_text, 
+                                     foreground=face_detection_color, 
+                                     font=("Arial", 8, "bold"))
+        face_status_label.pack(side=tk.RIGHT, padx=(20, 10))
+        
+        # Status message
+        self.progress_var = tk.StringVar(value="Select a directory to begin")
+        status_label = ttk.Label(dir_frame, textvariable=self.progress_var, 
+                               foreground="blue", font=("Arial", 9, "italic"))
+        status_label.pack(side=tk.RIGHT, padx=(10, 0))
+        
         # Control panel
         control_frame = ttk.LabelFrame(main_frame, text="Effect Controls", padding=15)
         control_frame.pack(fill='x', pady=(0, 10))
         
+        # Create left and right sections for controls
+        controls_container = ttk.Frame(control_frame)
+        controls_container.pack(fill='x')
+        
+        # Left side - main sliders
+        left_controls = ttk.Frame(controls_container)
+        left_controls.pack(side=tk.LEFT, fill='x', expand=True)
+        
+        # Right side - additional options
+        right_controls = ttk.Frame(controls_container)
+        right_controls.pack(side=tk.RIGHT, padx=(20, 0))
+        
         # Film grain controls
-        grain_frame = ttk.Frame(control_frame)
+        grain_frame = ttk.Frame(left_controls)
         grain_frame.pack(fill='x', pady=5)
         
         grain_check = tk.Checkbutton(grain_frame, text="", variable=self.grain_enabled, 
@@ -103,15 +165,18 @@ class FilmicEffectsProcessor:
                  font=("Arial", 10, "bold"), width=19).pack(side=tk.LEFT)
         grain_scale = ttk.Scale(grain_frame, from_=0.0, to=0.56, 
                                variable=self.grain_intensity, orient='horizontal', 
-                               length=750, style='Blue.Horizontal.TScale')
+                               length=500, style='Blue.Horizontal.TScale')
         grain_scale.pack(side=tk.LEFT, padx=(10, 15))
         
         self.grain_label = ttk.Label(grain_frame, text="0.22", width=8,
                                     font=("Arial", 11, "bold"))
         self.grain_label.pack(side=tk.LEFT)
         
+        ttk.Button(grain_frame, text="Reset", width=8,
+                  command=lambda: self.reset_slider(self.grain_intensity, self.grain_label, self.DEFAULT_GRAIN)).pack(side=tk.LEFT, padx=(5, 0))
+        
         # Vignette controls
-        vignette_frame = ttk.Frame(control_frame)
+        vignette_frame = ttk.Frame(left_controls)
         vignette_frame.pack(fill='x', pady=5)
         
         vignette_check = tk.Checkbutton(vignette_frame, text="", variable=self.vignette_enabled, 
@@ -122,15 +187,18 @@ class FilmicEffectsProcessor:
                  font=("Arial", 10, "bold"), width=19).pack(side=tk.LEFT)
         vignette_scale = ttk.Scale(vignette_frame, from_=0.0, to=0.75, 
                                   variable=self.vignette_strength, orient='horizontal', 
-                                  length=750, style='Blue.Horizontal.TScale')
+                                  length=500, style='Blue.Horizontal.TScale')
         vignette_scale.pack(side=tk.LEFT, padx=(10, 15))
         
         self.vignette_label = ttk.Label(vignette_frame, text="0.34", width=8,
                                        font=("Arial", 11, "bold"))
         self.vignette_label.pack(side=tk.LEFT)
         
+        ttk.Button(vignette_frame, text="Reset", width=8,
+                  command=lambda: self.reset_slider(self.vignette_strength, self.vignette_label, self.DEFAULT_VIGNETTE)).pack(side=tk.LEFT, padx=(5, 0))
+        
         # Saturation controls
-        saturation_frame = ttk.Frame(control_frame)
+        saturation_frame = ttk.Frame(left_controls)
         saturation_frame.pack(fill='x', pady=5)
         
         saturation_check = tk.Checkbutton(saturation_frame, text="", variable=self.saturation_enabled, 
@@ -141,15 +209,18 @@ class FilmicEffectsProcessor:
                  font=("Arial", 10, "bold"), width=19).pack(side=tk.LEFT)
         saturation_scale = ttk.Scale(saturation_frame, from_=0.0, to=1.0, 
                                     variable=self.saturation_reduction, orient='horizontal', 
-                                    length=750, style='Blue.Horizontal.TScale')
+                                    length=500, style='Blue.Horizontal.TScale')
         saturation_scale.pack(side=tk.LEFT, padx=(10, 15))
         
         self.saturation_label = ttk.Label(saturation_frame, text="0.30", width=8,
                                          font=("Arial", 11, "bold"))
         self.saturation_label.pack(side=tk.LEFT)
         
+        ttk.Button(saturation_frame, text="Reset", width=8,
+                  command=lambda: self.reset_slider(self.saturation_reduction, self.saturation_label, self.DEFAULT_SATURATION)).pack(side=tk.LEFT, padx=(5, 0))
+        
         # Chromatic aberration controls
-        aberration_frame = ttk.Frame(control_frame)
+        aberration_frame = ttk.Frame(left_controls)
         aberration_frame.pack(fill='x', pady=5)
         
         chromatic_check = tk.Checkbutton(aberration_frame, text="", variable=self.chromatic_enabled, 
@@ -160,75 +231,61 @@ class FilmicEffectsProcessor:
                  font=("Arial", 10, "bold"), width=19).pack(side=tk.LEFT)
         aberration_scale = ttk.Scale(aberration_frame, from_=0.0, to=1.0, 
                                     variable=self.chromatic_aberration, orient='horizontal', 
-                                    length=750, style='Blue.Horizontal.TScale')
+                                    length=500, style='Blue.Horizontal.TScale')
         aberration_scale.pack(side=tk.LEFT, padx=(10, 15))
         
         self.aberration_label = ttk.Label(aberration_frame, text="0.09", width=8,
                                          font=("Arial", 11, "bold"))
         self.aberration_label.pack(side=tk.LEFT)
         
-        # Foveated pixels controls
-        foveated_frame = ttk.Frame(control_frame)
-        foveated_frame.pack(fill='x', pady=5)
+        ttk.Button(aberration_frame, text="Reset", width=8,
+                  command=lambda: self.reset_slider(self.chromatic_aberration, self.aberration_label, self.DEFAULT_CHROMATIC)).pack(side=tk.LEFT, padx=(5, 0))
         
-        foveated_check = tk.Checkbutton(foveated_frame, text="", variable=self.foveated_enabled, 
-                                       command=self.update_preview, bg='#808080', selectcolor='#606060')
-        foveated_check.pack(side=tk.LEFT, padx=(0, 5))
+        # Show CA center checkbox
+        ca_center_check = tk.Checkbutton(aberration_frame, text="Show CA Centre", 
+                                        variable=self.show_ca_center, command=self.update_preview,
+                                        bg='#808080', fg='black', selectcolor='#606060',
+                                        activebackground='#808080', activeforeground='black',
+                                        font=("Arial", 10, "bold"))
+        ca_center_check.pack(side=tk.LEFT, padx=(10, 0))
         
-        ttk.Label(foveated_frame, text="Foveated Pixels:", 
-                 font=("Arial", 10, "bold"), width=19).pack(side=tk.LEFT)
-        foveated_scale = ttk.Scale(foveated_frame, from_=0.0, to=1.0, 
-                                  variable=self.foveated_pixels, orient='horizontal', 
-                                  length=750, style='Blue.Horizontal.TScale')
-        foveated_scale.pack(side=tk.LEFT, padx=(10, 15))
-        
-        self.foveated_label = ttk.Label(foveated_frame, text="0.00", width=8,
-                                       font=("Arial", 11, "bold"))
-        self.foveated_label.pack(side=tk.LEFT)
-        
-        # Restore defaults button
-        defaults_frame = ttk.Frame(control_frame)
-        defaults_frame.pack(fill='x', pady=10)
-        
-        ttk.Button(defaults_frame, text="Restore Defaults", 
-                  command=self.restore_defaults).pack(side=tk.LEFT)
+        # Right side controls - Additional options
+        ttk.Label(right_controls, text="Additional Options", 
+                 font=("Arial", 11, "bold")).pack(pady=(0, 10))
         
         # Vintage border checkbox
-        border_frame = ttk.Frame(control_frame)
-        border_frame.pack(fill='x', pady=10)
-        
-        vintage_border_check = tk.Checkbutton(border_frame, text="Vintage Photo Border (12px white with rounded corners)", 
+        vintage_border_check = tk.Checkbutton(right_controls, text="Vintage Photo Border", 
                                              variable=self.vintage_border, command=self.update_preview,
                                              bg='#808080', fg='black', selectcolor='#606060',
                                              activebackground='#808080', activeforeground='black',
-                                             font=("Arial", 10, "bold"))
-        vintage_border_check.pack(anchor='w')
+                                             font=("Arial", 9))
+        vintage_border_check.pack(anchor='w', pady=2)
         
         # Unsharp sharpening checkbox
-        unsharp_check = tk.Checkbutton(border_frame, text="Unsharp Sharpening (Enhanced detail and edge definition)", 
+        unsharp_check = tk.Checkbutton(right_controls, text="Unsharp Sharpening", 
                                       variable=self.unsharp_sharpening, command=self.update_preview,
                                       bg='#808080', fg='black', selectcolor='#606060',
                                       activebackground='#808080', activeforeground='black',
-                                      font=("Arial", 10, "bold"))
-        unsharp_check.pack(anchor='w', pady=(5, 0))
+                                      font=("Arial", 9))
+        unsharp_check.pack(anchor='w', pady=2)
         
         # Auto-contrast stretch checkbox
-        contrast_check = tk.Checkbutton(border_frame, text="Auto-Contrast Stretch (Optimize dynamic range and contrast)", 
+        contrast_check = tk.Checkbutton(right_controls, text="Auto-Contrast Stretch", 
                                        variable=self.auto_contrast_stretch, command=self.update_preview,
                                        bg='#808080', fg='black', selectcolor='#606060',
                                        activebackground='#808080', activeforeground='black',
-                                       font=("Arial", 10, "bold"))
-        contrast_check.pack(anchor='w', pady=(5, 0))
+                                       font=("Arial", 9))
+        contrast_check.pack(anchor='w', pady=2)
+        
+        # Restore defaults button
+        ttk.Button(right_controls, text="Restore All Defaults", 
+                  command=self.restore_all_defaults).pack(pady=(15, 0))
         
         # Update labels when scales change
         grain_scale.configure(command=self.update_grain_label)
         vignette_scale.configure(command=self.update_vignette_label)
         saturation_scale.configure(command=self.update_saturation_label)
         aberration_scale.configure(command=self.update_aberration_label)
-        
-        # Foveated pixels slider only updates on release (performance optimization)
-        foveated_scale.configure(command=self.update_foveated_label_only)
-        foveated_scale.bind("<ButtonRelease-1>", self.on_foveated_release)
         
         # Preview and processing controls
         action_frame = ttk.Frame(main_frame)
@@ -248,10 +305,6 @@ class FilmicEffectsProcessor:
                   style='Accent.TButton').pack(side=tk.RIGHT)
         
         # Progress bar
-        self.progress_var = tk.StringVar(value="Select a directory to begin")
-        progress_label = ttk.Label(main_frame, textvariable=self.progress_var)
-        progress_label.pack(pady=5)
-        
         self.progress_bar = ttk.Progressbar(main_frame, length=400, mode='determinate')
         self.progress_bar.pack(pady=5)
         
@@ -268,8 +321,8 @@ class FilmicEffectsProcessor:
         original_frame.pack(side=tk.LEFT, padx=10)
         
         original_label = tk.Label(original_frame, text="Original", 
-                                 bg='#808080', fg='black', font=("Arial", 12, "bold"))
-        original_label.pack(pady=5)
+                                 bg='#808080', fg='black', font=("Arial", 8))
+        original_label.pack(pady=2)
         
         # Create frame for canvas and scrollbar
         original_canvas_frame = tk.Frame(original_frame, bg='#808080')
@@ -295,9 +348,11 @@ class FilmicEffectsProcessor:
         processed_frame = tk.Frame(canvas_container, bg='#808080')
         processed_frame.pack(side=tk.LEFT, padx=10)
         
-        processed_label = tk.Label(processed_frame, text="Processed", 
-                                  bg='#808080', fg='black', font=("Arial", 12, "bold"))
-        processed_label.pack(pady=5)
+        # Processed label with face detection status
+        self.processed_label_text = tk.StringVar(value="Processed")
+        processed_label = tk.Label(processed_frame, textvariable=self.processed_label_text, 
+                                  bg='#808080', fg='black', font=("Arial", 8))
+        processed_label.pack(pady=2)
         
         # Create frame for canvas and scrollbar
         processed_canvas_frame = tk.Frame(processed_frame, bg='#808080')
@@ -343,36 +398,89 @@ class FilmicEffectsProcessor:
         self.aberration_label.config(text=f"{float(value):.2f}")
         self.update_preview()
         
-    def update_foveated_label(self, value):
-        """Update foveated pixels label and preview (original method, not used anymore)"""
-        self.foveated_label.config(text=f"{float(value):.2f}")
+    def reset_slider(self, variable, label, default_value):
+        """Reset a specific slider to its default value"""
+        variable.set(default_value)
+        label.config(text=f"{default_value:.2f}")
         self.update_preview()
         
-    def update_foveated_label_only(self, value):
-        """Update foveated pixels label only (no preview update for performance)"""
-        self.foveated_label.config(text=f"{float(value):.2f}")
-        
-    def on_foveated_release(self, event):
-        """Handle foveated pixels slider release - update preview only when user stops dragging"""
-        self.update_preview()
-        
-    def restore_defaults(self):
-        """Restore default values for all effect parameters"""
-        self.grain_intensity.set(0.22)
-        self.vignette_strength.set(0.34)
-        self.saturation_reduction.set(0.30)
-        self.chromatic_aberration.set(0.09)
-        self.foveated_pixels.set(0.0)
+    def restore_all_defaults(self):
+        """Restore all slider values to their defaults"""
+        self.grain_intensity.set(self.DEFAULT_GRAIN)
+        self.vignette_strength.set(self.DEFAULT_VIGNETTE)
+        self.saturation_reduction.set(self.DEFAULT_SATURATION)
+        self.chromatic_aberration.set(self.DEFAULT_CHROMATIC)
         
         # Update labels
-        self.grain_label.config(text="0.22")
-        self.vignette_label.config(text="0.34")
-        self.saturation_label.config(text="0.30")
-        self.aberration_label.config(text="0.09")
-        self.foveated_label.config(text="0.00")
+        self.grain_label.config(text=f"{self.DEFAULT_GRAIN:.2f}")
+        self.vignette_label.config(text=f"{self.DEFAULT_VIGNETTE:.2f}")
+        self.saturation_label.config(text=f"{self.DEFAULT_SATURATION:.2f}")
+        self.aberration_label.config(text=f"{self.DEFAULT_CHROMATIC:.2f}")
         
         # Update preview
         self.update_preview()
+        
+    def detect_face_center(self, image):
+        """Detect face center using MediaPipe face detection"""
+        if not FACE_DETECTION_AVAILABLE or self.face_mesh is None:
+            return (360, 360)  # Default center
+            
+        try:
+            # Convert PIL Image to numpy array
+            if isinstance(image, Image.Image):
+                image_np = np.array(image)
+            else:
+                image_np = image.copy()
+            
+            # Ensure RGB format
+            if len(image_np.shape) == 3 and image_np.shape[2] == 3:
+                rgb_image = image_np
+            else:
+                if FACE_DETECTION_AVAILABLE:
+                    rgb_image = cv2.cvtColor(image_np, cv2.COLOR_GRAY2RGB)
+                else:
+                    # Fallback for grayscale without cv2
+                    rgb_image = np.stack([image_np, image_np, image_np], axis=-1)
+            
+            # Process the image for face detection
+            results = self.face_mesh.process(rgb_image)
+            
+            if results.multi_face_landmarks and len(results.multi_face_landmarks) > 0:
+                # Get the first (main) face
+                face_landmarks = results.multi_face_landmarks[0]
+                landmarks = face_landmarks.landmark
+                
+                h, w = rgb_image.shape[:2]
+                
+                # Calculate eye centers (same as face_keypoint_detector.py)
+                left_eye_center = (int(landmarks[159].x * w), int(landmarks[159].y * h))
+                right_eye_center = (int(landmarks[386].x * w), int(landmarks[386].y * h))
+                
+                # Calculate mouth corners
+                left_mouth_corner = (int(landmarks[61].x * w), int(landmarks[61].y * h))
+                right_mouth_corner = (int(landmarks[291].x * w), int(landmarks[291].y * h))
+                
+                # Calculate center positions
+                eye_center_x = (left_eye_center[0] + right_eye_center[0]) // 2
+                eye_center_y = (left_eye_center[1] + right_eye_center[1]) // 2
+                
+                mouth_center_x = (left_mouth_corner[0] + right_mouth_corner[0]) // 2
+                mouth_center_y = (left_mouth_corner[1] + right_mouth_corner[1]) // 2
+                
+                # Calculate the face center point (between eyes and mouth)
+                center_x = eye_center_x  # Horizontally centered between pupils
+                center_y = (eye_center_y + mouth_center_y) // 2  # Vertically centered between eyes and mouth
+                
+                print(f"Face detected! Center: ({center_x}, {center_y})")
+                self.face_detected = True
+                return (center_x, center_y)
+                
+        except Exception as e:
+            print(f"Face detection error: {e}")
+            
+        # Return default center if face detection fails
+        self.face_detected = False
+        return (360, 360)
         
     def select_directory(self):
         """Select directory containing images"""
@@ -421,6 +529,13 @@ class FilmicEffectsProcessor:
                 return
                 
             self.progress_var.set(f"Preview: {image_path.name} ({self.current_preview_index + 1}/{len(self.image_files)})")
+            
+            # Detect face center for dynamic effect positioning
+            self.effect_center = self.detect_face_center(self.preview_image)
+            
+            # Update processed label with face detection status
+            face_status = "✓ Face detected" if self.face_detected else "✗ No face"
+            self.processed_label_text.set(f"Processed ({face_status})")
             
             # Set flag to indicate this is a new image load (should reset scroll to top)
             self._is_new_image_load = True
@@ -518,7 +633,7 @@ class FilmicEffectsProcessor:
             image = image.convert('RGB')
         
         width, height = image.size
-        center_x, center_y = 360, 360 # deliberately higher in image
+        center_x, center_y = self.effect_center  # Use detected face center or default
         
         # Split into RGB channels
         r, g, b = image.split()
@@ -578,70 +693,6 @@ class FilmicEffectsProcessor:
         
         return result
         
-    def apply_foveated_pixels(self, image, strength):
-        """Ultra-fast foveated pixelation using downsampling/upsampling approach"""
-        if strength == 0.0 or not self.foveated_enabled.get():
-            return image
-            
-        if image.mode != 'RGB':
-            image = image.convert('RGB')
-        
-        width, height = image.size
-        center_x, center_y = 360, 360  # Same center as chromatic aberration
-        
-        # Convert to numpy array
-        img_array = np.array(image)
-        result_array = img_array.copy()
-        
-        # Create distance map for chunking levels
-        y, x = np.ogrid[:height, :width]
-        distance = np.sqrt((x - center_x)**2 + (y - center_y)**2)
-        
-        # Normalize distance to 0-1
-        max_distance = np.sqrt((width - center_x)**2 + (height - center_y)**2)
-        normalized_distance = np.minimum(distance / max_distance, 1.0)
-        
-        # Define chunking levels (powers of 2 for efficient processing)
-        chunk_levels = [2, 4, 8, 16, 32]  # Chunk sizes
-        
-        # Process each chunking level
-        for chunk_size in chunk_levels:
-            # Determine which pixels should use this chunk size
-            level_threshold = (chunk_size / 32.0) * strength
-            if level_threshold > 1.0:
-                break
-                
-            # Create mask for pixels that should use this chunk size
-            level_mask = (normalized_distance >= level_threshold) & (normalized_distance < level_threshold + (1.0 / len(chunk_levels)))
-            
-            if not np.any(level_mask):
-                continue
-            
-            # Process image in non-overlapping chunks
-            for y_start in range(0, height, chunk_size):
-                for x_start in range(0, width, chunk_size):
-                    y_end = min(y_start + chunk_size, height)
-                    x_end = min(x_start + chunk_size, width)
-                    
-                    # Check if this chunk overlaps with the level mask
-                    chunk_mask = level_mask[y_start:y_end, x_start:x_end]
-                    
-                    if not np.any(chunk_mask):
-                        continue
-                    
-                    # Get single pixel sample from center of chunk (FAST!)
-                    sample_y = y_start + (y_end - y_start) // 2
-                    sample_x = x_start + (x_end - x_start) // 2
-                    sample_color = img_array[sample_y, sample_x]
-                    
-                    # Apply sample color to all pixels in chunk where mask is true
-                    for py in range(y_start, y_end):
-                        for px in range(x_start, x_end):
-                            if px < width and py < height and level_mask[py, px]:
-                                result_array[py, px] = sample_color
-        
-        return Image.fromarray(result_array)
-        
     def apply_filmic_effects(self, image):
         """Apply film grain, vignette, and saturation effects to image"""
         if image.mode != 'RGB':
@@ -683,10 +734,6 @@ class FilmicEffectsProcessor:
         if self.chromatic_enabled.get():
             current_result = self.apply_chromatic_aberration(current_result, self.chromatic_aberration.get())
         
-        # Apply foveated pixels if enabled
-        if self.foveated_enabled.get():
-            current_result = self.apply_foveated_pixels(current_result, self.foveated_pixels.get())
-        
         # Apply film grain if enabled
         if self.grain_enabled.get():
             current_result = self.apply_film_grain_rgb(current_result, self.grain_intensity.get())
@@ -719,10 +766,27 @@ class FilmicEffectsProcessor:
             current_scroll_pos = self.original_canvas.yview()
             
             # Use full image (720x1600)
-            original_full = self.preview_image
+            original_full = self.preview_image.copy()
             
             # Apply effects to full image
             processed_full = self.apply_filmic_effects(self.preview_image)
+            
+            # Show CA center on processed image only if checkbox is enabled
+            if self.show_ca_center.get():
+                # Draw a green circle at the detected center point on processed image
+                from PIL import ImageDraw
+                processed_with_center = processed_full.copy()
+                draw = ImageDraw.Draw(processed_with_center)
+                center_x, center_y = self.effect_center
+                radius = 8
+                # Draw outer circle (border)
+                draw.ellipse([center_x-radius-1, center_y-radius-1, center_x+radius+1, center_y+radius+1], 
+                           fill=None, outline=(0, 0, 0), width=2)
+                # Draw inner circle (green)
+                draw.ellipse([center_x-radius, center_y-radius, center_x+radius, center_y+radius], 
+                           fill=(0, 255, 0), outline=None)
+                processed_full = processed_with_center
+            
             self.processed_preview = processed_full
             
             # Convert to PhotoImage for display at 1:1 scale
@@ -799,6 +863,9 @@ class FilmicEffectsProcessor:
                     if image.size != (720, 1600):
                         print(f"Skipping {image_path.name} - wrong dimensions: {image.size}")
                         continue
+                    
+                    # Detect face center for this specific image
+                    self.effect_center = self.detect_face_center(image)
                     
                     # Apply effects
                     processed = self.apply_filmic_effects(image)
