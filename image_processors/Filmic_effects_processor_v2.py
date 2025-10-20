@@ -646,10 +646,10 @@ class FilmicEffectsProcessor:
         distance = np.sqrt((x - center_x)**2 + (y - center_y)**2)
         
         # Create aberration factor based on distance
-        # No effect within radius 300, full effect at radius 800+
+        # No effect within radius 250, full effect at radius 800+
         aberration_factor = np.zeros_like(distance)
-        mask = distance > 300
-        aberration_factor[mask] = np.minimum((distance[mask] - 300) / (800 - 300), 1.0)
+        mask = distance > 250
+        aberration_factor[mask] = np.minimum((distance[mask] - 250) / (800 - 250), 1.0)
 
         # Calculate shift amount (30 pixels at full strength)
         shift_amount = aberration_factor * strength * 30.0
