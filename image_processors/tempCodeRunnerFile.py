@@ -1,0 +1,1 @@
+center_x, center_y = 360, 360 # deliberately higher in image
