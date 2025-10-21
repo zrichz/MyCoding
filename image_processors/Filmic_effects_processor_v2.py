@@ -87,6 +87,7 @@ class FilmicEffectsProcessor:
         # Default center point (fallback)
         self.effect_center = (360, 360)
         self.face_detected = False  # Track if face was detected for current image
+        self.face_landmarks = None  # Store face landmarks for outline drawing
         
         self.setup_ui()
         
@@ -241,8 +242,8 @@ class FilmicEffectsProcessor:
         ttk.Button(aberration_frame, text="Reset", width=8,
                   command=lambda: self.reset_slider(self.chromatic_aberration, self.aberration_label, self.DEFAULT_CHROMATIC)).pack(side=tk.LEFT, padx=(5, 0))
         
-        # Show CA center checkbox
-        ca_center_check = tk.Checkbutton(aberration_frame, text="Show CA Centre", 
+        # Show face outline checkbox
+        ca_center_check = tk.Checkbutton(aberration_frame, text="Show Face Outline", 
                                         variable=self.show_ca_center, command=self.update_preview,
                                         bg='#808080', fg='black', selectcolor='#606060',
                                         activebackground='#808080', activeforeground='black',
@@ -421,7 +422,7 @@ class FilmicEffectsProcessor:
         self.update_preview()
         
     def detect_face_center(self, image):
-        """Detect face center using MediaPipe face detection"""
+        """Detect face center using MediaPipe face detection with fallback retry"""
         if not FACE_DETECTION_AVAILABLE or self.face_mesh is None:
             return (360, 360)  # Default center
             
@@ -442,13 +443,54 @@ class FilmicEffectsProcessor:
                     # Fallback for grayscale without cv2
                     rgb_image = np.stack([image_np, image_np, image_np], axis=-1)
             
-            # Process the image for face detection
+            # First attempt: Standard confidence (0.5)
             results = self.face_mesh.process(rgb_image)
+            confidence_used = 0.5
+            
+            # If no face found, retry with lower confidence settings
+            if not (results.multi_face_landmarks and len(results.multi_face_landmarks) > 0):
+                print("No face detected with standard confidence, trying fallback detection...")
+                
+                # Create new face mesh with lower confidence for fallback
+                try:
+                    mp_face_mesh = mp.solutions.face_mesh
+                    fallback_face_mesh = mp_face_mesh.FaceMesh(
+                        static_image_mode=True,
+                        max_num_faces=1,
+                        refine_landmarks=True,
+                        min_detection_confidence=0.3,  # Lower confidence
+                        min_tracking_confidence=0.3    # Lower confidence
+                    )
+                    
+                    # Retry with lower confidence
+                    results = fallback_face_mesh.process(rgb_image)
+                    confidence_used = 0.3
+                    
+                    # If still no face, try even lower confidence
+                    if not (results.multi_face_landmarks and len(results.multi_face_landmarks) > 0):
+                        print("Still no face, trying very low confidence detection...")
+                        
+                        very_low_face_mesh = mp_face_mesh.FaceMesh(
+                            static_image_mode=True,
+                            max_num_faces=1,
+                            refine_landmarks=True,
+                            min_detection_confidence=0.1,  # Very low confidence
+                            min_tracking_confidence=0.1    # Very low confidence
+                        )
+                        
+                        results = very_low_face_mesh.process(rgb_image)
+                        confidence_used = 0.1
+                        
+                except Exception as fallback_error:
+                    print(f"Fallback face detection failed: {fallback_error}")
             
             if results.multi_face_landmarks and len(results.multi_face_landmarks) > 0:
                 # Get the first (main) face
                 face_landmarks = results.multi_face_landmarks[0]
                 landmarks = face_landmarks.landmark
+                
+                # Store face landmarks for outline drawing
+                self.face_landmarks = face_landmarks
                 
                 h, w = rgb_image.shape[:2]
                 
@@ -471,15 +513,18 @@ class FilmicEffectsProcessor:
                 center_x = eye_center_x  # Horizontally centered between pupils
                 center_y = (eye_center_y + mouth_center_y) // 2  # Vertically centered between eyes and mouth
                 
-                print(f"Face detected! Center: ({center_x}, {center_y})")
+                print(f"Face detected! (confidence: {confidence_used}) Center: ({center_x}, {center_y})")
                 self.face_detected = True
                 return (center_x, center_y)
+            else:
+                print("No face detected even with very low confidence threshold")
                 
         except Exception as e:
             print(f"Face detection error: {e}")
             
-        # Return default center if face detection fails
+        # Return default center if all face detection attempts fail
         self.face_detected = False
+        self.face_landmarks = None
         return (360, 360)
         
     def select_directory(self):
@@ -771,21 +816,27 @@ class FilmicEffectsProcessor:
             # Apply effects to full image
             processed_full = self.apply_filmic_effects(self.preview_image)
             
-            # Show CA center on processed image only if checkbox is enabled
+            # Show face outline on processed image only if checkbox is enabled
             if self.show_ca_center.get():
-                # Draw a green circle at the detected center point on processed image
                 from PIL import ImageDraw
-                processed_with_center = processed_full.copy()
-                draw = ImageDraw.Draw(processed_with_center)
-                center_x, center_y = self.effect_center
-                radius = 8
-                # Draw outer circle (border)
-                draw.ellipse([center_x-radius-1, center_y-radius-1, center_x+radius+1, center_y+radius+1], 
-                           fill=None, outline=(0, 0, 0), width=2)
-                # Draw inner circle (green)
-                draw.ellipse([center_x-radius, center_y-radius, center_x+radius, center_y+radius], 
-                           fill=(0, 255, 0), outline=None)
-                processed_full = processed_with_center
+                processed_with_face = processed_full.copy()
+                draw = ImageDraw.Draw(processed_with_face)
+                
+                # Draw face outline if face was detected
+                if hasattr(self, 'face_landmarks') and self.face_landmarks is not None:
+                    self.draw_face_outline(draw, processed_with_face.size)
+                else:
+                    # Fallback: draw center point if no face landmarks available
+                    center_x, center_y = self.effect_center
+                    radius = 8
+                    # Draw outer circle (border)
+                    draw.ellipse([center_x-radius-1, center_y-radius-1, center_x+radius+1, center_y+radius+1], 
+                               fill=None, outline=(0, 0, 0), width=2)
+                    # Draw inner circle (red)
+                    draw.ellipse([center_x-radius, center_y-radius, center_x+radius, center_y+radius], 
+                               fill=(255, 0, 0), outline=None)
+                
+                processed_full = processed_with_face
             
             self.processed_preview = processed_full
             
@@ -1086,6 +1137,92 @@ class FilmicEffectsProcessor:
         except Exception as e:
             print(f"Error applying auto contrast stretch: {e}")
             return image
+        
+    def draw_face_outline(self, draw, image_size):
+        """Draw red outline of detected face using MediaPipe landmarks"""
+        if not self.face_landmarks:
+            return
+            
+        landmarks = self.face_landmarks.landmark
+        h, w = image_size[1], image_size[0]  # PIL size is (width, height)
+        
+        # Define face contour landmark indices (MediaPipe face mesh contour points)
+        # Face oval contour points
+        face_oval = [
+            10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288,
+            397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136,
+            172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109, 10
+        ]
+        
+        # Convert landmarks to pixel coordinates and draw face outline
+        outline_points = []
+        for idx in face_oval:
+            if idx < len(landmarks):
+                x = int(landmarks[idx].x * w)
+                y = int(landmarks[idx].y * h)
+                outline_points.append((x, y))
+        
+        # Draw face outline in red
+        if len(outline_points) > 2:
+            # Draw as connected lines to form the face outline
+            for i in range(len(outline_points)):
+                start_point = outline_points[i]
+                end_point = outline_points[(i + 1) % len(outline_points)]
+                draw.line([start_point, end_point], fill=(255, 0, 0), width=2)
+        
+        # Also draw key facial features for better visibility
+        # Eyes
+        left_eye_contour = [33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246]
+        right_eye_contour = [362, 382, 381, 380, 374, 373, 390, 249, 263, 466, 388, 387, 386, 385, 384, 398]
+        
+        # Draw left eye
+        eye_points = []
+        for idx in left_eye_contour:
+            if idx < len(landmarks):
+                x = int(landmarks[idx].x * w)
+                y = int(landmarks[idx].y * h)
+                eye_points.append((x, y))
+        
+        if len(eye_points) > 2:
+            for i in range(len(eye_points)):
+                start_point = eye_points[i]
+                end_point = eye_points[(i + 1) % len(eye_points)]
+                draw.line([start_point, end_point], fill=(255, 0, 0), width=1)
+        
+        # Draw right eye
+        eye_points = []
+        for idx in right_eye_contour:
+            if idx < len(landmarks):
+                x = int(landmarks[idx].x * w)
+                y = int(landmarks[idx].y * h)
+                eye_points.append((x, y))
+        
+        if len(eye_points) > 2:
+            for i in range(len(eye_points)):
+                start_point = eye_points[i]
+                end_point = eye_points[(i + 1) % len(eye_points)]
+                draw.line([start_point, end_point], fill=(255, 0, 0), width=1)
+        
+        # Mouth contour
+        mouth_contour = [61, 84, 17, 314, 405, 320, 307, 375, 321, 308, 324, 318]
+        mouth_points = []
+        for idx in mouth_contour:
+            if idx < len(landmarks):
+                x = int(landmarks[idx].x * w)
+                y = int(landmarks[idx].y * h)
+                mouth_points.append((x, y))
+        
+        if len(mouth_points) > 2:
+            for i in range(len(mouth_points)):
+                start_point = mouth_points[i]
+                end_point = mouth_points[(i + 1) % len(mouth_points)]
+                draw.line([start_point, end_point], fill=(255, 0, 0), width=1)
+        
+        # Draw center point for reference
+        center_x, center_y = self.effect_center
+        radius = 4
+        draw.ellipse([center_x-radius, center_y-radius, center_x+radius, center_y+radius], 
+                    fill=(255, 0, 0), outline=None)
         
 def main():
     # Check if required packages are available
