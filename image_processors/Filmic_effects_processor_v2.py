@@ -433,9 +433,13 @@ class FilmicEffectsProcessor:
                 image_np = image.copy()
             
             # Ensure RGB format
-            if len(image_np.shape) == 3 and image_np.shape[2] == 3:
+            if len(image_np.shape) == 3 and image_np.shape[2] == 4:
+                # Convert RGBA to RGB by removing alpha channel
+                rgb_image = image_np[:, :, :3]
+            elif len(image_np.shape) == 3 and image_np.shape[2] == 3:
                 rgb_image = image_np
             else:
+                # Handle grayscale images
                 if FACE_DETECTION_AVAILABLE:
                     rgb_image = cv2.cvtColor(image_np, cv2.COLOR_GRAY2RGB)
                 else:
