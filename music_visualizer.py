@@ -61,7 +61,7 @@ def create_spectrogram_frame(S_db, times, current_time, time_window, size, color
     fig, ax = plt.subplots(figsize=(size/100, size/100), dpi=100)
     fig.patch.set_facecolor('black')
     
-    # Time window slice
+    # Time window slice - maintain constant window size
     start_time = current_time
     end_time = current_time + time_window
     start_idx = np.argmin(np.abs(times - start_time))
@@ -69,6 +69,14 @@ def create_spectrogram_frame(S_db, times, current_time, time_window, size, color
     
     if end_idx <= start_idx:
         end_idx = min(start_idx + 6, len(times))
+    
+    # Calculate desired window width in frames
+    desired_width = end_idx - start_idx
+    
+    # If we're near the end and don't have enough frames, shift the window backward
+    if end_idx >= len(times):
+        end_idx = len(times)
+        start_idx = max(0, end_idx - desired_width)
     
     time_slice = slice(start_idx, end_idx)
     
@@ -113,6 +121,13 @@ def create_spectrogram_frame(S_db, times, current_time, time_window, size, color
     frame = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR)
     buf.close()
     plt.close(fig)
+    
+    # Apply polar transformation: map width (time) to 0 to 2π (Tau)
+    # Width becomes angular coordinate (0 to 2π), height becomes radial coordinate
+    center = (size // 2, size // 2)
+    max_radius = size // 2
+    frame = cv2.warpPolar(frame, (size, size), center, max_radius, 
+                          cv2.WARP_POLAR_LINEAR + cv2.WARP_INVERSE_MAP)
     
     return frame
 
