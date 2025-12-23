@@ -7,13 +7,67 @@ Outputs 512x512 60fps MP4 videos using Gradio interface.
 import gradio as gr
 import numpy as np
 import librosa
-import matplotlib.pyplot as plt
 import cv2
 import os
 from pathlib import Path
 from datetime import datetime
 import PIL.Image
-import io
+
+# Custom colormap implementations (replacing matplotlib)
+def apply_colormap(data, colormap_name):
+    """Apply colormap to normalized 0-255 uint8 data"""
+    # OpenCV built-in colormaps
+    cv2_colormaps = {
+        'viridis': cv2.COLORMAP_VIRIDIS,
+        'plasma': cv2.COLORMAP_PLASMA,
+        'inferno': cv2.COLORMAP_INFERNO,
+        'magma': cv2.COLORMAP_MAGMA,
+    }
+    
+    if colormap_name in cv2_colormaps:
+        # Apply OpenCV colormap (returns BGR)
+        colored = cv2.applyColorMap(data, cv2_colormaps[colormap_name])
+        return colored
+    else:
+        # Fallback to viridis
+        colored = cv2.applyColorMap(data, cv2.COLORMAP_VIRIDIS)
+        return colored
+
+def precompute_colormap_lut(colormap_name):
+    """Pre-compute colormap lookup table for faster application"""
+    # Create a 256x1 gradient
+    gradient = np.arange(256, dtype=np.uint8).reshape(256, 1)
+    # Apply colormap once to create LUT
+    lut = apply_colormap(gradient, colormap_name)
+    lut = lut.reshape(256, 3)
+    # Ensure lowest value is solid black for maximum contrast
+    lut[0] = [0, 0, 0]
+    return lut
+
+def create_circular_mask(size):
+    """Create a circular mask for the given size"""
+    center = (size // 2, size // 2)
+    radius = size // 2
+    Y, X = np.ogrid[:size, :size]
+    dist_from_center = np.sqrt((X - center[0])**2 + (Y - center[1])**2)
+    mask = dist_from_center <= radius
+    return mask
+
+def apply_hemisphere_symmetry(frame_hemisphere, size):
+    """Take a PI (180 degree) hemisphere and mirror it vertically for top-bottom symmetry"""
+    # frame_hemisphere is the transformed 0 to PI section (top half)
+    half_size = size // 2
+    
+    # Create full frame
+    full_frame = np.zeros((size, size, 3), dtype=np.uint8)
+    
+    # Top hemisphere (original)
+    full_frame[0:half_size, :] = frame_hemisphere[0:half_size, :]
+    
+    # Bottom hemisphere (vertical flip of top)
+    full_frame[half_size:size, :] = np.flipud(frame_hemisphere[0:half_size, :])
+    
+    return full_frame
 
 def analyze_audio(audio_file, n_mels=32):
     """Analyze audio file and generate spectrogram preview"""
@@ -37,110 +91,130 @@ def analyze_audio(audio_file, n_mels=32):
     transients = librosa.frames_to_time(onset_frames, sr=sr, hop_length=hop_length)
     times = librosa.times_like(S_db, sr=sr, hop_length=hop_length)
     
-    # Create preview plot (smaller for 1080p layout)
-    fig, ax = plt.subplots(figsize=(8, 3))
-    fig.patch.set_facecolor('white')
-    librosa.display.specshow(S_db, x_axis='time', y_axis='hz', sr=sr, hop_length=512, ax=ax, cmap='viridis')
+    # Extract 5 seconds from the middle of the audio
+    preview_duration = min(5.0, duration)  # Max 5 seconds
+    middle_time = duration / 2.0
+    start_time = max(0, middle_time - preview_duration / 2.0)
+    end_time = min(duration, start_time + preview_duration)
     
-    # Mark transients
-    for t in transients:
-        ax.axvline(x=t, color='red', alpha=0.7, linewidth=0.8)
+    # Find frame indices for the time window
+    start_idx = np.argmin(np.abs(times - start_time))
+    end_idx = np.argmin(np.abs(times - end_time))
     
-    ax.set_xticks([])
-    ax.set_yticks([])
-    fig.tight_layout()
+    # Slice spectrogram to show only middle 5 seconds
+    S_db_preview = S_db[:, start_idx:end_idx]
+    
+    # Create preview image using CV2 (no matplotlib)
+    spec_normalized = np.clip((S_db_preview + 80) / 80 * 255, 0, 255).astype(np.uint8)
+    spec_colored = apply_colormap(spec_normalized, 'viridis')
+    spec_colored = np.flipud(spec_colored)  # Flip for correct orientation
+    
+    # Resize for preview (800x300)
+    preview_img = cv2.resize(spec_colored, (800, 300), interpolation=cv2.INTER_NEAREST)
+    
+    # Draw transient markers as red vertical lines (only within preview window)
+    preview_transients = [t for t in transients if start_time <= t <= end_time]
+    time_per_pixel = (end_time - start_time) / preview_img.shape[1]
+    for t in preview_transients:
+        x_pos = int((t - start_time) / time_per_pixel)
+        if 0 <= x_pos < preview_img.shape[1]:
+            cv2.line(preview_img, (x_pos, 0), (x_pos, preview_img.shape[0]), (0, 0, 255), 1)
+    
+    # Convert BGR to RGB for Gradio display
+    preview_img = cv2.cvtColor(preview_img, cv2.COLOR_BGR2RGB)
     
     # Analysis info
     info = f"""Duration: {duration:.2f}s | Sample Rate: {sr} Hz | Transients: {len(transients)}
-Frequency bins: {len(S)} | Time frames: {len(times)}"""
+Frequency bins: {len(S)} | Time frames: {len(times)} | Preview: {start_time:.1f}s - {end_time:.1f}s"""
     
-    return fig, info
+    return preview_img, info
 
-def create_spectrogram_frame(S_db, times, current_time, time_window, size, colormap, interpolation, y, sr):
-    """Create single video frame with waveform overlay"""
-    fig, ax = plt.subplots(figsize=(size/100, size/100), dpi=100)
-    fig.patch.set_facecolor('black')
-    
+def create_spectrogram_frame(S_db, times, current_time, time_window, size, colormap_lut, y, sr, cache, show_waveform):
+    """Create single video frame with optional waveform overlay - optimized version"""
     # Time window slice - maintain constant window size
     start_time = current_time
     end_time = current_time + time_window
-    start_idx = np.argmin(np.abs(times - start_time))
-    end_idx = np.argmin(np.abs(times - end_time))
+    start_idx = np.searchsorted(times, start_time)
+    end_idx = np.searchsorted(times, end_time)
     
     if end_idx <= start_idx:
         end_idx = min(start_idx + 6, len(times))
     
     # Calculate desired window width in frames
-    desired_width = end_idx - start_idx
+    desired_width = cache['desired_width']
     
     # If we're near the end and don't have enough frames, shift the window backward
     if end_idx >= len(times):
         end_idx = len(times)
         start_idx = max(0, end_idx - desired_width)
     
-    time_slice = slice(start_idx, end_idx)
+    # Create spectrogram using direct array to image conversion
+    spec_slice = S_db[:, start_idx:end_idx]
     
-    # Display spectrogram with no interpolation
-    ax.imshow(S_db[:, time_slice], aspect='auto', origin='lower', 
-              cmap=colormap, vmax=0, vmin=-80, interpolation='nearest',
-              extent=[0, 1, 0, 1])
+    # Normalize to 0-255 range (vectorized)
+    spec_normalized = np.clip((spec_slice + 80) * 3.1875, 0, 255).astype(np.uint8)
     
-    # Overlay waveform for the same time slice
-    start_sample = int(start_time * sr)
-    end_sample = int(end_time * sr)
-    waveform_slice = y[start_sample:end_sample]
+    # Apply colormap using pre-computed LUT (much faster)
+    spec_colored = colormap_lut[spec_normalized]
     
-    if len(waveform_slice) > 0:
-        # Normalize waveform to fit in bottom portion of plot
-        waveform_normalized = waveform_slice / (np.max(np.abs(waveform_slice)) + 1e-8)
-        # Scale to bottom 15% of plot
-        waveform_y = 0.075 + waveform_normalized * 0.075
-        waveform_x = np.linspace(0, 1, len(waveform_slice))
-        ax.plot(waveform_x, waveform_y, color='white', linewidth=0.5, alpha=0.8)
+    # Flip vertically
+    spec_colored = np.flipud(spec_colored)
     
-    ax.set_xlim(0, 1)
-    ax.set_ylim(0, 1)
-    ax.axis('off')
-    fig.tight_layout(pad=0)
+    # Resize to target size
+    frame = cv2.resize(spec_colored, (size, size), interpolation=cv2.INTER_NEAREST)
     
-    # Convert to image with no filtering
-    fig.canvas.draw()
-    buf = io.BytesIO()
-    fig.savefig(buf, format='png', dpi=100, bbox_inches='tight', 
-                facecolor='black', edgecolor='none')
-    buf.seek(0)
+    # Apply polar transformation with PI range (0 to 180 degrees)
+    # This creates a hemisphere (top half) that we'll mirror vertically
+    center = cache['center']
+    max_radius = cache['max_radius']
     
-    pil_img = PIL.Image.open(buf)
-    # Use NEAREST neighbor only - no bilinear filtering
-    pil_img = pil_img.resize((size, size), PIL.Image.Resampling.NEAREST)
-    frame_rgb = np.array(pil_img)
-    
-    if len(frame_rgb.shape) == 3 and frame_rgb.shape[2] == 4:
-        frame_rgb = frame_rgb[:, :, :3]
-    
-    frame = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR)
-    buf.close()
-    plt.close(fig)
-    
-    # Apply polar transformation: map width (time) to 0 to 2π (Tau)
-    # Width becomes angular coordinate (0 to 2π), height becomes radial coordinate
-    center = (size // 2, size // 2)
-    max_radius = size // 2
+    # Use WARP_FILL_OUTLIERS to handle the PI mapping properly
     frame = cv2.warpPolar(frame, (size, size), center, max_radius, 
                           cv2.WARP_POLAR_LINEAR + cv2.WARP_INVERSE_MAP)
     
+    # Apply top-bottom symmetry by mirroring the hemisphere
+    frame = apply_hemisphere_symmetry(frame, size)
+    
+    # Overlay waveform AFTER polar transform (if enabled)
+    if show_waveform:
+        start_sample = int(start_time * sr)
+        end_sample = int(end_time * sr)
+        waveform_slice = y[start_sample:end_sample]
+        
+        if len(waveform_slice) > 500:
+            # Downsample waveform for faster drawing (take every Nth sample)
+            step = len(waveform_slice) // 500
+            waveform_slice = waveform_slice[::step]
+        
+        if len(waveform_slice) > 0:
+            # Normalize waveform
+            max_val = np.max(np.abs(waveform_slice))
+            if max_val > 1e-8:
+                waveform_normalized = waveform_slice / max_val
+            else:
+                waveform_normalized = waveform_slice
+            
+            # Vectorized point generation
+            center_y = cache['center_y']
+            waveform_height = cache['waveform_height']  # Now 25% = half screen peak-to-peak
+            num_samples = len(waveform_slice)
+            
+            x_coords = (np.arange(num_samples) * size / num_samples).astype(np.int32)
+            y_coords = (center_y + waveform_normalized * waveform_height).astype(np.int32)
+            
+            # Create points array for polylines (much faster than individual line calls)
+            points = np.column_stack((x_coords, y_coords)).reshape((-1, 1, 2))
+            
+            # Draw waveform as polyline
+            cv2.polylines(frame, [points], False, (255, 255, 255), 1, cv2.LINE_AA)
+    
+    # Apply circular mask to remove artifacts outside the circle
+    mask = cache['circular_mask']
+    frame[~mask] = 0  # Set everything outside the circle to black
+    
     return frame
 
-def normalize_frame(frame):
-    """Apply contrast normalization"""
-    lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
-    l, a, b = cv2.split(lab)
-    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
-    l = clahe.apply(l)
-    lab = cv2.merge([l, a, b])
-    return cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
-
-def generate_video(audio_file, size, fps, n_mels, time_window, colormap, interpolation, progress=gr.Progress()):
+def generate_video(audio_file, size, fps, n_mels, time_window, colormap, interpolation, show_waveform, progress=gr.Progress()):
     """Generate video from audio file"""
     if audio_file is None:
         return None, "Please upload an audio file first"
@@ -151,7 +225,7 @@ def generate_video(audio_file, size, fps, n_mels, time_window, colormap, interpo
     y, sr = librosa.load(audio_file, sr=None)
     duration = len(y) / sr
     
-    progress(0.1, desc="Computing spectrogram...")
+    progress(0.05, desc="Computing spectrogram...")
     hop_length = int(sr / 30)
     S = librosa.feature.melspectrogram(
         y=y, sr=sr, n_fft=2048, hop_length=hop_length, 
@@ -159,6 +233,21 @@ def generate_video(audio_file, size, fps, n_mels, time_window, colormap, interpo
     )
     S_db = librosa.amplitude_to_db(S, ref=np.max)
     times = librosa.times_like(S_db, sr=sr, hop_length=hop_length)
+    
+    # Pre-compute colormap LUT for faster application
+    colormap_lut = precompute_colormap_lut(colormap)
+    
+    # Pre-calculate values to cache
+    initial_window_samples = int(time_window * len(times) / duration)
+    circular_mask = create_circular_mask(size)
+    cache = {
+        'desired_width': initial_window_samples,
+        'center': (size // 2, size // 2),
+        'max_radius': size // 2,
+        'center_y': size // 2,
+        'waveform_height': int(size * 0.25),  # 25% for half screen peak-to-peak
+        'circular_mask': circular_mask
+    }
     
     # Setup video (temporary file without audio)
     base_name = Path(audio_file).stem
@@ -171,20 +260,18 @@ def generate_video(audio_file, size, fps, n_mels, time_window, colormap, interpo
     
     total_frames = int(duration * fps)
     
-    progress(0.2, desc="Generating frames...")
+    progress(0.1, desc="Generating frames...")
     
     # Generate frames
     for frame_num in range(total_frames):
         current_time = (frame_num / total_frames) * duration
         
         frame = create_spectrogram_frame(S_db, times, current_time, time_window, 
-                                        size, colormap, interpolation, y, sr)
-        frame = normalize_frame(frame)
+                                        size, colormap_lut, y, sr, cache, show_waveform)
         out.write(frame)
         
         if frame_num % 30 == 0:
-            progress((0.2 + 0.75 * frame_num / total_frames), 
-                    desc=f"Frame {frame_num}/{total_frames}")
+            progress(0.1 + 0.85 * frame_num / total_frames)
     
     out.release()
     
@@ -227,9 +314,12 @@ with gr.Blocks(title="Music Visualizer") as app:
                                           value="plasma", label="Colors")
                 with gr.Column():
                     fps = gr.Dropdown([24, 30, 60], value=60, label="FPS")
-                    time_window = gr.Dropdown([0.2, 0.4, 0.8, 1.6], value=0.4, label="Window (s)")
+                    time_window = gr.Dropdown([0.2, 0.4, 0.8, 1.6], value=0.8, label="Window (s)")
                     interpolation = gr.Dropdown(["nearest", "bilinear"], 
                                               value="nearest", label="Interp")
+            
+            with gr.Row():
+                show_waveform = gr.Checkbox(label="Show Waveform Overlay", value=True)
             
             with gr.Row():
                 analyze_btn = gr.Button("📊 Analyze", variant="secondary")
@@ -238,7 +328,7 @@ with gr.Blocks(title="Music Visualizer") as app:
             analysis_info = gr.Textbox(label="Analysis Info", lines=2)
         
         with gr.Column(scale=3):
-            preview_plot = gr.Plot(label="Spectrogram Preview")
+            preview_plot = gr.Image(label="Spectrogram Preview", type="numpy")
             video_output = gr.Video(label="Generated Video", height=300)
             status = gr.Textbox(label="Status", lines=1, show_label=False)
     
@@ -251,7 +341,7 @@ with gr.Blocks(title="Music Visualizer") as app:
     
     generate_btn.click(
         fn=generate_video,
-        inputs=[audio_input, size, fps, n_mels, time_window, colormap, interpolation],
+        inputs=[audio_input, size, fps, n_mels, time_window, colormap, interpolation, show_waveform],
         outputs=[video_output, status]
     )
 
