@@ -160,23 +160,7 @@ def create_interface():
     """Create the Gradio interface"""
     
     with gr.Blocks(
-        title="Slitscanner Video Processor",
-        theme=gr.themes.Soft(),
-        css="""
-        .gradio-container {
-            max-width: 1200px;
-            margin: auto;
-        }
-        .main-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .status-box {
-            padding: 15px;
-            border-radius: 8px;
-            margin: 10px 0;
-        }
-        """
+        title="Slitscanner Video Processor"
     ) as interface:
         
         # Header
@@ -249,8 +233,7 @@ def create_interface():
                 image_output = gr.Image(
                     label="Slitscanned Result",
                     type="pil",
-                    height=400,
-                    show_download_button=True
+                    height=400
                 )
                 
                 # Download section
@@ -305,7 +288,23 @@ def main():
             share=False,
             show_error=True,
             quiet=False,
-            inbrowser=True  # Automatically open browser
+            inbrowser=True,  # Automatically open browser
+            theme=gr.themes.Soft(),
+            css="""
+            .gradio-container {
+                max-width: 1200px;
+                margin: auto;
+            }
+            .main-header {
+                text-align: center;
+                margin-bottom: 30px;
+            }
+            .status-box {
+                padding: 15px;
+                border-radius: 8px;
+                margin: 10px 0;
+            }
+            """
         )
     else:
         print("🌐 Letting Gradio find an available port automatically")
@@ -314,7 +313,23 @@ def main():
             share=False,
             show_error=True,
             quiet=False,
-            inbrowser=True  # Automatically open browser
+            inbrowser=True,  # Automatically open browser
+            theme=gr.themes.Soft(),
+            css="""
+            .gradio-container {
+                max-width: 1200px;
+                margin: auto;
+            }
+            .main-header {
+                text-align: center;
+                margin-bottom: 30px;
+            }
+            .status-box {
+                padding: 15px;
+                border-radius: 8px;
+                margin: 10px 0;
+            }
+            """
         )
 
 
