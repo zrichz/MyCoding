@@ -33,7 +33,7 @@ def find_available_port(start_port=7860, max_attempts=10):
     return None
 
 
-def process_video_to_voxel_cube(video_file, frame_step, output_frames, output_fps, downsample_factor, progress=gr.Progress()):
+def process_video_to_voxel_cube(video_file, frame_step, output_frames, output_fps, downsample_factor, rotate_x, rotate_y):
     """
     Process video into a voxel cube and create rotating slice video output
     
@@ -43,21 +43,26 @@ def process_video_to_voxel_cube(video_file, frame_step, output_frames, output_fp
         output_frames: Number of output video frames (rotation steps)
         output_fps: FPS for output video
         downsample_factor: Resolution reduction (1=full, 2=half, 4=quarter)
-        progress: Gradio progress tracker
+        rotate_x: Rotate around X-axis (top-bottom)
+        rotate_y: Rotate around Y-axis (left-right)
     
     Returns:
         tuple: (output_video_path, status_message, preview_image)
     """
     if video_file is None:
-        return None, "❌ Please upload a video file", None
+        yield None, "❌ Please upload a video file", None
+        return
     
     try:
-        progress(0, desc="Opening video...")
+        # Yield initial status
+        yield None, "📂 Opening video file...", None
+        
         # Open video file
         cap = cv2.VideoCapture(video_file)
         
         if not cap.isOpened():
-            return None, "❌ Could not open video file. Please check the format.", None
+            yield None, "❌ Could not open video file. Please check the format.", None
+            return
         
         # Get video properties
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -73,14 +78,18 @@ def process_video_to_voxel_cube(video_file, frame_step, output_frames, output_fp
         n_frames_to_use = total_frames // frame_step
         
         if n_frames_to_use < 3:
-            return None, f"Not enough frames. With every {frame_step} frames, only {n_frames_to_use} frames available. Need at least 3.", None
+            yield None, f"Not enough frames. With every {frame_step} frames, only {n_frames_to_use} frames available. Need at least 3.", None
+            return
+            return
         
         # Read frames into voxel cube
-        progress(0.1, desc=f"Building voxel cube ({n_frames_to_use} frames)...")
         voxel_cube = np.zeros((frame_height, frame_width, n_frames_to_use, 3), dtype=np.uint8)
         
         frame_count = 0
         cube_idx = 0
+        
+        # Initial status yield
+        yield None, f"Building voxel cube: Loading {n_frames_to_use} frames...", None
         
         while cap.isOpened() and cube_idx < n_frames_to_use:
             ret, frame = cap.read()
@@ -93,15 +102,19 @@ def process_video_to_voxel_cube(video_file, frame_step, output_frames, output_fp
                     frame = cv2.resize(frame, (frame_width, frame_height), interpolation=cv2.INTER_AREA)
                 voxel_cube[:, :, cube_idx, :] = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 cube_idx += 1
-                # Update progress during cube building
-                progress(0.1 + 0.3 * (cube_idx / n_frames_to_use), desc=f"Loading frames... {cube_idx}/{n_frames_to_use}")
+                # Yield progress every 50 frames
+                if cube_idx % 50 == 0:
+                    progress_msg = f"Building voxel cube: {cube_idx}/{n_frames_to_use} frames loaded ({100*cube_idx//n_frames_to_use}%)"
+                    yield None, progress_msg, None
             
             frame_count += 1
         
         cap.release()
         
         if cube_idx == 0:
-            return None, "No frames were loaded into voxel cube.", None
+            yield None, "No frames were loaded into voxel cube.", None
+            return
+            return
         
         # Update actual cube size if fewer frames loaded
         if cube_idx < n_frames_to_use:
@@ -111,7 +124,9 @@ def process_video_to_voxel_cube(video_file, frame_step, output_frames, output_fp
         status_msg = f"Voxel cube built: {frame_height}x{frame_width}x{n_frames_to_use}\n"
         status_msg += f"Creating {output_frames} output frames with rotation...\n"
         
-        progress(0.4, desc="Initializing video writer...")
+        # Yield status before starting rendering
+        yield None, status_msg + "Starting video rendering...", None
+        
         # Create output video
         temp_output = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
         output_path = temp_output.name
@@ -130,9 +145,6 @@ def process_video_to_voxel_cube(video_file, frame_step, output_frames, output_fp
         
         # Generate output frames by rotating the slice plane
         for frame_idx in range(output_frames):
-            # Update progress
-            progress(0.4 + 0.6 * (frame_idx / output_frames), desc=f"Generating frame {frame_idx+1}/{output_frames}...")
-            
             # Calculate rotation angle (0 to 360 degrees)
             angle = (frame_idx / output_frames) * 2 * np.pi
             
@@ -143,68 +155,140 @@ def process_video_to_voxel_cube(video_file, frame_step, output_frames, output_fp
             # Translate to center-origin coordinates
             x_rel = x_coords - center_x
             y_rel = y_coords - center_y
+            z_rel = np.zeros_like(x_rel)  # Start with z=0 (center plane)
             
-            # Rotate around Z-axis (vectorized)
+            # Apply rotations based on selected axes
             cos_angle = np.cos(angle)
             sin_angle = np.sin(angle)
-            x_rot = x_rel * cos_angle
-            z_rot = x_rel * sin_angle
+            
+            # Store intermediate coordinates
+            x_temp = x_rel.copy()
+            y_temp = y_rel.copy()
+            z_temp = z_rel.copy()
+            
+            # Rotate around X-axis (top-bottom) - rotates Y and Z
+            if rotate_x:
+                y_new = y_temp * cos_angle - z_temp * sin_angle
+                z_new = y_temp * sin_angle + z_temp * cos_angle
+                y_temp = y_new
+                z_temp = z_new
+            
+            # Rotate around Y-axis (left-right) - rotates X and Z
+            if rotate_y:
+                x_new = x_temp * cos_angle + z_temp * sin_angle
+                z_new = -x_temp * sin_angle + z_temp * cos_angle
+                x_temp = x_new
+                z_temp = z_new
             
             # Translate back
-            x_voxel = x_rot + center_x
-            z_voxel = z_rot + center_z
+            x_voxel = x_temp + center_x
+            y_voxel = y_temp + center_y
+            z_voxel = z_temp + center_z
             
-            # Use modulo wrapping (tiling) for coordinates
-            x_wrapped = x_voxel % frame_width
-            z_wrapped = z_voxel % n_frames_to_use
+            # Use mirror tiling for coordinates to smooth overscan issues
+            # Mirror tiling: coordinates bounce back and forth at boundaries
+            # Instead of 0,1,2,3,0,1,2,3 we get 0,1,2,3,2,1,0,1,2,3,2,1
+            def mirror_wrap(coord, size):
+                """Apply mirror tiling to coordinates"""
+                # Normalize to [0, 2*size) range with modulo
+                coord_mod = coord % (2 * size)
+                # Mirror: if > size, reflect back
+                mirrored = np.where(coord_mod < size, coord_mod, 2 * size - coord_mod - 1)
+                # Clamp to valid range
+                return np.clip(mirrored, 0, size - 1)
+            
+            x_wrapped = mirror_wrap(x_voxel, frame_width)
+            y_wrapped = mirror_wrap(y_voxel, frame_height)
+            z_wrapped = mirror_wrap(z_voxel, n_frames_to_use)
             
             # Bilinear interpolation indices (vectorized)
-            x0 = np.floor(x_wrapped).astype(int) % frame_width
-            x1 = np.ceil(x_wrapped).astype(int) % frame_width
-            z0 = np.floor(z_wrapped).astype(int) % n_frames_to_use
-            z1 = np.ceil(z_wrapped).astype(int) % n_frames_to_use
-            y_idx = y_coords % frame_height
+            x0 = np.floor(x_wrapped).astype(int)
+            x1 = np.ceil(x_wrapped).astype(int)
+            y0 = np.floor(y_wrapped).astype(int)
+            y1 = np.ceil(y_wrapped).astype(int)
+            z0 = np.floor(z_wrapped).astype(int)
+            z1 = np.ceil(z_wrapped).astype(int)
+            
+            # Ensure indices stay within bounds (important for ceil at edges)
+            x0 = np.clip(x0, 0, frame_width - 1)
+            x1 = np.clip(x1, 0, frame_width - 1)
+            y0 = np.clip(y0, 0, frame_height - 1)
+            y1 = np.clip(y1, 0, frame_height - 1)
+            z0 = np.clip(z0, 0, n_frames_to_use - 1)
+            z1 = np.clip(z1, 0, n_frames_to_use - 1)
             
             # Interpolation weights
             wx = x_wrapped - np.floor(x_wrapped)
+            wy = y_wrapped - np.floor(y_wrapped)
             wz = z_wrapped - np.floor(z_wrapped)
             
             # Expand dimensions for broadcasting
             wx = wx[:, :, np.newaxis]
+            wy = wy[:, :, np.newaxis]
             wz = wz[:, :, np.newaxis]
             
-            # Sample all 4 corners (vectorized)
-            c00 = voxel_cube[y_idx, x0, z0, :]
-            c01 = voxel_cube[y_idx, x0, z1, :]
-            c10 = voxel_cube[y_idx, x1, z0, :]
-            c11 = voxel_cube[y_idx, x1, z1, :]
+            # Sample all 8 corners for trilinear interpolation (vectorized)
+            c000 = voxel_cube[y0, x0, z0, :]
+            c001 = voxel_cube[y0, x0, z1, :]
+            c010 = voxel_cube[y0, x1, z0, :]
+            c011 = voxel_cube[y0, x1, z1, :]
+            c100 = voxel_cube[y1, x0, z0, :]
+            c101 = voxel_cube[y1, x0, z1, :]
+            c110 = voxel_cube[y1, x1, z0, :]
+            c111 = voxel_cube[y1, x1, z1, :]
             
-            # Bilinear interpolation (vectorized)
-            c0 = c00 * (1 - wx) + c10 * wx
-            c1 = c01 * (1 - wx) + c11 * wx
+            # Trilinear interpolation (vectorized)
+            # Interpolate in x direction
+            c00 = c000 * (1 - wx) + c010 * wx
+            c01 = c001 * (1 - wx) + c011 * wx
+            c10 = c100 * (1 - wx) + c110 * wx
+            c11 = c101 * (1 - wx) + c111 * wx
+            
+            # Interpolate in y direction
+            c0 = c00 * (1 - wy) + c10 * wy
+            c1 = c01 * (1 - wy) + c11 * wy
+            
+            # Interpolate in z direction
             output_frame = (c0 * (1 - wz) + c1 * wz).astype(np.uint8)
             
             # Write frame to output video
             out.write(cv2.cvtColor(output_frame.astype(np.uint8), cv2.COLOR_RGB2BGR))
             
-            # Capture preview frame every 10 frames
+            # Capture and yield preview frame every 10 frames
             if frame_idx % 10 == 0 or frame_idx == output_frames - 1:
                 preview_frame = Image.fromarray(output_frame.astype(np.uint8))
+                # Yield intermediate result to update preview
+                progress_pct = int(100 * (frame_idx + 1) / output_frames)
+                partial_status = status_msg + f"Rendering: Frame {frame_idx+1}/{output_frames} ({progress_pct}%)"
+                yield None, partial_status, preview_frame
         
         out.release()
         
-        progress(1.0, desc="Complete!")
         status_msg += f"Video created: {output_frames} frames at {output_fps} FPS\n"
         status_msg += f"Output: {frame_width}x{frame_height}px video\n"
-        status_msg += f"Rotation: 360° around Z-axis"
         
-        return output_path, status_msg, preview_frame
+        # Build rotation axes description
+        axes_enabled = []
+        if rotate_x:
+            axes_enabled.append("top-bottom")
+        if rotate_y:
+            axes_enabled.append("left-right")
+        
+        if axes_enabled:
+            status_msg += f"Rotation: 360° around {', '.join(axes_enabled)}"
+        else:
+            status_msg += "Rotation: No axes selected (static)"
+        
+        status_msg += "\n\n✅ Processing complete!"
+        
+        # Final yield with complete video
+        yield output_path, status_msg, preview_frame
         
     except Exception as e:
-        return None, f"Processing failed: {str(e)}", None
+        yield None, f"Processing failed: {str(e)}", None
 
 
-def process_video(video_file, sampling_method, n_frames, progress=gr.Progress()):
+def process_video(video_file, sampling_method, n_frames):
     """
     Process the uploaded video and create slitscanned image
     
@@ -212,16 +296,18 @@ def process_video(video_file, sampling_method, n_frames, progress=gr.Progress())
         video_file: Uploaded video file
         sampling_method: Frame sampling method (every_frame, every_2, every_n)
         n_frames: Number for every_n sampling (3-1000)
-        progress: Gradio progress tracker
     
     Returns:
         tuple: (processed_image, status_message, None)
     """
     if video_file is None:
-        return None, "❌ Please upload a video file", None
+        yield None, "❌ Please upload a video file", None
+        return
     
     try:
-        progress(0, desc="Opening video...")
+        # Yield initial status
+        yield None, "📂 Opening video file...", None
+        
         # Open video file
         cap = cv2.VideoCapture(video_file)
         
@@ -237,7 +323,6 @@ def process_video(video_file, sampling_method, n_frames, progress=gr.Progress())
         # Calculate center column
         center_x = frame_width // 2
         
-        progress(0.1, desc="Calculating frame sampling...")
         # Determine frame step based on sampling method
         if sampling_method == "Every Frame":
             frame_step = 1
@@ -263,7 +348,6 @@ def process_video(video_file, sampling_method, n_frames, progress=gr.Progress())
         if frames_to_process == 0:
             return None, "No frames to process. Video might be too short or frame step too large.", None
         
-        progress(0.2, desc=f"Processing {frames_to_process} frames...")
         # Create output image array
         slitscanned_image = np.zeros((frame_height, frames_to_process, 3), dtype=np.uint8)
         
@@ -285,10 +369,6 @@ def process_video(video_file, sampling_method, n_frames, progress=gr.Progress())
                 # Add to slitscanned image
                 slitscanned_image[:, processed_count, :] = center_column
                 processed_count += 1
-                
-                # Update progress
-                if processed_count % 10 == 0:
-                    progress(0.2 + 0.7 * (processed_count / frames_to_process), desc=f"Processing frame {processed_count}/{frames_to_process}")
             
             frame_count += 1
         
@@ -297,14 +377,12 @@ def process_video(video_file, sampling_method, n_frames, progress=gr.Progress())
         if processed_count == 0:
             return None, "No frames were processed. Please check your video file.", None
         
-        progress(0.95, desc="Converting to image...")
         # Convert BGR to RGB
         slitscanned_image = cv2.cvtColor(slitscanned_image, cv2.COLOR_BGR2RGB)
         
         # Convert to PIL Image
         output_image = Image.fromarray(slitscanned_image)
         
-        progress(1.0, desc="Complete!")
         # Create status message
         duration = total_frames / fps if fps > 0 else 0
         status_msg = f"Success. Processed {processed_count} frames from {total_frames} total frames\n"
@@ -318,19 +396,20 @@ def process_video(video_file, sampling_method, n_frames, progress=gr.Progress())
         return None, f"Processing failed: {str(e)}", None
 
 
-def process_dispatcher(video_file, output_mode, sampling_method, n_frames, frame_step_cube, output_frames, output_fps, downsample_factor, progress=gr.Progress()):
+def process_dispatcher(video_file, output_mode, sampling_method, n_frames, frame_step_cube, output_frames, output_fps, downsample_factor, rotate_x, rotate_y):
     """Dispatch to appropriate processing function based on output mode"""
-    if output_mode == "Still Image":
-        return process_video(video_file, sampling_method, n_frames, progress)
-    else:  # Video output
-        return process_video_to_voxel_cube(video_file, frame_step_cube, output_frames, output_fps, downsample_factor, progress)
+    if output_mode == "image":
+        result = process_video(video_file, sampling_method, n_frames)
+        yield result
+    else:  # Video output - this is now a generator
+        yield from process_video_to_voxel_cube(video_file, frame_step_cube, output_frames, output_fps, downsample_factor, rotate_x, rotate_y)
 
 
 def create_interface():
     """Create the Gradio interface"""
     
     with gr.Blocks(
-        title="Slitscanner Video Processor",
+        title="Slitscan Video Processor",
         theme=gr.themes.Soft(),
         css="""
         .gradio-container {
@@ -340,7 +419,19 @@ def create_interface():
         }
         .main-header {
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 10px;
+            padding: 5px 0;
+        }
+        .main-header h1 {
+            margin: 0;
+            padding: 0;
+            font-size: 1.8em;
+            line-height: 1.2;
+        }
+        .main-header p {
+            margin: 2px 0 0 0;
+            padding: 0;
+            font-size: 0.9em;
         }
         .status-box {
             padding: 15px;
@@ -356,8 +447,8 @@ def create_interface():
         # Header
         gr.HTML("""
         <div class="main-header">
-            <h1>Slitscanner Video Processor</h1>
-            <p>Transform videos into images OR create voxel cube rotating slice videos</p>
+            <h1>Slitscan Video Processor</h1>
+            <p>Transform videos to images / rotating voxel videos</p>
         </div>
         """)
         
@@ -381,36 +472,57 @@ def create_interface():
                     interactive=False
                 )
                 
-                # Function to show first frame of video
+                # Video info display
+                video_info = gr.Textbox(
+                    label="Video Information",
+                    value="",
+                    interactive=False,
+                    lines=2
+                )
+                
+                # Function to show first frame of video and display info
                 def show_video_preview(video_file):
                     if video_file is None:
-                        return None
+                        return None, "", 120, gr.update()
                     try:
                         cap = cv2.VideoCapture(video_file)
+                        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                        fps = cap.get(cv2.CAP_PROP_FPS)
+                        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
                         ret, frame = cap.read()
                         cap.release()
+                        
+                        info_text = f"Total Frames: {total_frames} | Input FPS: {fps:.2f}"
+                        
+                        # Calculate suggested output frames (same as input)
+                        suggested_output_frames = total_frames
+                        
+                        # Create resolution choices with actual dimensions
+                        w1, h1 = width, height
+                        w2, h2 = (width // 2) // 2 * 2, (height // 2) // 2 * 2
+                        w4, h4 = (width // 4) // 2 * 2, (height // 4) // 2 * 2
+                        res_choices = [
+                            f"full ({w1}x{h1})",
+                            f"1/2 ({w2}x{h2})",
+                            f"1/4 ({w4}x{h4})"
+                        ]
+                        res_update = gr.update(choices=res_choices, value=res_choices[1])
+                        
                         if ret:
                             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                            return Image.fromarray(frame_rgb)
+                            return Image.fromarray(frame_rgb), info_text, suggested_output_frames, res_update
+                        else:
+                            return None, info_text, suggested_output_frames, res_update
                     except:
                         pass
-                    return None
-                
-                video_input.change(
-                    fn=show_video_preview,
-                    inputs=[video_input],
-                    outputs=[input_preview]
-                )
-                
-                gr.HTML("<br><h4>Output Mode</h4>")
+                    return None, "Error reading video", 120, gr.update()
                 
                 output_mode = gr.Radio(
-                    choices=["Still Image", "Video (Voxel Cube Rotation)"],
-                    value="Still Image",
+                    choices=["image", "video"],
+                    value="image",
                     label="Output Type"
                 )
-                
-                gr.HTML("<br><h4>Processing Options</h4>")
                 
                 # Still image options
                 sampling_method = gr.Radio(
@@ -434,7 +546,7 @@ def create_interface():
                 frame_step_cube = gr.Slider(
                     minimum=1,
                     maximum=200,
-                    value=3,
+                    value=1,
                     step=1,
                     label="Frame Step",
                     info="Use every nth frame",
@@ -462,10 +574,26 @@ def create_interface():
                 )
                 
                 downsample_factor = gr.Radio(
-                    choices=["1 (Full Resolution)", "2 (Half)", "4 (Quarter)"],
-                    value="2 (Half)",
+                    choices=["full", "1/2", "1/4"],
+                    value="1/2",
                     label="Resolution",
-                    info="Lower resolution = faster",
+                    info="",
+                    visible=False
+                )
+                
+                gr.HTML("<br><h4>Rotation Axes</h4>")
+                
+                rotate_x_check = gr.Checkbox(
+                    label="Top-Bottom",
+                    value=False,
+                    info="Rotate around top-bottom axis",
+                    visible=False
+                )
+                
+                rotate_y_check = gr.Checkbox(
+                    label="Left-Right (Standard)",
+                    value=True,
+                    info="Rotate around left-right axis",
                     visible=False
                 )
                 
@@ -474,27 +602,36 @@ def create_interface():
                     return gr.update(visible=(method == "Every n Frames"))
                 
                 def toggle_options(mode):
-                    is_image = mode == "Still Image"
-                    is_video = mode == "Video (Voxel Cube Rotation)"
+                    is_image = mode == "image"
+                    is_video = mode == "video"
                     return (
                         gr.update(visible=is_image),  # sampling_method
                         gr.update(visible=False),  # n_frames_input (hide by default)
                         gr.update(visible=is_video),  # frame_step_cube
                         gr.update(visible=is_video),  # output_frames
                         gr.update(visible=is_video),  # output_fps
-                        gr.update(visible=is_video)   # downsample_factor
+                        gr.update(visible=is_video),  # downsample_factor
+                        gr.update(visible=is_video),  # rotate_x_check
+                        gr.update(visible=is_video)   # rotate_y_check
                     )
                 
                 output_mode.change(
                     fn=toggle_options,
                     inputs=[output_mode],
-                    outputs=[sampling_method, n_frames_input, frame_step_cube, output_frames, output_fps, downsample_factor]
+                    outputs=[sampling_method, n_frames_input, frame_step_cube, output_frames, output_fps, downsample_factor, rotate_x_check, rotate_y_check]
                 )
                 
                 sampling_method.change(
                     fn=toggle_n_frames,
                     inputs=[sampling_method],
                     outputs=[n_frames_input]
+                )
+                
+                # Connect video input to update preview, info, and output_frames
+                video_input.change(
+                    fn=show_video_preview,
+                    inputs=[video_input],
+                    outputs=[input_preview, video_info, output_frames, downsample_factor]
                 )
                 
                 # Process button
@@ -541,21 +678,35 @@ def create_interface():
                 )
         
         # Helper function to manage outputs
-        def process_and_route(video_file, output_mode, sampling_method, n_frames, frame_step_cube, output_frames, output_fps, downsample_str, progress=gr.Progress()):
+        def process_and_route(video_file, output_mode, sampling_method, n_frames, frame_step_cube, output_frames, output_fps, downsample_str, rotate_x, rotate_y):
+            # Initial status yield
+            yield None, None, "⏳ Starting processing...", None, gr.update(), gr.update()
+            
             # Parse downsample factor from string
-            downsample_factor = int(downsample_str.split()[0])
-            
-            result, status, preview = process_dispatcher(video_file, output_mode, sampling_method, n_frames, frame_step_cube, output_frames, output_fps, downsample_factor, progress)
-            
-            if output_mode == "Still Image":
-                return result, None, status, preview, gr.update(visible=True), gr.update(visible=False)
+            if downsample_str.startswith("full"):
+                downsample_factor = 1
+            elif downsample_str.startswith("1/2"):
+                downsample_factor = 2
+            elif downsample_str.startswith("1/4"):
+                downsample_factor = 4
             else:
-                return None, result, status, preview, gr.update(visible=False), gr.update(visible=True)
+                downsample_factor = 2  # default
+            
+            # Process as generator to get incremental updates
+            for result, status, preview in process_dispatcher(video_file, output_mode, sampling_method, n_frames, frame_step_cube, output_frames, output_fps, downsample_factor, rotate_x, rotate_y):
+                if output_mode == "image":
+                    yield result, None, status, preview, gr.update(visible=True), gr.update(visible=False)
+                else:
+                    # For video mode: yield intermediate updates
+                    if result is None:  # Intermediate preview update
+                        yield None, None, status, preview, gr.update(visible=False), gr.update(visible=True)
+                    else:  # Final result with video
+                        yield None, result, status, preview, gr.update(visible=False), gr.update(visible=True)
         
         # Process button click handler
         process_btn.click(
             fn=process_and_route,
-            inputs=[video_input, output_mode, sampling_method, n_frames_input, frame_step_cube, output_frames, output_fps, downsample_factor],
+            inputs=[video_input, output_mode, sampling_method, n_frames_input, frame_step_cube, output_frames, output_fps, downsample_factor, rotate_x_check, rotate_y_check],
             outputs=[image_output, video_output, status_output, frame_preview, image_output, video_output]
         )
     
