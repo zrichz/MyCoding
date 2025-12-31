@@ -1,8 +1,7 @@
 """
-Slitscanner - Video to Image Processing Application (Gradio Version)
+Slitscanner - Video to Image or Video Processing Application (Gradio)
 
-This application creates artistic images by extracting vertical pixel columns
-from video frames and combining them horizontally into a single image.
+creates images / videos by extracting vertical pixel columns, or an input frame within a voxel cube
 """
 
 import cv2
@@ -15,7 +14,6 @@ import socket
 
 
 def find_available_port(start_port=7860, max_attempts=10):
-    """Find an available port starting from start_port"""
     for port in range(start_port, start_port + max_attempts):
         try:
             # Try to bind to the port
@@ -28,23 +26,23 @@ def find_available_port(start_port=7860, max_attempts=10):
                 return port
         except Exception:
             continue
-    
-    # If no port found in range, let Gradio find one automatically
-    return None
+    return None # If no port found in range, let Gradio find one automatically
 
 
-def process_video_to_voxel_cube(video_file, frame_step, output_frames, output_fps, downsample_factor, rotate_x, rotate_y):
+def process_video_to_voxel_cube(video_file, frame_step, output_frames, output_fps, downsample_factor, rotate_x, rotate_y, time_travel_mode, progress=gr.Progress()):
     """
     Process video into a voxel cube and create rotating slice video output
     
     Args:
         video_file: Uploaded video file
-        frame_step: Take every nth frame (e.g., 3 means frames 0, 3, 6, 9...)
-        output_frames: Number of output video frames (rotation steps)
-        output_fps: FPS for output video
+        frame_step: Take every nth frame
+        output_frames: Number of output frames (rotation steps)
+        output_fps: output video fps
         downsample_factor: Resolution reduction (1=full, 2=half, 4=quarter)
         rotate_x: Rotate around X-axis (top-bottom)
         rotate_y: Rotate around Y-axis (left-right)
+        time_travel_mode: "Centered" or "Front-to-Back-to-Front"
+        progress: Gradio progress tracker
     
     Returns:
         tuple: (output_video_path, status_message, preview_image)
@@ -80,7 +78,6 @@ def process_video_to_voxel_cube(video_file, frame_step, output_frames, output_fp
         if n_frames_to_use < 3:
             yield None, f"Not enough frames. With every {frame_step} frames, only {n_frames_to_use} frames available. Need at least 3.", None
             return
-            return
         
         # Read frames into voxel cube
         voxel_cube = np.zeros((frame_height, frame_width, n_frames_to_use, 3), dtype=np.uint8)
@@ -104,7 +101,7 @@ def process_video_to_voxel_cube(video_file, frame_step, output_frames, output_fp
                 cube_idx += 1
                 # Yield progress every 50 frames
                 if cube_idx % 50 == 0:
-                    progress_msg = f"Building voxel cube: {cube_idx}/{n_frames_to_use} frames loaded ({100*cube_idx//n_frames_to_use}%)"
+                    progress_msg = f"Building voxel cube: {cube_idx}/{n_frames_to_use} frames ({100*cube_idx//n_frames_to_use}%)"
                     yield None, progress_msg, None
             
             frame_count += 1
@@ -113,7 +110,6 @@ def process_video_to_voxel_cube(video_file, frame_step, output_frames, output_fp
         
         if cube_idx == 0:
             yield None, "No frames were loaded into voxel cube.", None
-            return
             return
         
         # Update actual cube size if fewer frames loaded
@@ -138,7 +134,14 @@ def process_video_to_voxel_cube(video_file, frame_step, output_frames, output_fp
         # Calculate center of cube
         center_y = frame_height / 2
         center_x = frame_width / 2
-        center_z = n_frames_to_use / 2
+        
+        # Determine center_z based on time travel mode
+        if time_travel_mode == "Front-to-Back-to-Front":
+            # We'll animate this, start at front (0)
+            center_z_base = 0  # Will be animated
+        else:
+            # Centered mode - always at center
+            center_z_base = n_frames_to_use / 2
         
         # Store preview frame
         preview_frame = None
@@ -147,6 +150,24 @@ def process_video_to_voxel_cube(video_file, frame_step, output_frames, output_fp
         for frame_idx in range(output_frames):
             # Calculate rotation angle (0 to 360 degrees)
             angle = (frame_idx / output_frames) * 2 * np.pi
+            
+            # Calculate time travel offset for Front-to-Back-to-Front mode
+            if time_travel_mode == "Front-to-Back-to-Front":
+                # Progress from 0 to 1 over the animation
+                time_progress = frame_idx / output_frames
+                # Triangle wave: 0 -> 1 -> 0 (front -> back -> front)
+                # Goes from 0 to 0.5: moves from front to back
+                # Goes from 0.5 to 1: moves from back to front
+                if time_progress < 0.5:
+                    time_offset = time_progress * 2  # 0 to 1
+                else:
+                    time_offset = 2 - time_progress * 2  # 1 back to 0
+                
+                # Scale to full depth range
+                center_z = time_offset * (n_frames_to_use - 1)
+            else:
+                # Centered mode
+                center_z = center_z_base
             
             # VECTORIZED APPROACH - process all pixels at once
             # Create coordinate grids
@@ -396,52 +417,20 @@ def process_video(video_file, sampling_method, n_frames):
         return None, f"Processing failed: {str(e)}", None
 
 
-def process_dispatcher(video_file, output_mode, sampling_method, n_frames, frame_step_cube, output_frames, output_fps, downsample_factor, rotate_x, rotate_y):
+def process_dispatcher(video_file, output_mode, sampling_method, n_frames, frame_step_cube, output_frames, output_fps, downsample_factor, rotate_x, rotate_y, time_travel_mode):
     """Dispatch to appropriate processing function based on output mode"""
     if output_mode == "image":
         result = process_video(video_file, sampling_method, n_frames)
         yield result
     else:  # Video output - this is now a generator
-        yield from process_video_to_voxel_cube(video_file, frame_step_cube, output_frames, output_fps, downsample_factor, rotate_x, rotate_y)
+        yield from process_video_to_voxel_cube(video_file, frame_step_cube, output_frames, output_fps, downsample_factor, rotate_x, rotate_y, time_travel_mode)
 
 
 def create_interface():
     """Create the Gradio interface"""
     
     with gr.Blocks(
-        title="Slitscan Video Processor",
-        theme=gr.themes.Soft(),
-        css="""
-        .gradio-container {
-            max-width: 1800px;
-            margin: auto;
-            padding: 20px;
-        }
-        .main-header {
-            text-align: center;
-            margin-bottom: 10px;
-            padding: 5px 0;
-        }
-        .main-header h1 {
-            margin: 0;
-            padding: 0;
-            font-size: 1.8em;
-            line-height: 1.2;
-        }
-        .main-header p {
-            margin: 2px 0 0 0;
-            padding: 0;
-            font-size: 0.9em;
-        }
-        .status-box {
-            padding: 15px;
-            border-radius: 8px;
-            margin: 10px 0;
-        }
-        #status_output {
-            min-height: 120px;
-        }
-        """
+        title="Slitscan Video Processor"
     ) as interface:
         
         # Header
@@ -597,6 +586,16 @@ def create_interface():
                     visible=False
                 )
                 
+                gr.HTML("<br><h4>Time Travel Mode</h4>")
+                
+                time_travel_radio = gr.Radio(
+                    label="Slice Position",
+                    choices=["Centered", "Front-to-Back-to-Front"],
+                    value="Centered",
+                    info="Centered: slice at cube center. Front-to-Back-to-Front: animates from video start to end and back",
+                    visible=False
+                )
+                
                 # Show/hide options based on selections
                 def toggle_n_frames(method):
                     return gr.update(visible=(method == "Every n Frames"))
@@ -612,13 +611,14 @@ def create_interface():
                         gr.update(visible=is_video),  # output_fps
                         gr.update(visible=is_video),  # downsample_factor
                         gr.update(visible=is_video),  # rotate_x_check
-                        gr.update(visible=is_video)   # rotate_y_check
+                        gr.update(visible=is_video),  # rotate_y_check
+                        gr.update(visible=is_video)   # time_travel_radio
                     )
                 
                 output_mode.change(
                     fn=toggle_options,
                     inputs=[output_mode],
-                    outputs=[sampling_method, n_frames_input, frame_step_cube, output_frames, output_fps, downsample_factor, rotate_x_check, rotate_y_check]
+                    outputs=[sampling_method, n_frames_input, frame_step_cube, output_frames, output_fps, downsample_factor, rotate_x_check, rotate_y_check, time_travel_radio]
                 )
                 
                 sampling_method.change(
@@ -667,7 +667,6 @@ def create_interface():
                     label="Result",
                     type="pil",
                     height=600,
-                    show_download_button=True,
                     visible=True
                 )
                 
@@ -678,7 +677,7 @@ def create_interface():
                 )
         
         # Helper function to manage outputs
-        def process_and_route(video_file, output_mode, sampling_method, n_frames, frame_step_cube, output_frames, output_fps, downsample_str, rotate_x, rotate_y):
+        def process_and_route(video_file, output_mode, sampling_method, n_frames, frame_step_cube, output_frames, output_fps, downsample_str, rotate_x, rotate_y, time_travel_mode):
             # Initial status yield
             yield None, None, "⏳ Starting processing...", None, gr.update(), gr.update()
             
@@ -693,7 +692,7 @@ def create_interface():
                 downsample_factor = 2  # default
             
             # Process as generator to get incremental updates
-            for result, status, preview in process_dispatcher(video_file, output_mode, sampling_method, n_frames, frame_step_cube, output_frames, output_fps, downsample_factor, rotate_x, rotate_y):
+            for result, status, preview in process_dispatcher(video_file, output_mode, sampling_method, n_frames, frame_step_cube, output_frames, output_fps, downsample_factor, rotate_x, rotate_y, time_travel_mode):
                 if output_mode == "image":
                     yield result, None, status, preview, gr.update(visible=True), gr.update(visible=False)
                 else:
@@ -706,7 +705,7 @@ def create_interface():
         # Process button click handler
         process_btn.click(
             fn=process_and_route,
-            inputs=[video_input, output_mode, sampling_method, n_frames_input, frame_step_cube, output_frames, output_fps, downsample_factor, rotate_x_check, rotate_y_check],
+            inputs=[video_input, output_mode, sampling_method, n_frames_input, frame_step_cube, output_frames, output_fps, downsample_factor, rotate_x_check, rotate_y_check, time_travel_radio],
             outputs=[image_output, video_output, status_output, frame_preview, image_output, video_output]
         )
     
