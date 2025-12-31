@@ -285,6 +285,9 @@ def process_video_with_delay_optimized(video_file, control_image, max_delay_ms, 
         frames_array = np.array(frames)
         num_input_frames = len(frames)
         
+        # Pre-compute grid indices for vectorized operations
+        y_grid, x_grid = np.mgrid[0:input_height, 0:input_width]
+        
         # Process each output frame (including extra frames for delayed pixels)
         preview_image = None
         for output_idx in range(num_output_frames):
@@ -294,13 +297,9 @@ def process_video_with_delay_optimized(video_file, control_image, max_delay_ms, 
             # Clamp to valid range
             source_indices = np.clip(source_indices, 0, num_input_frames - 1)
             
-            # Create output frame by sampling from appropriate source frames
-            output_frame_full = np.zeros((input_height, input_width, 3), dtype=np.uint8)
-            
-            for y in range(input_height):
-                for x in range(input_width):
-                    src_idx = source_indices[y, x]
-                    output_frame_full[y, x] = frames_array[src_idx, y, x]
+            # Use advanced indexing to create output frame in one vectorized operation
+            # This is MUCH faster than nested loops
+            output_frame_full = frames_array[source_indices, y_grid, x_grid]
             
             # Scale down if needed
             if output_scale != "100%":
@@ -337,8 +336,21 @@ def process_video_with_delay_optimized(video_file, control_image, max_delay_ms, 
 def create_interface():
     """Create the Gradio interface"""
     
+    custom_css = """
+    .gradio-container {
+        max-width: 2400px !important;
+        width: 95% !important;
+        margin: auto;
+    }
+    .main-header {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    """
+    
     with gr.Blocks(
-        title="Time-Delay Video Processor"
+        title="Time-Delay Video Processor",
+        css=custom_css
     ) as interface:
         
         # Header
@@ -487,19 +499,6 @@ def main():
     
     interface = create_interface()
     
-    # Custom CSS for wide layout optimized for 2560x1440
-    custom_css = """
-    .gradio-container {
-        max-width: 2400px !important;
-        width: 95% !important;
-        margin: auto;
-    }
-    .main-header {
-        text-align: center;
-        margin-bottom: 20px;
-    }
-    """
-    
     # Launch the interface
     if available_port:
         print(f"Launching on port {available_port}")
@@ -509,8 +508,7 @@ def main():
             share=False,
             show_error=True,
             quiet=False,
-            inbrowser=True,
-            css=custom_css
+            inbrowser=True
         )
     else:
         print("Letting Gradio find an available port automatically")
@@ -519,8 +517,7 @@ def main():
             share=False,
             show_error=True,
             quiet=False,
-            inbrowser=True,
-            css=custom_css
+            inbrowser=True
         )
 
 
