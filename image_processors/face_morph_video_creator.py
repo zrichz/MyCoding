@@ -1,7 +1,7 @@
 """
 Face Morphing Video Creator
 
-Creates smooth morphing videos between two face images using MediaPipe facial landmarks
+Creates smooth morphing videos between two face images using facial landmarks
 and Delaunay triangulation for accurate facial feature alignment.
 
 Features:
@@ -22,34 +22,26 @@ warnings.filterwarnings('ignore', category=UserWarning)
 
 import cv2
 import numpy as np
-import mediapipe as mp
 from PIL import Image
 import gradio as gr
 from scipy.spatial import Delaunay
 import tkinter as tk
 from tkinter import filedialog
+import mediapipe as mp
 
 
 class FaceMorphVideoCreator:
     def __init__(self):
-        # Initialize MediaPipe Face Mesh
+        # Initialize MediaPipe Face Mesh for accurate landmark detection (468 points)
         self.mp_face_mesh = mp.solutions.face_mesh
         self.face_mesh = self.mp_face_mesh.FaceMesh(
             static_image_mode=True,
             max_num_faces=1,
             refine_landmarks=True,
-            min_detection_confidence=0.3,  # Lower threshold for better detection
-            min_tracking_confidence=0.3   # Lower threshold for better detection
+            min_detection_confidence=0.3,  # Lower threshold for small faces
+            min_tracking_confidence=0.3
         )
-        
-        # Fallback detector without refinement
-        self.face_mesh_simple = self.mp_face_mesh.FaceMesh(
-            static_image_mode=True,
-            max_num_faces=1,
-            refine_landmarks=False,
-            min_detection_confidence=0.2,
-            min_tracking_confidence=0.2
-        )
+        print("✓ Using MediaPipe Face Mesh with 468-point landmark model")
         
         # Video settings
         self.fps = 24
@@ -59,49 +51,59 @@ class FaceMorphVideoCreator:
         """Draw facial landmarks on image for preview"""
         img_copy = image.copy()
         
-        # Draw all landmark points with more visible size
+        # Draw all landmark points
         for point in points:
             x, y = int(point[0]), int(point[1])
-            cv2.circle(img_copy, (x, y), 2, (0, 255, 0), -1)
+            cv2.circle(img_copy, (x, y), 1, (0, 255, 0), -1)
         
-        # MediaPipe Face Mesh specific contours (468 landmark model)
-        # Only draw the main facial contours using correct MediaPipe indices
+        # MediaPipe Face Mesh connections for better visualization
+        # Key facial features using MediaPipe landmark indices
         
-        # Face oval contour
-        face_oval = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 
-                     397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 
-                     172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109, 10]
+        # Face oval (outer contour)
+        FACE_OVAL = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288,
+                     397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136,
+                     172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109]
         
-        # Left eye contour
-        left_eye = [33, 246, 161, 160, 159, 158, 157, 173, 133, 155, 154, 153, 145, 144, 163, 7, 33]
+        # Left eye
+        LEFT_EYE = [362, 382, 381, 380, 374, 373, 390, 249, 263, 466, 388, 387, 386, 385, 384, 398]
         
-        # Right eye contour
-        right_eye = [362, 398, 384, 385, 386, 387, 388, 466, 263, 249, 390, 373, 374, 380, 381, 382, 362]
+        # Right eye  
+        RIGHT_EYE = [33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246]
         
-        # Outer lips
-        outer_lips = [61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95, 61]
+        # Lips outer
+        LIPS_OUTER = [61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291, 185, 40, 39, 37, 0, 267, 269, 270, 409]
         
-        # Inner lips
-        inner_lips = [78, 191, 80, 81, 82, 13, 312, 311, 310, 415, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95, 78]
+        # Lips inner
+        LIPS_INNER = [78, 191, 80, 81, 82, 13, 312, 311, 310, 415, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95]
         
         # Left eyebrow
-        left_eyebrow = [70, 63, 105, 66, 107, 55, 65, 52, 53, 46]
+        LEFT_EYEBROW = [276, 283, 282, 295, 285, 300, 293, 334, 296, 336]
         
-        # Right eyebrow  
-        right_eyebrow = [300, 293, 334, 296, 336, 285, 295, 282, 283, 276]
+        # Right eyebrow
+        RIGHT_EYEBROW = [46, 53, 52, 65, 55, 70, 63, 105, 66, 107]
         
-        # Nose bridge
-        nose_bridge = [168, 6, 197, 195, 5, 4, 1, 19, 94, 2]
+        # Nose
+        NOSE = [168, 6, 197, 195, 5, 4, 1, 19, 94, 2]
         
-        # Draw contours
-        contours = [face_oval, left_eye, right_eye, outer_lips, inner_lips, 
-                   left_eyebrow, right_eyebrow, nose_bridge]
+        # Draw contours for key features
+        contours = {
+            'face': FACE_OVAL,
+            'left_eye': LEFT_EYE,
+            'right_eye': RIGHT_EYE,
+            'lips_outer': LIPS_OUTER,
+            'lips_inner': LIPS_INNER,
+            'left_eyebrow': LEFT_EYEBROW,
+            'right_eyebrow': RIGHT_EYEBROW,
+            'nose': NOSE
+        }
         
-        for contour in contours:
-            for i in range(len(contour) - 1):
-                if contour[i] < len(points) and contour[i+1] < len(points):
-                    pt1 = (int(points[contour[i]][0]), int(points[contour[i]][1]))
-                    pt2 = (int(points[contour[i+1]][0]), int(points[contour[i+1]][1]))
+        for feature_name, indices in contours.items():
+            for i in range(len(indices)):
+                idx1 = indices[i]
+                idx2 = indices[(i + 1) % len(indices)]
+                if idx1 < len(points) and idx2 < len(points):
+                    pt1 = (int(points[idx1][0]), int(points[idx1][1]))
+                    pt2 = (int(points[idx2][0]), int(points[idx2][1]))
                     cv2.line(img_copy, pt1, pt2, (0, 255, 0), 1)
         
         return img_copy
@@ -112,14 +114,14 @@ class FaceMorphVideoCreator:
         
         # Key landmark indices for MediaPipe 468-point model
         key_points = {
-            'left_eye': 159,      # Left eye center
-            'right_eye': 386,     # Right eye center
-            'nose_tip': 1,        # Nose tip
-            'left_mouth': 61,     # Left mouth corner
-            'right_mouth': 291,   # Right mouth corner
-            'chin': 152,          # Chin center
-            'left_cheek': 234,    # Left cheek
-            'right_cheek': 454,   # Right cheek
+            'left_eye_center': 468,      # Left iris center (if available)
+            'right_eye_center': 473,     # Right iris center
+            'nose_tip': 4,               # Nose tip
+            'left_mouth': 61,            # Left mouth corner
+            'right_mouth': 291,          # Right mouth corner
+            'chin': 152,                 # Chin center
+            'left_cheek': 234,           # Left cheek
+            'right_cheek': 454,          # Right cheek
         }
         
         # Draw circles for key points with labels
@@ -132,9 +134,15 @@ class FaceMorphVideoCreator:
         
         return frame_copy
         
-    def detect_face_landmarks(self, image):
-        """Detect facial landmarks in an image with fallback options"""
-        # Convert to RGB if needed
+    def detect_face_landmarks(self, image, face_hint=None):
+        """
+        Detect facial landmarks in an image using MediaPipe
+        
+        Args:
+            image: Input image (PIL Image or numpy array)
+            face_hint: Optional tuple (x, y) indicating approximate face center (currently unused with MediaPipe)
+        """
+        # Convert to numpy array if needed
         if isinstance(image, Image.Image):
             image_np = np.array(image)
         else:
@@ -144,46 +152,52 @@ class FaceMorphVideoCreator:
         if not isinstance(image_np, np.ndarray):
             return None, None
         
-        # Convert to RGB format
-        if len(image_np.shape) == 2:
-            image_np = cv2.cvtColor(image_np, cv2.COLOR_GRAY2RGB)
-        elif len(image_np.shape) == 3:
-            if image_np.shape[2] == 4:
-                image_np = cv2.cvtColor(image_np, cv2.COLOR_RGBA2RGB)
-            elif image_np.shape[2] == 3:
-                # Might be BGR, convert to RGB for MediaPipe
-                # Check if it looks like BGR by simple heuristic
-                pass  # Assume it's already RGB from PIL
-        else:
-            return None, None
-        
-        # Ensure uint8 format
+        # Ensure uint8 format first
         if image_np.dtype != np.uint8:
             image_np = np.clip(image_np, 0, 255).astype(np.uint8)
         
-        # Try primary detector first
-        results = self.face_mesh.process(image_np)
+        # Handle different image formats - MediaPipe expects RGB
+        if len(image_np.shape) == 2:
+            # Grayscale image - convert to RGB
+            image_rgb = cv2.cvtColor(image_np, cv2.COLOR_GRAY2RGB)
+        elif len(image_np.shape) == 3:
+            if image_np.shape[2] == 4:
+                # RGBA image - convert to RGB
+                image_rgb = cv2.cvtColor(image_np, cv2.COLOR_RGBA2RGB)
+            elif image_np.shape[2] == 3:
+                # Already RGB (from PIL/Gradio)
+                image_rgb = image_np.copy()
+            else:
+                return None, None
+        else:
+            return None, None
         
-        # If no face detected, try fallback detector
-        if not results.multi_face_landmarks:
-            results = self.face_mesh_simple.process(image_np)
+        # Ensure RGB is uint8
+        if image_rgb.dtype != np.uint8:
+            image_rgb = np.clip(image_rgb, 0, 255).astype(np.uint8)
+        
+        h, w = image_rgb.shape[:2]
+        
+        # Process with MediaPipe Face Mesh
+        results = self.face_mesh.process(image_rgb)
         
         if not results.multi_face_landmarks:
             return None, None
         
-        # Extract landmarks as (x, y) coordinates
+        # Get the first face's landmarks
         face_landmarks = results.multi_face_landmarks[0]
-        h, w = image_np.shape[:2]
         
+        # Convert normalized landmarks to pixel coordinates
         points = []
         for landmark in face_landmarks.landmark:
-            x = int(landmark.x * w)
-            y = int(landmark.y * h)
+            x = landmark.x * w
+            y = landmark.y * h
             points.append([x, y])
         
         points = np.array(points, dtype=np.float32)
         
-        return points, image_np
+        # Return RGB image for consistency
+        return points, image_rgb
     
     def add_boundary_points(self, points, img_shape):
         """Add boundary points for complete image coverage"""
@@ -281,7 +295,7 @@ class FaceMorphVideoCreator:
         
         # Create mask for the morphed triangle
         mask = np.zeros((h, w), dtype=np.uint8)
-        cv2.fillConvexPoly(mask, np.int32(tri_morph_rect), 255)
+        cv2.fillConvexPoly(mask, tri_morph_rect.astype(np.int32), 255)
         
         # Get affine transformation matrices
         try:
@@ -383,11 +397,22 @@ class FaceMorphVideoCreator:
             return False, "No frames to save"
         
         try:
-            h, w = frames[0].shape[:2]
+            # Check first frame dimensions and format
+            first_frame = frames[0]
+            if len(first_frame.shape) != 3:
+                return False, f"Invalid frame format: expected 3D array, got {first_frame.shape}"
+            
+            h, w = first_frame.shape[:2]
+            
+            # Ensure dimensions are even (required by many codecs)
+            if w % 2 != 0:
+                w = w - 1
+            if h % 2 != 0:
+                h = h - 1
             
             # Try multiple codecs in order of preference
             codecs_to_try = [
-                ('X264', 'x264'),  # H.264 (best quality, widely compatible)
+                ('X264', 'H.264'),  # H.264 (best quality, widely compatible)
                 ('mp4v', 'MPEG-4'),  # MPEG-4 Part 2 (good compatibility)
                 ('MJPG', 'MJPEG'),  # Motion JPEG (always available)
             ]
@@ -416,9 +441,28 @@ class FaceMorphVideoCreator:
                 return False, "Failed to initialize video writer with any codec"
             
             # Write all frames
-            for frame in frames:
-                # Convert RGB to BGR for OpenCV
-                frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+            for i, frame in enumerate(frames):
+                # Ensure frame is correct size
+                if frame.shape[:2] != (h, w):
+                    frame = cv2.resize(frame, (w, h), interpolation=cv2.INTER_LINEAR)
+                
+                # Ensure frame is BGR format (OpenCV requirement)
+                if len(frame.shape) == 3:
+                    if frame.shape[2] == 3:
+                        # Assume it's RGB, convert to BGR
+                        frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                    elif frame.shape[2] == 4:
+                        # RGBA, convert to BGR
+                        frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGBA2BGR)
+                    else:
+                        return False, f"Unexpected number of channels in frame {i}: {frame.shape[2]}"
+                else:
+                    return False, f"Frame {i} has invalid shape: {frame.shape}"
+                
+                # Ensure uint8 dtype
+                if frame_bgr.dtype != np.uint8:
+                    frame_bgr = np.clip(frame_bgr, 0, 255).astype(np.uint8)
+                
                 out.write(frame_bgr)
             
             out.release()
@@ -427,43 +471,90 @@ class FaceMorphVideoCreator:
         except Exception as e:
             if 'out' in locals() and out is not None:
                 out.release()
-            return False, f"Error saving video: {e}"
+            import traceback
+            return False, f"Error saving video: {e}\n{traceback.format_exc()}"
 
 
 # Global instance
 morpher = FaceMorphVideoCreator()
 
 
-def detect_faces_preview(image1, image2):
+def detect_faces_preview(image1, image2, hint1_str="", hint2_str=""):
     """Detect and preview face landmarks on both images"""
     try:
         if image1 is None or image2 is None:
             return None, None, "Please upload both images"
         
+        # Get image dimensions for debug info
+        if isinstance(image1, Image.Image):
+            img1_size = f"{image1.width}x{image1.height}"
+        elif isinstance(image1, np.ndarray):
+            img1_size = f"{image1.shape[1]}x{image1.shape[0]}"
+        else:
+            img1_size = "unknown"
+            
+        if isinstance(image2, Image.Image):
+            img2_size = f"{image2.width}x{image2.height}"
+        elif isinstance(image2, np.ndarray):
+            img2_size = f"{image2.shape[1]}x{image2.shape[0]}"
+        else:
+            img2_size = "unknown"
+        
+        # Parse face hints from coordinate strings
+        hint1_x, hint1_y = parse_hint_coords(hint1_str)
+        hint1 = None
+        if hint1_x is not None and hint1_y is not None and hint1_x > 0 and hint1_y > 0:
+            hint1 = (int(hint1_x), int(hint1_y))
+            
+        hint2_x, hint2_y = parse_hint_coords(hint2_str)
+        hint2 = None
+        if hint2_x is not None and hint2_y is not None and hint2_x > 0 and hint2_y > 0:
+            hint2 = (int(hint2_x), int(hint2_y))
+        
         # Detect landmarks
-        points1, img1 = morpher.detect_face_landmarks(image1)
-        points2, img2 = morpher.detect_face_landmarks(image2)
+        points1, img1 = morpher.detect_face_landmarks(image1, face_hint=hint1)
+        points2, img2 = morpher.detect_face_landmarks(image2, face_hint=hint2)
         
         if points1 is None:
-            return None, None, "No face detected in first image"
+            hint_msg = "\n\n💡 TIP: If automatic detection fails, try entering face center coordinates (X, Y) below the image." if hint1 is None else ""
+            return None, None, f"No face detected in first image (size: {img1_size})\nTry: 1) Ensure face is clearly visible, 2) Face should be at least 80x80 pixels, 3) Good lighting and contrast{hint_msg}"
         if points2 is None:
-            return None, None, "No face detected in second image"
+            hint_msg = "\n\n💡 TIP: If automatic detection fails, try entering face center coordinates (X, Y) below the image." if hint2 is None else ""
+            return None, None, f"No face detected in second image (size: {img2_size})\nTry: 1) Ensure face is clearly visible, 2) Face should be at least 80x80 pixels, 3) Good lighting and contrast{hint_msg}"
         
         # Draw landmarks on images
         preview1 = morpher.draw_landmarks_on_image(img1, points1)
         preview2 = morpher.draw_landmarks_on_image(img2, points2)
         
-        status = f"✓ Face detected in both images\n" \
+        # Draw hint markers if they were used
+        if hint1 is not None:
+            cv2.circle(preview1, hint1, 10, (0, 255, 0), 2)
+            cv2.drawMarker(preview1, hint1, (0, 255, 0), cv2.MARKER_CROSS, 20, 2)
+            cv2.putText(preview1, "Hint", (hint1[0] + 15, hint1[1] - 15), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+            
+        if hint2 is not None:
+            cv2.circle(preview2, hint2, 10, (0, 255, 0), 2)
+            cv2.drawMarker(preview2, hint2, (0, 255, 0), cv2.MARKER_CROSS, 20, 2)
+            cv2.putText(preview2, "Hint", (hint2[0] + 15, hint2[1] - 15), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+        
+        hint_status = ""
+        if hint1 is not None or hint2 is not None:
+            hint_status = " (with face hints)"
+        
+        status = f"✓ Face detected in both images{hint_status}\n" \
                 f"Image 1: {img1.shape[1]}x{img1.shape[0]} - {len(points1)} landmarks\n" \
                 f"Image 2: {img2.shape[1]}x{img2.shape[0]} - {len(points2)} landmarks"
         
         return preview1, preview2, status
         
     except Exception as e:
-        return None, None, f"Error: {str(e)}"
+        import traceback
+        return None, None, f"Error: {str(e)}\n{traceback.format_exc()}"
 
 
-def create_face_morph_video(image1, image2, duration, half_resolution, debug_overlay, output_folder, progress=gr.Progress()):
+def create_face_morph_video(image1, image2, duration, half_resolution, debug_overlay, output_folder, hint1_str="", hint2_str="", progress=gr.Progress()):
     """Main function to create face morph video"""
     try:
         if image1 is None or image2 is None:
@@ -474,14 +565,27 @@ def create_face_morph_video(image1, image2, duration, half_resolution, debug_ove
         
         progress(0, desc="Detecting faces...")
         
+        # Parse face hints from coordinate strings
+        hint1_x, hint1_y = parse_hint_coords(hint1_str)
+        hint1 = None
+        if hint1_x is not None and hint1_y is not None and hint1_x > 0 and hint1_y > 0:
+            hint1 = (int(hint1_x), int(hint1_y))
+            
+        hint2_x, hint2_y = parse_hint_coords(hint2_str)
+        hint2 = None
+        if hint2_x is not None and hint2_y is not None and hint2_x > 0 and hint2_y > 0:
+            hint2 = (int(hint2_x), int(hint2_y))
+        
         # Detect landmarks in both images
-        points1, img1 = morpher.detect_face_landmarks(image1)
-        points2, img2 = morpher.detect_face_landmarks(image2)
+        points1, img1 = morpher.detect_face_landmarks(image1, face_hint=hint1)
+        points2, img2 = morpher.detect_face_landmarks(image2, face_hint=hint2)
         
         if points1 is None:
-            return "No face detected in first image", None
+            hint_msg = "\n\n💡 TIP: Try entering face center coordinates (X, Y) to help detection." if hint1 is None else ""
+            return f"No face detected in first image{hint_msg}", None
         if points2 is None:
-            return "No face detected in second image", None
+            hint_msg = "\n\n💡 TIP: Try entering face center coordinates (X, Y) to help detection." if hint2 is None else ""
+            return f"No face detected in second image{hint_msg}", None
         
         progress(0.2, desc="Creating morph sequence...")
         
@@ -504,19 +608,69 @@ def create_face_morph_video(image1, image2, duration, half_resolution, debug_ove
         
         progress(0.9, desc="Saving video...")
         
-        # Save video
+        # Create a temporary file for Gradio (will be auto-managed by Gradio's cache)
+        import tempfile
+        temp_dir = tempfile.gettempdir()
+        temp_output = os.path.join(temp_dir, "face_morph_temp.mp4")
+        
+        # Save video to temp location first
+        success, message = morpher.save_video(frames, temp_output, morpher.fps)
+        
+        if not success:
+            progress(1.0, desc="Error!")
+            return message, None
+        
+        # Also save to user's selected folder
         output_path = os.path.join(output_folder, "face_morph_output.mp4")
-        success, message = morpher.save_video(frames, output_path, morpher.fps)
+        try:
+            import shutil
+            shutil.copy2(temp_output, output_path)
+            final_message = f"Video saved to: {output_path}"
+        except Exception as e:
+            final_message = f"Video created but copy failed: {e}\nTemp file at: {temp_output}"
+            output_path = temp_output
         
         progress(1.0, desc="Complete!")
         
-        if success:
-            return message, output_path
-        else:
-            return message, None
+        # Return temp file path for Gradio to display
+        return final_message, temp_output
             
     except Exception as e:
-        return f"Error: {str(e)}", None
+        import traceback
+        error_details = traceback.format_exc()
+        return f"Error: {str(e)}\n\nDetails:\n{error_details}", None
+
+
+def parse_hint_coords(hint_str):
+    """Parse hint coordinate string into x, y tuple or return None"""
+    if not hint_str or hint_str.strip() == "":
+        return None, None
+    try:
+        parts = hint_str.strip().split(',')
+        if len(parts) == 2:
+            x = int(parts[0].strip())
+            y = int(parts[1].strip())
+            return x, y
+    except:
+        pass
+    return None, None
+
+
+def handle_image_select(image, evt: gr.SelectData):
+    """Handle click on image to set face hint"""
+    if image is None:
+        return ""
+    
+    # Get click coordinates from event
+    x, y = evt.index[0], evt.index[1]
+    
+    # Return formatted coordinates
+    return f"{x}, {y}"
+
+
+def clear_hint():
+    """Clear face hint coordinates"""
+    return ""
 
 
 def browse_folder():
@@ -531,28 +685,47 @@ def browse_folder():
 
 # Gradio Interface
 def launch_gradio():
-    with gr.Blocks(title="Face Morphing Video Creator", theme=gr.themes.Soft()) as app:
+    with gr.Blocks(title="Face Morphing Video Creator") as app:
         gr.Markdown("# Face Morphing Video Creator")
         
         with gr.Row():
             with gr.Column():
                 gr.Markdown("### Input Images")
+                gr.Markdown("💡 **Tip:** Click on the nose area if automatic detection fails")
                 
                 image1_input = gr.Image(
-                    label="First Face",
+                    label="First Face - Click on nose to set hint",
                     type="pil",
                     sources=["upload", "webcam", "clipboard"],
-                    height=300,
-                    width=300
+                    height=400,
+                    width=400
                 )
                 
+                hint1_coords = gr.Textbox(
+                    label="Face 1 Hint (auto-filled on click)",
+                    value="",
+                    interactive=False,
+                    visible=True
+                )
+                
+                clear_hint1_btn = gr.Button("Clear Face 1 Hint", size="sm", variant="secondary")
+                
                 image2_input = gr.Image(
-                    label="Second Face",
+                    label="Second Face - Click on nose to set hint",
                     type="pil",
                     sources=["upload", "webcam", "clipboard"],
-                    height=300,
-                    width=300
+                    height=400,
+                    width=400
                 )
+                
+                hint2_coords = gr.Textbox(
+                    label="Face 2 Hint (auto-filled on click)",
+                    value="",
+                    interactive=False,
+                    visible=True
+                )
+                
+                clear_hint2_btn = gr.Button("Clear Face 2 Hint", size="sm", variant="secondary")
                 
                 detect_btn = gr.Button("Detect Faces", variant="secondary", size="lg")
                 
@@ -578,8 +751,13 @@ def launch_gradio():
                     info="Overlay key facial points on output video for debugging"
                 )
                 
+                # Set default output folder to be in the image_processors directory
+                default_output_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), "output")
+                os.makedirs(default_output_folder, exist_ok=True)  # Create if it doesn't exist
+                
                 output_folder = gr.Textbox(
                     label="Output Folder",
+                    value=default_output_folder,
                     placeholder="Click below to browse",
                     info="Where to save the output video"
                 )
@@ -622,17 +800,52 @@ def launch_gradio():
         gr.Markdown("### Instructions")
         gr.Markdown("""
         1. Upload two face images (frontal faces work best)
-        2. Click 'Detect Faces' to verify face detection
-        3. Adjust settings (duration, resolution)
-        4. Select output folder
-        5. Click 'Create Morph Video' and wait for processing
-        6. Video will be saved as `face_morph_output.mp4` at first image resolution
+        2. **Optional:** If automatic face detection fails, **click on the nose area** of each face to set a detection hint
+           - Click directly on the image to set coordinates
+           - A hint marker will appear when you detect faces
+           - Click "Clear Hint" to remove and try automatic detection again
+        3. Click 'Detect Faces' to verify face detection (green markers show hints if used)
+        4. Adjust settings (duration, resolution)
+        5. Select output folder (can be anywhere - Downloads, Documents, etc.)
+        6. Click 'Create Morph Video' and wait for processing
+        7. Video will be saved as `face_morph_output.mp4` in your selected folder
+        8. You can also download the video using the download button below the preview
+        
+        **Note:** Small faces work best if they're at least 80x80 pixels. The app automatically 
+        upscales images during detection to find smaller faces. If detection still fails, click 
+        on the nose area to help guide the algorithm.
         """)
         
         # Event handlers
+        # Handle clicks on images to set face hints
+        image1_input.select(
+            fn=handle_image_select,
+            inputs=[image1_input],
+            outputs=[hint1_coords]
+        )
+        
+        image2_input.select(
+            fn=handle_image_select,
+            inputs=[image2_input],
+            outputs=[hint2_coords]
+        )
+        
+        # Clear hint buttons
+        clear_hint1_btn.click(
+            fn=clear_hint,
+            inputs=[],
+            outputs=[hint1_coords]
+        )
+        
+        clear_hint2_btn.click(
+            fn=clear_hint,
+            inputs=[],
+            outputs=[hint2_coords]
+        )
+        
         detect_btn.click(
             fn=detect_faces_preview,
-            inputs=[image1_input, image2_input],
+            inputs=[image1_input, image2_input, hint1_coords, hint2_coords],
             outputs=[preview1_output, preview2_output, detection_status]
         )
         
@@ -644,7 +857,7 @@ def launch_gradio():
         
         create_btn.click(
             fn=create_face_morph_video,
-            inputs=[image1_input, image2_input, duration_slider, half_res_checkbox, debug_checkbox, output_folder],
+            inputs=[image1_input, image2_input, duration_slider, half_res_checkbox, debug_checkbox, output_folder, hint1_coords, hint2_coords],
             outputs=[status_text, video_output]
         )
     
@@ -654,4 +867,12 @@ def launch_gradio():
 if __name__ == "__main__":
     app = launch_gradio()
     app.queue(max_size=20)
-    app.launch(max_threads=10, show_error=True, inbrowser=True)
+    
+    # Note: Videos are saved to temp directory for Gradio compatibility
+    # Then copied to user's selected output folder
+    # This avoids Gradio's InvalidPathError for non-allowed directories
+    app.launch(
+        max_threads=10,
+        show_error=True,
+        inbrowser=True
+    )
