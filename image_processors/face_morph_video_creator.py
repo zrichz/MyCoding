@@ -12,7 +12,14 @@ Features:
 - Exports as 24fps MP4 video
 """
 
+# Suppress verbose logging from MediaPipe and TensorFlow
 import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppress TensorFlow logging
+os.environ['GLOG_minloglevel'] = '2'  # Suppress Glog logging (MediaPipe)
+
+import warnings
+warnings.filterwarnings('ignore', category=UserWarning)
+
 import cv2
 import numpy as np
 import mediapipe as mp
@@ -371,30 +378,55 @@ class FaceMorphVideoCreator:
         return frames
     
     def save_video(self, frames, output_path, fps=24):
-        """Save frames as MP4 video"""
+        """Save frames as MP4 video with multiple codec fallbacks"""
         if not frames:
             return False, "No frames to save"
         
         try:
             h, w = frames[0].shape[:2]
             
-            # Use H.264 codec
-            fourcc = cv2.VideoWriter_fourcc(*'avc1')
-            out = cv2.VideoWriter(output_path, fourcc, fps, (w, h))
+            # Try multiple codecs in order of preference
+            codecs_to_try = [
+                ('X264', 'x264'),  # H.264 (best quality, widely compatible)
+                ('mp4v', 'MPEG-4'),  # MPEG-4 Part 2 (good compatibility)
+                ('MJPG', 'MJPEG'),  # Motion JPEG (always available)
+            ]
             
-            if not out.isOpened():
-                fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-                out = cv2.VideoWriter(output_path, fourcc, fps, (w, h))
+            out = None
+            codec_used = None
             
+            for codec_name, codec_desc in codecs_to_try:
+                try:
+                    fourcc = cv2.VideoWriter_fourcc(*codec_name)
+                    out = cv2.VideoWriter(output_path, fourcc, fps, (w, h))
+                    
+                    if out.isOpened():
+                        codec_used = codec_desc
+                        break
+                    else:
+                        out.release()
+                        out = None
+                except Exception:
+                    if out is not None:
+                        out.release()
+                    out = None
+                    continue
+            
+            if out is None or not out.isOpened():
+                return False, "Failed to initialize video writer with any codec"
+            
+            # Write all frames
             for frame in frames:
                 # Convert RGB to BGR for OpenCV
                 frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
                 out.write(frame_bgr)
             
             out.release()
-            return True, f"Video saved: {output_path}"
+            return True, f"Video saved: {output_path} (codec: {codec_used})"
             
         except Exception as e:
+            if 'out' in locals() and out is not None:
+                out.release()
             return False, f"Error saving video: {e}"
 
 
