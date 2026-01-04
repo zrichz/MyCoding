@@ -1,141 +1,234 @@
 import torch
 from transformers import BlipProcessor, BlipForConditionalGeneration
 from PIL import Image
-import tkinter as tk
-from tkinter import filedialog, ttk
-import threading
+import gradio as gr
+import os
 
-# Load the BLIP model and processor
+# Load the BLIP model and processor with CPU fallback
 print("Loading BLIP model...")
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print (f"Device: {device}")
+
+# Load processor and model on CPU first
 processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
-model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base").to(device)
+model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base")
+
+# Try to use CUDA, but fall back to CPU if there are any issues
+device = "cpu"  # Default to CPU
+if torch.cuda.is_available():
+    try:
+        print("Attempting to move model to CUDA...")
+        model = model.to("cuda")  # type: ignore
+        # Test with actual inference to catch kernel errors
+        test_tensor = torch.zeros(1, 3, 224, 224).cuda()
+        _ = model.vision_model(test_tensor)
+        device = "cuda"
+        print("✓ CUDA is working - using GPU")
+    except Exception as e:
+        print(f"✗ CUDA error detected: {str(e)[:100]}")
+        print("→ Falling back to CPU")
+        model = model.to("cpu")  # type: ignore
+        device = "cpu"
+else:
+    print("CUDA not available - using CPU")
+    model = model.to("cpu")  # type: ignore
+
+print(f"Final device: {device}")
 print("BLIP model loaded successfully!")
 
 # Function to generate captions using BLIP
 def generate_caption_blip(image, max_length, min_length, num_beams, length_penalty):
-    inputs = processor(images=image, return_tensors="pt").to(device)
-    out = model.generate(
-        **inputs,
-        max_length=max_length,
-        min_length=min_length,
-        num_beams=num_beams,
-        length_penalty=length_penalty,
-        early_stopping=True
-    )
-    caption = processor.decode(out[0], skip_special_tokens=True)
-    return caption
-
-# GUI Application
-class BLIPCaptionerGUI:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("BLIP Image Captioner")
-        self.root.geometry("800x600")
-        
-        # Default image path
-        self.image_path = "/home/rich/MyCoding/images_general/MonaLisa-662199825.jpg"
-        
-        # Create GUI elements
-        self.create_widgets()
-        
-    def create_widgets(self):
-        # File selection frame
-        file_frame = ttk.Frame(self.root, padding="10")
-        file_frame.grid(row=0, column=0, sticky="ew", columnspan=2)
-        
-        ttk.Label(file_frame, text="Image File:").grid(row=0, column=0, sticky="w", padx=(0, 10))
-        
-        self.file_var = tk.StringVar(value=self.image_path)
-        file_entry = ttk.Entry(file_frame, textvariable=self.file_var, width=50, state="readonly")
-        file_entry.grid(row=0, column=1, sticky="ew", padx=(0, 10))
-        
-        browse_btn = ttk.Button(file_frame, text="Browse", command=self.browse_file)
-        browse_btn.grid(row=0, column=2)
-        
-        file_frame.columnconfigure(1, weight=1)
-        
-        # Generate button
-        generate_btn = ttk.Button(self.root, text="Generate Captions", command=self.generate_captions_threaded)
-        generate_btn.grid(row=1, column=0, columnspan=2, pady=20)
-        
-        # Results area
-        results_frame = ttk.Frame(self.root, padding="10")
-        results_frame.grid(row=2, column=0, columnspan=2, sticky="nsew")
-        
-        ttk.Label(results_frame, text="Generated Captions:").grid(row=0, column=0, sticky="w", pady=(0, 10))
-        
-        # Text area with scrollbar
-        text_frame = ttk.Frame(results_frame)
-        text_frame.grid(row=1, column=0, sticky="nsew")
-        
-        self.results_text = tk.Text(text_frame, wrap=tk.WORD, width=70, height=20)
-        scrollbar = ttk.Scrollbar(text_frame, orient="vertical", command=self.results_text.yview)
-        self.results_text.configure(yscrollcommand=scrollbar.set)
-        
-        self.results_text.grid(row=0, column=0, sticky="nsew")
-        scrollbar.grid(row=0, column=1, sticky="ns")
-        
-        text_frame.columnconfigure(0, weight=1)
-        text_frame.rowconfigure(0, weight=1)
-        results_frame.columnconfigure(0, weight=1)
-        results_frame.rowconfigure(1, weight=1)
-        
-        # Configure root grid weights
-        self.root.columnconfigure(0, weight=1)
-        self.root.rowconfigure(2, weight=1)
-        
-    def browse_file(self):
-        file_path = filedialog.askopenfilename(
-            title="Select an image",
-            filetypes=[
-                ("Image files", "*.png *.jpg *.jpeg *.bmp *.tiff"),
-                ("PNG files", "*.png"),
-                ("JPEG files", "*.jpg *.jpeg"),
-                ("All files", "*.*")
-            ]
+    global device, model
+    try:
+        inputs = processor(images=image, return_tensors="pt").to(device)  # type: ignore
+        out = model.generate(
+            **inputs,
+            max_length=max_length,
+            min_length=min_length,
+            num_beams=num_beams,
+            length_penalty=length_penalty,
+            early_stopping=True
         )
-        if file_path:
-            self.file_var.set(file_path)
-            self.image_path = file_path
-            
-    def generate_captions_threaded(self):
-        # Run caption generation in a separate thread to avoid blocking the GUI
-        threading.Thread(target=self.generate_captions, daemon=True).start()
-        
-    def generate_captions(self):
-        try:
-            # Clear previous results
-            self.results_text.delete(1.0, tk.END)
-            self.results_text.insert(tk.END, "Generating captions...\n\n")
-            self.results_text.update()
-            
-            # Load the image
-            im = Image.open(self.image_path).convert("RGB")
-            
-            # Generate captions with increasing lengths
-            for i in range(6):
-                max_length = (i + 1) * 8  # Increase max_length
-                min_length = (i + 1) * 4  # Increase min_length
-                num_beams = 8  # Use beam search with 8 beams
-                length_penalty = 1.25  # increase length penalty to encourage longer captions
-                
-                caption = generate_caption_blip(im, max_length=max_length, min_length=min_length, 
-                                              num_beams=num_beams, length_penalty=length_penalty)
-                
-                # Update results in real-time
-                result_text = f"Caption {i + 1} (max_len={max_length}): {caption}\n\n"
-                self.results_text.insert(tk.END, result_text)
-                self.results_text.see(tk.END)
-                self.results_text.update()
-                
-        except Exception as e:
-            self.results_text.delete(1.0, tk.END)
-            self.results_text.insert(tk.END, f"Error: {str(e)}")
+        caption = processor.decode(out[0], skip_special_tokens=True)
+        return caption
+    except RuntimeError as e:
+        if "CUDA" in str(e) and device == "cuda":
+            print(f"CUDA runtime error detected: {str(e)[:100]}")
+            print("Switching to CPU for all future operations...")
+            device = "cpu"
+            model = model.to("cpu")  # type: ignore
+            # Retry on CPU
+            inputs = processor(images=image, return_tensors="pt").to(device)  # type: ignore
+            out = model.generate(
+                **inputs,
+                max_length=max_length,
+                min_length=min_length,
+                num_beams=num_beams,
+                length_penalty=length_penalty,
+                early_stopping=True
+            )
+            caption = processor.decode(out[0], skip_special_tokens=True)
+            return caption
+        else:
+            raise
 
-# Create and run the GUI
+# Store generated captions globally for saving
+current_captions = []
+current_image_path = None
+
+# Function to handle file upload and set original path
+def handle_file_upload(file_obj):
+    if file_obj is None:
+        return ""
+    # Get the original filename from the temp path
+    temp_path = file_obj.name if hasattr(file_obj, 'name') else file_obj
+    original_name = os.path.basename(temp_path)
+    # Return a suggested path (user can edit)
+    return f"~/images_general/{original_name}"
+
+# Main function for Gradio
+def generate_captions(file_obj):
+    global current_captions, current_image_path
+    current_captions = []
+    current_image_path = None
+    
+    if file_obj is None:
+        yield None, "", gr.update(choices=[], visible=False), gr.update(value="", visible=False)
+        return
+    
+    try:
+        # Store the original file path for later saving
+        current_image_path = file_obj.name if hasattr(file_obj, 'name') else file_obj
+        
+        # Load and convert image
+        image = Image.open(current_image_path).convert("RGB")
+        
+        results = []
+        results.append(f"Using device: {device}\n")
+        results.append("=" * 60 + "\n\n")
+        yield image, "".join(results), gr.update(choices=[], visible=False), gr.update(value="", visible=False)
+        
+        captions_list = []
+        # Generate captions with increasing lengths (skip first 3 iterations)
+        for i in range(3, 6):  # Start from i=3 (only last 3 iterations)
+            max_length = (i + 1) * 8
+            min_length = (i + 1) * 4
+            num_beams = 8
+            length_penalty = 1.25
+            
+            caption = generate_caption_blip(image, max_length=max_length, min_length=min_length, 
+                                          num_beams=num_beams, length_penalty=length_penalty)
+            
+            captions_list.append(caption)
+            results.append(f"Caption {i - 2} (max_len={max_length}, min_len={min_length}):\n")
+            results.append(f"{caption}\n\n")
+            
+            # Yield progressive results
+            yield image, "".join(results), gr.update(choices=[], visible=False), gr.update(value="", visible=False)
+        
+        # Store captions for selection
+        current_captions = captions_list
+        
+        # Show radio buttons with captions
+        caption_choices = [f"Caption {i+1}: {cap}" for i, cap in enumerate(captions_list)]
+        yield image, "".join(results), gr.update(choices=caption_choices, value=None, visible=True), gr.update(value="", visible=True)
+        
+    except Exception as e:
+        yield None, f"Error: {str(e)}", gr.update(choices=[], visible=False), gr.update(value="", visible=False)
+
+# Function to save selected caption
+def save_caption(selected_caption_text, original_path):
+    global current_captions
+    
+    if not original_path:
+        return "⚠ Please specify the original image path."
+    
+    if not selected_caption_text:
+        return "Please select a caption first."
+    
+    try:
+        # Extract caption index from selection
+        caption_idx = int(selected_caption_text.split(":")[0].replace("Caption ", "")) - 1
+        selected_caption = current_captions[caption_idx]
+        
+        # Expand user path (~/... -> /home/user/...)
+        expanded_path = os.path.expanduser(original_path)
+        
+        # Create .txt file path in same directory as original image
+        base_path = os.path.splitext(expanded_path)[0]
+        txt_path = base_path + ".txt"
+        
+        # Save caption
+        with open(txt_path, 'w', encoding='utf-8') as f:
+            f.write(selected_caption)
+        
+        return f"✓ Caption saved to: {txt_path}"
+        
+    except Exception as e:
+        return f"Error saving caption: {str(e)}"
+
+# Create Gradio interface
+with gr.Blocks(title="BLIP Image Captioner") as demo:
+    gr.Markdown("# BLIP Image Captioner")
+    gr.Markdown(f"**Current Device:** {device}")
+    
+    with gr.Row():
+        with gr.Column(scale=1):
+            image_input = gr.File(
+                label="Upload Image File",
+                file_types=["image"]
+            )
+            original_path_input = gr.Textbox(
+                label="Original Image Path (edit if needed)",
+                placeholder="e.g., /home/rich/MyCoding/images_general/image.jpg",
+                info="Caption will be saved as .txt in same directory"
+            )
+            image_preview = gr.Image(
+                label="Image Preview",
+                height=400,
+                interactive=False
+            )
+            generate_btn = gr.Button("Generate Captions", variant="primary")
+        
+        with gr.Column(scale=1):
+            output_text = gr.Textbox(
+                label="Generated Captions",
+                lines=15,
+                max_lines=20
+            )
+    
+    # Auto-populate original path when file is uploaded
+    image_input.change(
+        fn=handle_file_upload,
+        inputs=image_input,
+        outputs=original_path_input
+    )
+    
+    with gr.Column():
+        caption_selector = gr.Radio(
+            label="Select Caption to Save (will auto-save on selection)",
+            choices=[],
+            visible=False
+        )
+        save_status = gr.Textbox(
+            label="Save Status",
+            lines=2,
+            visible=False
+        )
+    
+    generate_btn.click(
+        fn=generate_captions,
+        inputs=image_input,
+        outputs=[image_preview, output_text, caption_selector, save_status]
+    )
+    
+    # Auto-save when caption is selected
+    caption_selector.change(
+        fn=save_caption,
+        inputs=[caption_selector, original_path_input],
+        outputs=save_status
+    )
+    
+    gr.Markdown("---")
+    gr.Markdown("Upload an image file, edit the original path if needed, click 'Generate Captions', then select one to auto-save it.")
+
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = BLIPCaptionerGUI(root)
-    root.mainloop()
+    demo.launch(share=False, inbrowser=True)
