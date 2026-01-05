@@ -48,7 +48,7 @@ def resize_logo(logo_image, max_size=48):
     return logo_image
 
 
-def apply_watermark(image_path, logo_image, position='bottom-right', padding=10):
+def apply_watermark(image_path, logo_image, position='bottom-right', padding=10, opacity=1.0):
     """
     Apply watermark logo to an image.
     
@@ -57,6 +57,7 @@ def apply_watermark(image_path, logo_image, position='bottom-right', padding=10)
         logo_image: PIL Image object of the logo (already resized)
         position: Position of the watermark (currently only bottom-right)
         padding: Padding from edges in pixels
+        opacity: Logo opacity from 0.0 to 1.0
     
     Returns:
         PIL Image object with watermark applied
@@ -67,6 +68,18 @@ def apply_watermark(image_path, logo_image, position='bottom-right', padding=10)
     # Ensure logo is in RGBA mode to handle transparency
     if logo_image.mode != 'RGBA':
         logo_image = logo_image.convert('RGBA')
+    
+    # Apply opacity to the logo
+    if opacity < 1.0:
+        # Create a copy to avoid modifying the original
+        logo_with_opacity = logo_image.copy()
+        # Get the alpha channel
+        alpha = logo_with_opacity.split()[3]
+        # Multiply alpha by opacity
+        alpha = alpha.point(lambda p: int(p * opacity))
+        # Put the modified alpha back
+        logo_with_opacity.putalpha(alpha)
+        logo_image = logo_with_opacity
     
     # Calculate position (bottom-right)
     base_width, base_height = base_image.size
@@ -85,7 +98,7 @@ def apply_watermark(image_path, logo_image, position='bottom-right', padding=10)
     return watermarked
 
 
-def process_directory(logo_file, input_directory, max_logo_size, padding):
+def process_directory(logo_file, input_directory, max_logo_size, padding, opacity):
     """
     Process all images in a directory and apply watermark.
     
@@ -94,6 +107,7 @@ def process_directory(logo_file, input_directory, max_logo_size, padding):
         input_directory: Directory containing images to watermark
         max_logo_size: Maximum width/height for logo
         padding: Padding from edges
+        opacity: Logo opacity (0.5 to 1.0)
     
     Returns:
         Tuple of (status message, list of output file paths)
@@ -137,8 +151,8 @@ def process_directory(logo_file, input_directory, max_logo_size, padding):
     
     for image_path in image_files:
         try:
-            # Apply watermark
-            watermarked = apply_watermark(image_path, logo_resized, padding=padding)
+            # Apply watermark with opacity
+            watermarked = apply_watermark(image_path, logo_resized, padding=padding, opacity=opacity)
             
             # Generate output filename
             rel_path = os.path.relpath(image_path, input_directory)
@@ -161,15 +175,68 @@ def process_directory(logo_file, input_directory, max_logo_size, padding):
             errors.append(f"Error processing {image_path}: {str(e)}")
     
     # Prepare status message
-    status = f"Successfully processed {processed_count} of {len(image_files)} images.\n"
-    status += f"Output saved to: {output_directory}\n"
+    status = f"✅ Successfully processed {processed_count} of {len(image_files)} images.\n"
+    status += f"📁 Output saved to: {output_directory}\n"
     
     if errors:
-        status += f"\nErrors encountered:\n" + "\n".join(errors[:5])
+        status += f"\n⚠️ Errors encountered:\n" + "\n".join(errors[:5])
         if len(errors) > 5:
             status += f"\n... and {len(errors) - 5} more errors."
     
-    return status, output_files[:10]  # Return first 10 for preview
+    return status
+
+
+def preview_watermark(logo_file, input_directory, max_logo_size, padding, opacity):
+    """
+    Generate a preview of the watermark on the first image found in the directory.
+    
+    Args:
+        logo_file: Path to logo file
+        input_directory: Directory containing images
+        max_logo_size: Maximum width/height for logo
+        padding: Padding from edges
+        opacity: Logo opacity (0.5 to 1.0)
+    
+    Returns:
+        PIL Image with watermark applied for preview
+    """
+    if not logo_file:
+        return None
+    
+    if not input_directory or not os.path.isdir(input_directory):
+        return None
+    
+    try:
+        # Load and resize logo
+        logo = Image.open(logo_file)
+        logo_resized = resize_logo(logo, max_size=max_logo_size)
+        
+        # Find first image in directory
+        supported_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.webp'}
+        
+        for root, dirs, files in os.walk(input_directory):
+            for file in files:
+                if Path(file).suffix.lower() in supported_extensions:
+                    first_image = os.path.join(root, file)
+                    
+                    # Apply watermark for preview
+                    watermarked = apply_watermark(first_image, logo_resized, padding=padding, opacity=opacity)
+                    
+                    # Convert to RGB for display
+                    if watermarked.mode == 'RGBA':
+                        # Create white background
+                        background = Image.new('RGB', watermarked.size, (255, 255, 255))
+                        background.paste(watermarked, mask=watermarked.split()[3])
+                        return background
+                    
+                    return watermarked.convert('RGB')
+        
+        # No images found
+        return None
+        
+    except Exception as e:
+        print(f"Preview error: {e}")
+        return None
 
 
 def create_interface():
@@ -177,10 +244,10 @@ def create_interface():
     
     with gr.Blocks(title="Image Watermark Tool") as demo:
         gr.Markdown("# Image Watermark Tool")
-        gr.Markdown("Apply a logo watermark to a directory of images. The logo will be positioned at the bottom-right corner.")
+        gr.Markdown("Apply a logo watermark to a directory of images. Preview shows 1:1 scale with logo at bottom-right corner.")
         
         with gr.Row():
-            with gr.Column():
+            with gr.Column(scale=2):
                 logo_input = gr.File(
                     label="Upload Logo",
                     file_types=["image"],
@@ -215,18 +282,33 @@ def create_interface():
                         info="Distance from bottom-right corner"
                     )
                 
-                process_btn = gr.Button("Process Images", variant="primary")
-            
-            with gr.Column():
-                status_output = gr.Textbox(
-                    label="Status",
-                    lines=10,
-                    max_lines=20
+                opacity = gr.Slider(
+                    minimum=0.5,
+                    maximum=1.0,
+                    value=1.0,
+                    step=0.1,
+                    label="Logo Opacity",
+                    info="1.0 = 100% (fully opaque), 0.5 = 50% (semi-transparent)"
                 )
                 
-                preview_output = gr.File(
-                    label="Preview (First 10 outputs)",
-                    file_count="multiple"
+                with gr.Row():
+                    preview_btn = gr.Button("🔍 Preview First Image", variant="secondary", size="lg")
+                    process_btn = gr.Button("✅ Process All Images", variant="primary", size="lg")
+                
+                status_output = gr.Textbox(
+                    label="Status",
+                    lines=8,
+                    max_lines=20
+                )
+            
+            with gr.Column(scale=3):
+                preview_image = gr.Image(
+                    label="Preview (1:1 scale - Logo position shown at bottom-right)",
+                    type="pil",
+                    show_label=True,
+                    interactive=False,
+                    container=True,
+                    elem_classes=["preview-container"]
                 )
         
         # Set up browse button
@@ -236,16 +318,44 @@ def create_interface():
             outputs=[input_dir]
         )
         
+        # Set up preview button to update on any parameter change
+        preview_btn.click(
+            fn=preview_watermark,
+            inputs=[logo_input, input_dir, max_size, padding, opacity],
+            outputs=[preview_image]
+        )
+        
+        # Auto-update preview when parameters change
+        for component in [logo_input, input_dir, max_size, padding, opacity]:
+            component.change(
+                fn=preview_watermark,
+                inputs=[logo_input, input_dir, max_size, padding, opacity],
+                outputs=[preview_image]
+            )
+        
         # Set up the processing action
         process_btn.click(
             fn=process_directory,
-            inputs=[logo_input, input_dir, max_size, padding],
-            outputs=[status_output, preview_output]
+            inputs=[logo_input, input_dir, max_size, padding, opacity],
+            outputs=[status_output]
         )
     
     return demo
 
 
 if __name__ == "__main__":
+    # Custom CSS for large preview display (moved to launch for Gradio 6.0)
+    custom_css = """
+    .preview-container {
+        height: calc(100vh - 200px) !important;
+        overflow: auto !important;
+    }
+    .preview-container img {
+        max-width: none !important;
+        width: auto !important;
+        height: auto !important;
+    }
+    """
+    
     demo = create_interface()
-    demo.launch(share=False, inbrowser=True)
+    demo.launch(share=False, inbrowser=True, css=custom_css)
