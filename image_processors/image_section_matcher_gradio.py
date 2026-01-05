@@ -123,9 +123,9 @@ def infinite_swap_optimization(result_array, source_sections, sections_per_side,
             result_array[y2_start:y2_end, x2_start:x2_end] = temp_section
             improvements_made += 1
             
-            # Yield progress every 200 improvements
-            if improvements_made % 200 == 0:
-                yield improvements_made, swaps_checked, result_array.copy()
+        # Yield progress every 500 swap attempts
+        if swaps_checked % 500 == 0:
+            yield improvements_made, swaps_checked, result_array.copy()
     
     # Final yield when stopped
     yield improvements_made, swaps_checked, result_array.copy()
@@ -207,13 +207,13 @@ def create_interface():
                 source_image = gr.Image(
                     label="Source Image (sections to match)",
                     type="pil",
-                    height=400
+                    height=300
                 )
                 
                 target_image = gr.Image(
                     label="Target Image (sections to choose from)",
                     type="pil",
-                    height=400
+                    height=300
                 )
                 
                 with gr.Row():
@@ -253,7 +253,7 @@ def create_interface():
         - Randomly assigns target sections to source positions
         - Continuously performs random swaps to improve match quality
         - Each swap is kept only if it improves the overall similarity (using MSE)
-        - Progress updates shown every 200 improvements
+        - Progress updates shown every 500 swap attempts
         - Click "Stop" in Gradio to end the optimization
         """)
         
