@@ -1,0 +1,2 @@
+Version: 1.11.2
+Arguments: ['C:\\hostedtoolcache\\windows\\Python\\3.10.11\\x64\\lib\\site-packages\\delvewheel\\__main__.py', 'repair', '--analyze-existing', '-w', 'dist', 'wheel_temp/llvmlite-0.46.0-cp310-cp310-win_amd64.whl']

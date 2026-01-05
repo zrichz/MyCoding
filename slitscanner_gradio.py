@@ -333,7 +333,8 @@ def process_video(video_file, sampling_method, n_frames):
         cap = cv2.VideoCapture(video_file)
         
         if not cap.isOpened():
-            return None, "❌ Could not open video file. Please check the format.", None
+            yield None, "❌ Could not open video file. Please check the format.", None
+            return
         
         # Get video properties
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -353,9 +354,11 @@ def process_video(video_file, sampling_method, n_frames):
             try:
                 frame_step = int(n_frames)
                 if not (3 <= frame_step <= 1000):
-                    return None, "n frames value must be between 3 and 1000", None
+                    yield None, "n frames value must be between 3 and 1000", None
+                    return
             except (ValueError, TypeError):
-                return None, "Please enter a valid number between 3 and 1000", None
+                yield None, "Please enter a valid number between 3 and 1000", None
+                return
         else:
             frame_step = 1
         
@@ -367,7 +370,8 @@ def process_video(video_file, sampling_method, n_frames):
             frames_to_process = max_width
         
         if frames_to_process == 0:
-            return None, "No frames to process. Video might be too short or frame step too large.", None
+            yield None, "No frames to process. Video might be too short or frame step too large.", None
+            return
         
         # Create output image array
         slitscanned_image = np.zeros((frame_height, frames_to_process, 3), dtype=np.uint8)
@@ -396,7 +400,8 @@ def process_video(video_file, sampling_method, n_frames):
         cap.release()
         
         if processed_count == 0:
-            return None, "No frames were processed. Please check your video file.", None
+            yield None, "No frames were processed. Please check your video file.", None
+            return
         
         # Convert BGR to RGB
         slitscanned_image = cv2.cvtColor(slitscanned_image, cv2.COLOR_BGR2RGB)
@@ -411,17 +416,16 @@ def process_video(video_file, sampling_method, n_frames):
         status_msg += f"Output: {processed_count}x{frame_height}px image\n"
         status_msg += f"Sampling: Every {frame_step} frame(s)"
         
-        return output_image, status_msg, None
+        yield output_image, status_msg, None
         
     except Exception as e:
-        return None, f"Processing failed: {str(e)}", None
+        yield None, f"Processing failed: {str(e)}", None
 
 
 def process_dispatcher(video_file, output_mode, sampling_method, n_frames, frame_step_cube, output_frames, output_fps, downsample_factor, rotate_x, rotate_y, time_travel_mode):
     """Dispatch to appropriate processing function based on output mode"""
     if output_mode == "image":
-        result = process_video(video_file, sampling_method, n_frames)
-        yield result
+        yield from process_video(video_file, sampling_method, n_frames)
     else:  # Video output - this is now a generator
         yield from process_video_to_voxel_cube(video_file, frame_step_cube, output_frames, output_fps, downsample_factor, rotate_x, rotate_y, time_travel_mode)
 
