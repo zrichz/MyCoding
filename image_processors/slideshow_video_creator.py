@@ -25,6 +25,8 @@ import gradio as gr
 from pathlib import Path
 import cv2
 from tqdm import tqdm
+import tempfile
+import shutil
 
 class SlideshowVideoCreator:
     def __init__(self, half_resolution=False):
@@ -248,12 +250,15 @@ def create_slideshow(image_folder, half_resolution, progress=gr.Progress()):
         result = creator.create_slideshow_frames(progress=progress)
         yield f"{result}. Now encoding video...", None
         
-        # Save video
-        output_path = os.path.join(image_folder, "slideshow_output.mp4")
-        result = creator.save_video(output_path, progress=progress)
+        # Save video to temp directory for Gradio 6.0 compatibility
+        temp_output = os.path.join(tempfile.gettempdir(), "slideshow_output.mp4")
+        result = creator.save_video(temp_output, progress=progress)
         
-        if os.path.exists(output_path):
-            yield result, output_path
+        # Also save a copy to the image folder for user convenience
+        final_output = os.path.join(image_folder, "slideshow_output.mp4")
+        if os.path.exists(temp_output):
+            shutil.copy2(temp_output, final_output)
+            yield f"{result}\n✓ Video saved to: {final_output}", temp_output
         else:
             yield result, None
             
@@ -263,7 +268,7 @@ def create_slideshow(image_folder, half_resolution, progress=gr.Progress()):
 
 # Gradio Interface
 def launch_gradio():
-    with gr.Blocks(title="Slideshow Video Creator", theme=gr.themes.Soft()) as app:
+    with gr.Blocks(title="Slideshow Video Creator") as app:
         gr.Markdown("# Slideshow Video Creator")
         
         with gr.Row():
