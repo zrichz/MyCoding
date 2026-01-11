@@ -41,14 +41,14 @@ class FilmicEffectsProcessor:
         self.DEFAULT_SATURATION = 0.30
         self.DEFAULT_CHROMATIC = 0.09
         
-        # Effect parameters
+        # Effect parameters (existing)
         self.grain_intensity = tk.DoubleVar(value=self.DEFAULT_GRAIN)
         self.grain_edge_boost = tk.DoubleVar(value=1.8)
         self.vignette_strength = tk.DoubleVar(value=self.DEFAULT_VIGNETTE)
         self.saturation_reduction = tk.DoubleVar(value=self.DEFAULT_SATURATION)
         self.chromatic_aberration = tk.DoubleVar(value=self.DEFAULT_CHROMATIC)
         
-        # Effect enable/disable toggles
+        # Effect enable/disable toggles (existing)
         self.grain_enabled = tk.BooleanVar(value=True)
         self.vignette_enabled = tk.BooleanVar(value=True)
         self.saturation_enabled = tk.BooleanVar(value=True)
@@ -57,11 +57,50 @@ class FilmicEffectsProcessor:
         # Chromatic aberration center display toggle
         self.show_ca_center = tk.BooleanVar(value=False)
         
-        # Other options
+        # Other options (existing)
         self.vintage_border = tk.BooleanVar(value=True)
         self.unsharp_sharpening = tk.BooleanVar(value=True)
-        self.unsharp_half_strength = tk.BooleanVar(value=False)  # 50% alpha blend option
+        self.unsharp_half_strength = tk.BooleanVar(value=False)
         self.auto_contrast_stretch = tk.BooleanVar(value=True)
+        
+        # NEW: Photographic effects toggles
+        self.apply_tone_curve = tk.BooleanVar(value=False)
+        self.tone_strength = tk.DoubleVar(value=0.5)
+        
+        self.apply_split_tone = tk.BooleanVar(value=False)
+        
+        self.apply_photo_grain = tk.BooleanVar(value=False)
+        self.photo_grain_strength = tk.DoubleVar(value=0.04)
+        
+        self.apply_photo_chromatic = tk.BooleanVar(value=False)
+        self.ca_shift = tk.IntVar(value=1)
+        
+        self.apply_halation = tk.BooleanVar(value=False)
+        self.halation_strength = tk.DoubleVar(value=0.2)
+        
+        self.apply_photo_vignette = tk.BooleanVar(value=False)
+        self.photo_vignette_strength = tk.DoubleVar(value=0.5)
+        
+        self.apply_scan_banding = tk.BooleanVar(value=False)
+        self.banding_strength = tk.DoubleVar(value=0.01)
+        
+        self.apply_rgb_misalignment = tk.BooleanVar(value=False)
+        self.misalign_px = tk.IntVar(value=1)
+        
+        self.apply_dust = tk.BooleanVar(value=False)
+        self.dust_amount = tk.DoubleVar(value=0.001)
+        self.scratch_amount = tk.DoubleVar(value=0.0002)
+        
+        self.apply_jpeg_artifacts = tk.BooleanVar(value=False)
+        self.jpeg_quality = tk.IntVar(value=70)
+        
+        self.apply_lens_distortion = tk.BooleanVar(value=False)
+        self.distortion_strength = tk.DoubleVar(value=-0.0005)
+        
+        # Dithering options
+        self.apply_dithering = tk.BooleanVar(value=False)
+        self.dithering_type = tk.StringVar(value="floyd-steinberg")  # or "bayer"
+        self.dithering_colors = tk.IntVar(value=256)  # colors per channel
         
         # Internal parameters (not exposed in GUI)
         self.unsharp_radius = 1.0        # Gaussian blur radius for unsharp mask
@@ -89,6 +128,15 @@ class FilmicEffectsProcessor:
         self.face_detected = False  # Track if face was detected for current image
         
         self.setup_ui()
+    
+    def create_large_checkbox(self, parent, text, variable, command=None, font_size=12, bold=False):
+        """Helper to create larger, more visible checkboxes"""
+        font_style = ("Arial", font_size, "bold") if bold else ("Arial", font_size)
+        cb = tk.Checkbutton(parent, text=text, variable=variable, 
+                          command=command if command else self.update_preview,
+                          bg='#EBE1D2', selectcolor='#606060', font=font_style,
+                          borderwidth=2, relief='flat', padx=5, pady=3)
+        return cb
         
     def setup_ui(self):
         # Main container
@@ -102,15 +150,8 @@ class FilmicEffectsProcessor:
         style.configure('Dark.TLabel', background='#808080', foreground='black')
         style.configure('Dark.TButton', background='#606060', foreground='white')
         
-        # Configure slider style...
-        style.configure('Blue.Horizontal.TScale', 
-                       background="#2C7078",  
-                       troughcolor='#0080FF',  
-                       sliderthickness=20,     
-                       sliderrelief='raised')
-        style.map('Blue.Horizontal.TScale',
-                 background=[('active', '#FFFFFF'), ('pressed', '#FFFFFF')],  # White slider button
-                 troughcolor=[('active', '#0080FF'), ('pressed', '#0080FF')])  # Keep blue trough
+        # Configure entry style for input boxes
+        style.configure('TEntry', fieldbackground='white', foreground='black')
         
         # Directory selection
         dir_frame = ttk.LabelFrame(main_frame, text="Image Directory", padding=10)
@@ -137,163 +178,210 @@ class FilmicEffectsProcessor:
                                foreground="blue", font=("Arial", 9, "italic"))
         status_label.pack(side=tk.RIGHT, padx=(10, 0))
         
-        # Control panel
-        control_frame = ttk.LabelFrame(main_frame, text="Effect Controls", padding=15)
+        # Control panel with tabbed interface
+        control_frame = ttk.LabelFrame(main_frame, text="Effect Controls", padding=10)
         control_frame.pack(fill='x', pady=(0, 10))
         
-        # Create left and right sections for controls
-        controls_container = ttk.Frame(control_frame)
-        controls_container.pack(fill='x')
+        # Create notebook (tabs) for organized controls
+        notebook = ttk.Notebook(control_frame)
+        notebook.pack(fill='both', expand=True)
         
-        # Left side - main sliders
-        left_controls = ttk.Frame(controls_container)
-        left_controls.pack(side=tk.LEFT, fill='x', expand=True)
+        # Tab 1: Original Effects (TWO COLUMNS)
+        original_tab = ttk.Frame(notebook, padding=10)
+        notebook.add(original_tab, text="Original Effects")
         
-        # Right side - additional options
-        right_controls = ttk.Frame(controls_container)
-        right_controls.pack(side=tk.RIGHT, padx=(20, 0))
+        # Create two column frames
+        left_col = ttk.Frame(original_tab)
+        left_col.grid(row=0, column=0, padx=10, sticky='n')
+        right_col = ttk.Frame(original_tab)
+        right_col.grid(row=0, column=1, padx=10, sticky='n')
         
-        # Film grain controls
-        grain_frame = ttk.Frame(left_controls)
-        grain_frame.pack(fill='x', pady=5)
+        # LEFT COLUMN
+        row = 0
+        # Film grain
+        self.create_large_checkbox(left_col, "Film Grain", self.grain_enabled, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=5)
+        ttk.Label(left_col, text="Intensity:", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
+        self.grain_entry = ttk.Entry(left_col, textvariable=self.grain_intensity, width=10, font=("Arial", 11))
+        self.grain_entry.grid(row=row, column=2, padx=5)
+        self.grain_entry.bind('<Return>', lambda e: self.update_preview())
+        self.grain_entry.bind('<FocusOut>', lambda e: self.update_preview())
+        ttk.Button(left_col, text="Reset", width=8,
+                  command=lambda: self.reset_value(self.grain_intensity, self.DEFAULT_GRAIN)).grid(row=row, column=3, padx=5)
+        row += 1
         
-        grain_check = tk.Checkbutton(grain_frame, text="", variable=self.grain_enabled, 
-                                    command=self.update_preview, bg='#808080', selectcolor='#606060')
-        grain_check.pack(side=tk.LEFT, padx=(0, 5))
+        # Vignette
+        self.create_large_checkbox(left_col, "Vignette", self.vignette_enabled, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=5)
+        ttk.Label(left_col, text="Strength:", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
+        self.vignette_entry = ttk.Entry(left_col, textvariable=self.vignette_strength, width=10, font=("Arial", 11))
+        self.vignette_entry.grid(row=row, column=2, padx=5)
+        self.vignette_entry.bind('<Return>', lambda e: self.update_preview())
+        self.vignette_entry.bind('<FocusOut>', lambda e: self.update_preview())
+        ttk.Button(left_col, text="Reset", width=8,
+                  command=lambda: self.reset_value(self.vignette_strength, self.DEFAULT_VIGNETTE)).grid(row=row, column=3, padx=5)
+        row += 1
         
-        ttk.Label(grain_frame, text="Film Grain Intensity:", 
-                 font=("Arial", 10, "bold"), width=19).pack(side=tk.LEFT)
-        grain_scale = ttk.Scale(grain_frame, from_=0.0, to=0.56, 
-                               variable=self.grain_intensity, orient='horizontal', 
-                               length=500, style='Blue.Horizontal.TScale')
-        grain_scale.pack(side=tk.LEFT, padx=(10, 15))
+        # Saturation
+        self.create_large_checkbox(left_col, "Saturation Reduction", self.saturation_enabled, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=5)
+        ttk.Label(left_col, text="Amount:", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
+        self.saturation_entry = ttk.Entry(left_col, textvariable=self.saturation_reduction, width=10, font=("Arial", 11))
+        self.saturation_entry.grid(row=row, column=2, padx=5)
+        self.saturation_entry.bind('<Return>', lambda e: self.update_preview())
+        self.saturation_entry.bind('<FocusOut>', lambda e: self.update_preview())
+        ttk.Button(left_col, text="Reset", width=8,
+                  command=lambda: self.reset_value(self.saturation_reduction, self.DEFAULT_SATURATION)).grid(row=row, column=3, padx=5)
+        row += 1
         
-        self.grain_label = ttk.Label(grain_frame, text="0.22", width=8,
-                                    font=("Arial", 11, "bold"))
-        self.grain_label.pack(side=tk.LEFT)
+        # Chromatic aberration
+        self.create_large_checkbox(left_col, "Chromatic Aberration", self.chromatic_enabled, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=5)
+        ttk.Label(left_col, text="Amount:", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
+        self.aberration_entry = ttk.Entry(left_col, textvariable=self.chromatic_aberration, width=10, font=("Arial", 11))
+        self.aberration_entry.grid(row=row, column=2, padx=5)
+        self.aberration_entry.bind('<Return>', lambda e: self.update_preview())
+        self.aberration_entry.bind('<FocusOut>', lambda e: self.update_preview())
+        ttk.Button(left_col, text="Reset", width=8,
+                  command=lambda: self.reset_value(self.chromatic_aberration, self.DEFAULT_CHROMATIC)).grid(row=row, column=3, padx=5)
         
-        ttk.Button(grain_frame, text="Reset", width=8,
-                  command=lambda: self.reset_slider(self.grain_intensity, self.grain_label, self.DEFAULT_GRAIN)).pack(side=tk.LEFT, padx=(5, 0))
+        # RIGHT COLUMN - Additional options
+        row = 0
+        self.create_large_checkbox(right_col, "Photo Border", self.vintage_border).grid(row=row, column=0, sticky='w', padx=5, pady=5)
+        row += 1
+        self.create_large_checkbox(right_col, "Unsharp Sharpening", self.unsharp_sharpening).grid(row=row, column=0, sticky='w', padx=5, pady=5)
+        row += 1
+        self.create_large_checkbox(right_col, "  ↳ Apply at 50%", self.unsharp_half_strength, font_size=11).grid(row=row, column=0, sticky='w', padx=5, pady=5)
+        row += 1
+        self.create_large_checkbox(right_col, "Auto-Contrast Stretch", self.auto_contrast_stretch).grid(row=row, column=0, sticky='w', padx=5, pady=5)
+        row += 1
+        self.create_large_checkbox(right_col, "Show Face Center", self.show_ca_center).grid(row=row, column=0, sticky='w', padx=5, pady=5)
         
-        # Vignette controls
-        vignette_frame = ttk.Frame(left_controls)
-        vignette_frame.pack(fill='x', pady=5)
+        # Tab 2: Photographic Effects - Part 1 (TWO COLUMNS)
+        photo_tab1 = ttk.Frame(notebook, padding=10)
+        notebook.add(photo_tab1, text="Photo Effects 1")
         
-        vignette_check = tk.Checkbutton(vignette_frame, text="", variable=self.vignette_enabled, 
-                                       command=self.update_preview, bg='#808080', selectcolor='#606060')
-        vignette_check.pack(side=tk.LEFT, padx=(0, 5))
+        # Create two column frames
+        left_col1 = ttk.Frame(photo_tab1)
+        left_col1.grid(row=0, column=0, padx=10, sticky='n')
+        right_col1 = ttk.Frame(photo_tab1)
+        right_col1.grid(row=0, column=1, padx=10, sticky='n')
         
-        ttk.Label(vignette_frame, text="Vignette Strength:", 
-                 font=("Arial", 10, "bold"), width=19).pack(side=tk.LEFT)
-        vignette_scale = ttk.Scale(vignette_frame, from_=0.0, to=0.75, 
-                                  variable=self.vignette_strength, orient='horizontal', 
-                                  length=500, style='Blue.Horizontal.TScale')
-        vignette_scale.pack(side=tk.LEFT, padx=(10, 15))
+        # LEFT COLUMN
+        row = 0
+        # Tone curve
+        self.create_large_checkbox(left_col1, "Tone Curve (S-Curve)", self.apply_tone_curve, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=5)
+        ttk.Label(left_col1, text="Strength:", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
+        ttk.Entry(left_col1, textvariable=self.tone_strength, width=10, font=("Arial", 11)).grid(row=row, column=2, padx=5)
+        row += 1
         
-        self.vignette_label = ttk.Label(vignette_frame, text="0.34", width=8,
-                                       font=("Arial", 11, "bold"))
-        self.vignette_label.pack(side=tk.LEFT)
+        # Split toning
+        self.create_large_checkbox(left_col1, "Split Toning", self.apply_split_tone, bold=True).grid(row=row, column=0, columnspan=3, sticky='w', padx=5, pady=5)
+        row += 1
+        ttk.Label(left_col1, text="(warm shadows/cool)", font=("Arial", 10, "italic")).grid(row=row, column=0, columnspan=3, sticky='w', padx=20, pady=0)
+        row += 1
         
-        ttk.Button(vignette_frame, text="Reset", width=8,
-                  command=lambda: self.reset_slider(self.vignette_strength, self.vignette_label, self.DEFAULT_VIGNETTE)).pack(side=tk.LEFT, padx=(5, 0))
+        # Photo grain
+        self.create_large_checkbox(left_col1, "Photo Grain", self.apply_photo_grain, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=5)
+        ttk.Label(left_col1, text="Strength:", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
+        ttk.Entry(left_col1, textvariable=self.photo_grain_strength, width=10, font=("Arial", 11)).grid(row=row, column=2, padx=5)
+        row += 1
         
-        # Saturation controls
-        saturation_frame = ttk.Frame(left_controls)
-        saturation_frame.pack(fill='x', pady=5)
+        # RIGHT COLUMN
+        row = 0
+        # Photo chromatic aberration
+        self.create_large_checkbox(right_col1, "Photo Chromatic Aberr.", self.apply_photo_chromatic, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=5)
+        ttk.Label(right_col1, text="Shift (px):", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
+        ttk.Entry(right_col1, textvariable=self.ca_shift, width=10, font=("Arial", 11)).grid(row=row, column=2, padx=5)
+        row += 1
         
-        saturation_check = tk.Checkbutton(saturation_frame, text="", variable=self.saturation_enabled, 
-                                         command=self.update_preview, bg='#808080', selectcolor='#606060')
-        saturation_check.pack(side=tk.LEFT, padx=(0, 5))
+        # Halation
+        self.create_large_checkbox(right_col1, "Halation (Glow)", self.apply_halation, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=5)
+        ttk.Label(right_col1, text="Strength:", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
+        ttk.Entry(right_col1, textvariable=self.halation_strength, width=10, font=("Arial", 11)).grid(row=row, column=2, padx=5)
+        row += 1
         
-        ttk.Label(saturation_frame, text="Saturation Reduction:", 
-                 font=("Arial", 10, "bold"), width=19).pack(side=tk.LEFT)
-        saturation_scale = ttk.Scale(saturation_frame, from_=0.0, to=1.0, 
-                                    variable=self.saturation_reduction, orient='horizontal', 
-                                    length=500, style='Blue.Horizontal.TScale')
-        saturation_scale.pack(side=tk.LEFT, padx=(10, 15))
+        # Photo vignette
+        self.create_large_checkbox(right_col1, "Photo Vignette", self.apply_photo_vignette, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=5)
+        ttk.Label(right_col1, text="Strength:", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
+        ttk.Entry(right_col1, textvariable=self.photo_vignette_strength, width=10, font=("Arial", 11)).grid(row=row, column=2, padx=5)
+        row += 1
         
-        self.saturation_label = ttk.Label(saturation_frame, text="0.30", width=8,
-                                         font=("Arial", 11, "bold"))
-        self.saturation_label.pack(side=tk.LEFT)
+        # Tab 3: Photographic Effects - Part 2 (TWO COLUMNS)
+        photo_tab2 = ttk.Frame(notebook, padding=10)
+        notebook.add(photo_tab2, text="Photo Effects 2")
         
-        ttk.Button(saturation_frame, text="Reset", width=8,
-                  command=lambda: self.reset_slider(self.saturation_reduction, self.saturation_label, self.DEFAULT_SATURATION)).pack(side=tk.LEFT, padx=(5, 0))
+        # Create two column frames
+        left_col2 = ttk.Frame(photo_tab2)
+        left_col2.grid(row=0, column=0, padx=10, sticky='n')
+        right_col2 = ttk.Frame(photo_tab2)
+        right_col2.grid(row=0, column=1, padx=10, sticky='n')
         
-        # Chromatic aberration controls
-        aberration_frame = ttk.Frame(left_controls)
-        aberration_frame.pack(fill='x', pady=5)
+        # LEFT COLUMN
+        row = 0
+        # Scan banding
+        self.create_large_checkbox(left_col2, "Scan Banding", self.apply_scan_banding, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=5)
+        ttk.Label(left_col2, text="Strength:", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
+        ttk.Entry(left_col2, textvariable=self.banding_strength, width=10, font=("Arial", 11)).grid(row=row, column=2, padx=5)
+        row += 1
         
-        chromatic_check = tk.Checkbutton(aberration_frame, text="", variable=self.chromatic_enabled, 
-                                        command=self.update_preview, bg='#808080', selectcolor='#606060')
-        chromatic_check.pack(side=tk.LEFT, padx=(0, 5))
+        # RGB misalignment
+        self.create_large_checkbox(left_col2, "RGB Misalignment", self.apply_rgb_misalignment, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=5)
+        ttk.Label(left_col2, text="Shift (px):", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
+        ttk.Entry(left_col2, textvariable=self.misalign_px, width=10, font=("Arial", 11)).grid(row=row, column=2, padx=5)
+        row += 1
         
-        ttk.Label(aberration_frame, text="Chromatic Aberration:", 
-                 font=("Arial", 10, "bold"), width=19).pack(side=tk.LEFT)
-        aberration_scale = ttk.Scale(aberration_frame, from_=0.0, to=1.0, 
-                                    variable=self.chromatic_aberration, orient='horizontal', 
-                                    length=500, style='Blue.Horizontal.TScale')
-        aberration_scale.pack(side=tk.LEFT, padx=(10, 15))
+        # Dust & scratches
+        self.create_large_checkbox(left_col2, "Dust & Scratches", self.apply_dust, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=5)
+        ttk.Label(left_col2, text="Dust:", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
+        ttk.Entry(left_col2, textvariable=self.dust_amount, width=10, font=("Arial", 11)).grid(row=row, column=2, padx=5)
+        row += 1
+        ttk.Label(left_col2, text="Scratches:", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
+        ttk.Entry(left_col2, textvariable=self.scratch_amount, width=10, font=("Arial", 11)).grid(row=row, column=2, padx=5)
+        row += 1
         
-        self.aberration_label = ttk.Label(aberration_frame, text="0.09", width=8,
-                                         font=("Arial", 11, "bold"))
-        self.aberration_label.pack(side=tk.LEFT)
+        # RIGHT COLUMN
+        row = 0
+        # JPEG artifacts
+        self.create_large_checkbox(right_col2, "JPEG Artifacts", self.apply_jpeg_artifacts, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=5)
+        ttk.Label(right_col2, text="Quality:", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
+        ttk.Entry(right_col2, textvariable=self.jpeg_quality, width=10, font=("Arial", 11)).grid(row=row, column=2, padx=5)
+        row += 1
+        ttk.Label(right_col2, text="(1-100)", font=("Arial", 9, "italic")).grid(row=row, column=0, columnspan=3, sticky='w', padx=20, pady=0)
+        row += 1
         
-        ttk.Button(aberration_frame, text="Reset", width=8,
-                  command=lambda: self.reset_slider(self.chromatic_aberration, self.aberration_label, self.DEFAULT_CHROMATIC)).pack(side=tk.LEFT, padx=(5, 0))
+        # Lens distortion
+        self.create_large_checkbox(right_col2, "Lens Distortion", self.apply_lens_distortion, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=5)
+        ttk.Label(right_col2, text="Strength:", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
+        ttk.Entry(right_col2, textvariable=self.distortion_strength, width=10, font=("Arial", 11)).grid(row=row, column=2, padx=5)
+        row += 1
+        ttk.Label(right_col2, text="(-ve=barrel, +ve=pincushion)", font=("Arial", 9, "italic")).grid(row=row, column=0, columnspan=3, sticky='w', padx=20, pady=0)
+        row += 1
         
-        # Show face outline checkbox
-        ca_center_check = tk.Checkbutton(aberration_frame, text="Show Face centre", 
-                                        variable=self.show_ca_center, command=self.update_preview,
-                                        bg='#808080', fg='black', selectcolor='#606060',
-                                        activebackground='#808080', activeforeground='black',
-                                        font=("Arial", 10, "bold"))
-        ca_center_check.pack(side=tk.LEFT, padx=(10, 0))
+        # Add separator
+        ttk.Separator(right_col2, orient='horizontal').grid(row=row, column=0, columnspan=3, sticky='ew', pady=10)
+        row += 1
         
-        # Right side controls - Additional options
-        ttk.Label(right_controls, text="Additional Options", 
-                 font=("Arial", 11, "bold")).pack(pady=(0, 10))
+        # Dithering
+        self.create_large_checkbox(right_col2, "Color Dithering", self.apply_dithering, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=5)
+        row += 1
         
-        # Vintage border checkbox
-        vintage_border_check = tk.Checkbutton(right_controls, text="Photo Border", 
-                                             variable=self.vintage_border, command=self.update_preview,
-                                             bg='#808080', fg='black', selectcolor='#606060',
-                                             activebackground='#808080', activeforeground='black',
-                                             font=("Arial", 9))
-        vintage_border_check.pack(anchor='w', pady=2)
+        # Dithering type radio buttons
+        ttk.Label(right_col2, text="Type:", font=("Arial", 11)).grid(row=row, column=0, sticky='w', padx=20, pady=2)
+        rb1 = tk.Radiobutton(right_col2, text="Floyd-Steinberg", variable=self.dithering_type, value="floyd-steinberg",
+                      command=self.update_preview, bg='#EBE1D2', selectcolor='#606060',
+                      font=("Arial", 11), borderwidth=2, pady=3)
+        rb1.grid(row=row, column=1, sticky='w', padx=5, pady=2)
+        row += 1
+        rb2 = tk.Radiobutton(right_col2, text="Bayer", variable=self.dithering_type, value="bayer",
+                      command=self.update_preview, bg='#EBE1D2', selectcolor='#606060',
+                      font=("Arial", 11), borderwidth=2, pady=3)
+        rb2.grid(row=row, column=1, sticky='w', padx=5, pady=2)
+        row += 1
         
-        # Unsharp sharpening checkbox
-        unsharp_check = tk.Checkbutton(right_controls, text="Unsharp Sharpening", 
-                                      variable=self.unsharp_sharpening, command=self.update_preview,
-                                      bg='#808080', fg='black', selectcolor='#606060',
-                                      activebackground='#808080', activeforeground='black',
-                                      font=("Arial", 9))
-        unsharp_check.pack(anchor='w', pady=2)
-        
-        # Unsharp half-strength option (indented sub-option)
-        unsharp_half_check = tk.Checkbutton(right_controls, text="  ↳ Apply at 50% (softer)", 
-                                           variable=self.unsharp_half_strength, command=self.update_preview,
-                                           bg='#808080', fg='black', selectcolor='#606060',
-                                           activebackground='#808080', activeforeground='black',
-                                           font=("Arial", 9))
-        unsharp_half_check.pack(anchor='w', pady=2)
-        
-        # Auto-contrast stretch checkbox
-        contrast_check = tk.Checkbutton(right_controls, text="Auto-Contrast Stretch", 
-                                       variable=self.auto_contrast_stretch, command=self.update_preview,
-                                       bg='#808080', fg='black', selectcolor='#606060',
-                                       activebackground='#808080', activeforeground='black',
-                                       font=("Arial", 9))
-        contrast_check.pack(anchor='w', pady=2)
+        ttk.Label(right_col2, text="Colors/ch:", font=("Arial", 11)).grid(row=row, column=0, sticky='w', padx=20, pady=2)
+        ttk.Entry(right_col2, textvariable=self.dithering_colors, width=10, font=("Arial", 11)).grid(row=row, column=1, padx=5, pady=2)
+        row += 1
         
         # Restore defaults button
-        ttk.Button(right_controls, text="Restore All Defaults", 
-                  command=self.restore_all_defaults).pack(pady=(15, 0))
-        
-        # Update labels when scales change
-        grain_scale.configure(command=self.update_grain_label)
-        vignette_scale.configure(command=self.update_vignette_label)
-        saturation_scale.configure(command=self.update_saturation_label)
-        aberration_scale.configure(command=self.update_aberration_label)
+        ttk.Button(control_frame, text="Restore All Defaults", 
+                  command=self.restore_all_defaults).pack(pady=(10, 0))
         
         # Preview and processing controls
         action_frame = ttk.Frame(main_frame)
@@ -386,44 +474,17 @@ class FilmicEffectsProcessor:
         self.original_scrollbar = original_scrollbar
         self.processed_scrollbar = processed_scrollbar
         
-    def update_grain_label(self, value):
-        """Update grain intensity label"""
-        self.grain_label.config(text=f"{float(value):.2f}")
-        self.update_preview()
-        
-    def update_vignette_label(self, value):
-        """Update vignette strength label"""
-        self.vignette_label.config(text=f"{float(value):.2f}")
-        self.update_preview()
-        
-    def update_saturation_label(self, value):
-        """Update saturation reduction label"""
-        self.saturation_label.config(text=f"{float(value):.2f}")
-        self.update_preview()
-        
-    def update_aberration_label(self, value):
-        """Update chromatic aberration label"""
-        self.aberration_label.config(text=f"{float(value):.2f}")
-        self.update_preview()
-        
-    def reset_slider(self, variable, label, default_value):
-        """Reset a specific slider to its default value"""
+    def reset_value(self, variable, default_value):
+        """Reset a specific value to its default"""
         variable.set(default_value)
-        label.config(text=f"{default_value:.2f}")
         self.update_preview()
         
     def restore_all_defaults(self):
-        """Restore all slider values to their defaults"""
+        """Restore all values to their defaults"""
         self.grain_intensity.set(self.DEFAULT_GRAIN)
         self.vignette_strength.set(self.DEFAULT_VIGNETTE)
         self.saturation_reduction.set(self.DEFAULT_SATURATION)
         self.chromatic_aberration.set(self.DEFAULT_CHROMATIC)
-        
-        # Update labels
-        self.grain_label.config(text=f"{self.DEFAULT_GRAIN:.2f}")
-        self.vignette_label.config(text=f"{self.DEFAULT_VIGNETTE:.2f}")
-        self.saturation_label.config(text=f"{self.DEFAULT_SATURATION:.2f}")
-        self.aberration_label.config(text=f"{self.DEFAULT_CHROMATIC:.2f}")
         
         # Update preview
         self.update_preview()
@@ -758,7 +819,144 @@ class FilmicEffectsProcessor:
         if self.vintage_border.get():
             current_result = self.create_vintage_border(current_result)
         
+        # Apply new photographic effects if any are enabled
+        if (self.apply_tone_curve.get() or self.apply_split_tone.get() or 
+            self.apply_photo_grain.get() or self.apply_photo_chromatic.get() or 
+            self.apply_halation.get() or self.apply_photo_vignette.get() or 
+            self.apply_scan_banding.get() or self.apply_rgb_misalignment.get() or 
+            self.apply_dust.get() or self.apply_jpeg_artifacts.get() or 
+            self.apply_lens_distortion.get()):
+            
+            # Convert PIL to numpy/cv2 format (BGR)
+            current_result = self.apply_photographic_effects(current_result)
+        
+        # Apply dithering as final step if enabled
+        if self.apply_dithering.get():
+            current_result = self.apply_dithering_effect(current_result)
+        
         return current_result
+    
+    def apply_photographic_effects(self, pil_image):
+        """Apply photographic effects using the make_image_look_photographed function"""
+        try:
+            # Convert PIL image to numpy array (RGB)
+            img_array = np.array(pil_image)
+            
+            # Convert RGB to BGR for OpenCV
+            if FACE_DETECTION_AVAILABLE:
+                img_bgr = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
+            else:
+                # If cv2 not available, just flip channels manually
+                img_bgr = img_array[:, :, ::-1].copy()
+            
+            # Apply the photographic effects
+            result_bgr = make_image_look_photographed(
+                img_bgr,
+                apply_tone_curve=self.apply_tone_curve.get(),
+                tone_strength=self.tone_strength.get(),
+                apply_split_tone=self.apply_split_tone.get(),
+                apply_grain=self.apply_photo_grain.get(),
+                grain_strength=self.photo_grain_strength.get(),
+                apply_chromatic_aberration=self.apply_photo_chromatic.get(),
+                ca_shift=self.ca_shift.get(),
+                apply_halation=self.apply_halation.get(),
+                halation_strength=self.halation_strength.get(),
+                apply_vignette=self.apply_photo_vignette.get(),
+                vignette_strength=self.photo_vignette_strength.get(),
+                apply_scan_banding=self.apply_scan_banding.get(),
+                banding_strength=self.banding_strength.get(),
+                apply_rgb_misalignment=self.apply_rgb_misalignment.get(),
+                misalign_px=self.misalign_px.get(),
+                apply_dust=self.apply_dust.get(),
+                dust_amount=self.dust_amount.get(),
+                scratch_amount=self.scratch_amount.get(),
+                apply_jpeg_artifacts=self.apply_jpeg_artifacts.get(),
+                jpeg_quality=self.jpeg_quality.get(),
+                apply_lens_distortion=self.apply_lens_distortion.get(),
+                distortion_strength=self.distortion_strength.get(),
+                apply_lut=False,  # LUT not implemented in UI yet
+                lut=None
+            )
+            
+            # Convert back to RGB for PIL
+            if FACE_DETECTION_AVAILABLE:
+                result_rgb = cv2.cvtColor(result_bgr, cv2.COLOR_BGR2RGB)
+            else:
+                result_rgb = result_bgr[:, :, ::-1].copy()
+            
+            # Convert back to PIL Image
+            return Image.fromarray(result_rgb)
+            
+        except Exception as e:
+            print(f"Error applying photographic effects: {e}")
+            return pil_image
+    
+    def apply_dithering_effect(self, image):
+        """Apply Floyd-Steinberg or Bayer dithering to the image"""
+        try:
+            img_array = np.array(image).astype(np.float32)
+            h, w, c = img_array.shape
+            colors_per_channel = max(2, min(256, self.dithering_colors.get()))
+            
+            if self.dithering_type.get() == "floyd-steinberg":
+                # Floyd-Steinberg dithering
+                result = img_array.copy()
+                
+                for y in range(h):
+                    for x in range(w):
+                        old_pixel = result[y, x].copy()
+                        
+                        # Quantize to reduced color palette
+                        new_pixel = np.round(old_pixel * (colors_per_channel - 1) / 255.0) * 255.0 / (colors_per_channel - 1)
+                        result[y, x] = new_pixel
+                        
+                        # Calculate quantization error
+                        quant_error = old_pixel - new_pixel
+                        
+                        # Distribute error to neighboring pixels
+                        if x + 1 < w:
+                            result[y, x + 1] += quant_error * 7/16
+                        if y + 1 < h:
+                            if x > 0:
+                                result[y + 1, x - 1] += quant_error * 3/16
+                            result[y + 1, x] += quant_error * 5/16
+                            if x + 1 < w:
+                                result[y + 1, x + 1] += quant_error * 1/16
+                
+                result = np.clip(result, 0, 255).astype(np.uint8)
+                
+            else:  # Bayer dithering
+                # 8x8 Bayer matrix
+                bayer_matrix = np.array([
+                    [ 0, 32,  8, 40,  2, 34, 10, 42],
+                    [48, 16, 56, 24, 50, 18, 58, 26],
+                    [12, 44,  4, 36, 14, 46,  6, 38],
+                    [60, 28, 52, 20, 62, 30, 54, 22],
+                    [ 3, 35, 11, 43,  1, 33,  9, 41],
+                    [51, 19, 59, 27, 49, 17, 57, 25],
+                    [15, 47,  7, 39, 13, 45,  5, 37],
+                    [63, 31, 55, 23, 61, 29, 53, 21]
+                ]) / 64.0  # Normalize to 0-1
+                
+                # Apply Bayer dithering
+                result = img_array.copy()
+                
+                for y in range(h):
+                    for x in range(w):
+                        # Get threshold from Bayer matrix
+                        threshold = bayer_matrix[y % 8, x % 8] * (255.0 / colors_per_channel)
+                        
+                        # Quantize with threshold
+                        pixel = result[y, x] + threshold - 127.5 / colors_per_channel
+                        result[y, x] = np.round(pixel * (colors_per_channel - 1) / 255.0) * 255.0 / (colors_per_channel - 1)
+                
+                result = np.clip(result, 0, 255).astype(np.uint8)
+            
+            return Image.fromarray(result)
+            
+        except Exception as e:
+            print(f"Error applying dithering: {e}")
+            return image
         
     def update_preview(self, event=None):
         """Update preview with current effects showing full 1600px images at 1:1 scale with scrolling"""
@@ -1098,6 +1296,213 @@ class FilmicEffectsProcessor:
         except Exception as e:
             print(f"Error applying auto contrast stretch: {e}")
             return image
+
+
+def make_image_look_photographed(
+    img,
+
+    # tonal shaping
+    apply_tone_curve=True,
+    tone_strength=0.5,
+
+    # colour shaping
+    apply_split_tone=True,
+    shadow_tint=(1.05, 1.0, 0.95),
+    highlight_tint=(0.95, 1.0, 1.05),
+
+    # grain
+    apply_grain=True,
+    grain_strength=0.04,
+
+    # lens imperfections
+    apply_chromatic_aberration=True,
+    ca_shift=1,
+
+    apply_halation=True,
+    halation_strength=0.2,
+
+    apply_vignette=True,
+    vignette_strength=0.5,
+
+    # scan / print artifacts
+    apply_scan_banding=True,
+    banding_strength=0.01,
+
+    apply_rgb_misalignment=True,
+    misalign_px=1,
+
+    # texture overlay
+    paper_texture=None,
+    texture_strength=0.1,
+
+    # NEW: dust & scratches
+    apply_dust=True,
+    dust_amount=0.001,
+    scratch_amount=0.0002,
+
+    # NEW: JPEG compression artifacts
+    apply_jpeg_artifacts=True,
+    jpeg_quality=70,
+
+    # NEW: lens distortion
+    apply_lens_distortion=True,
+    distortion_strength=-0.0005,  # negative = barrel, positive = pincushion
+
+    # NEW: LUT (film stock)
+    apply_lut=False,
+    lut=None,  # 256x1x3 LUT or 3D LUT converted to 1D
+):
+    """
+    Takes an image (NumPy array, BGR 0–255) and applies a stack of
+    realism-enhancing effects to simulate a photographed print/scan.
+    """
+
+    img = img.astype(np.float32) / 255.0
+    h, w, _ = img.shape
+
+    # -------------------------------
+    # 1. Tone curve
+    # -------------------------------
+    if apply_tone_curve:
+        def s_curve(x, s=tone_strength):
+            return 1 / (1 + np.exp(-s * (x - 0.5)))
+        img = s_curve(img)
+
+    # -------------------------------
+    # 2. Split toning
+    # -------------------------------
+    if apply_split_tone:
+        shadows = np.clip(img * shadow_tint, 0, 1)
+        highlights = np.clip(img * highlight_tint, 0, 1)
+        mask = img > 0.5
+        img = np.where(mask, highlights, shadows)
+
+    # -------------------------------
+    # 3. Film grain
+    # -------------------------------
+    if apply_grain:
+        grain = np.random.normal(0, grain_strength, (h, w, 1))
+        grain = np.repeat(grain, 3, axis=2)
+        luma = img.mean(axis=2, keepdims=True)
+        grain *= (0.5 - np.abs(luma - 0.5)) * 2
+        img = np.clip(img + grain, 0, 1)
+
+    # -------------------------------
+    # 4. Chromatic aberration
+    # -------------------------------
+    if apply_chromatic_aberration:
+        def shift_channel(ch, dx, dy):
+            M = np.float32([[1, 0, dx], [0, 1, dy]])
+            return cv2.warpAffine(ch, M, (w, h))
+
+        b, g, r = cv2.split(img)
+        r = shift_channel(r, ca_shift, 0)
+        b = shift_channel(b, -ca_shift, 0)
+        img = cv2.merge([b, g, r])
+
+    # -------------------------------
+    # 5. Halation
+    # -------------------------------
+    if apply_halation:
+        blur = cv2.GaussianBlur(img, (0, 0), 5)
+        img = np.clip(img + blur * halation_strength, 0, 1)
+
+    # -------------------------------
+    # 6. Vignette
+    # -------------------------------
+    if apply_vignette:
+        Y, X = np.ogrid[:h, :w]
+        dist = np.sqrt((X - w/2)**2 + (Y - h/2)**2)
+        vignette = 1 - (dist / dist.max())**2 * vignette_strength
+        vignette = vignette[..., None]
+        img *= vignette
+
+    # -------------------------------
+    # 7. Scan banding
+    # -------------------------------
+    if apply_scan_banding:
+        bands = (np.sin(np.linspace(0, 50, h)) * banding_strength).reshape(h, 1, 1)
+        img = np.clip(img + bands, 0, 1)
+
+    # -------------------------------
+    # 8. RGB misalignment
+    # -------------------------------
+    if apply_rgb_misalignment:
+        def shift(ch, dx, dy):
+            M = np.float32([[1, 0, dx], [0, 1, dy]])
+            return cv2.warpAffine(ch, M, (w, h))
+
+        b, g, r = cv2.split(img)
+        r = shift(r, misalign_px, 0)
+        g = shift(g, 0, -misalign_px)
+        b = shift(b, -misalign_px, misalign_px)
+        img = cv2.merge([b, g, r])
+
+    # -------------------------------
+    # 9. Paper texture
+    # -------------------------------
+    if paper_texture is not None:
+        tex = cv2.resize(paper_texture.astype(np.float32) / 255.0, (w, h))
+        img = img * (1 - texture_strength) + tex * texture_strength
+
+    # -------------------------------
+    # 10. Dust & scratches (IMPROVED)
+    # -------------------------------
+    if apply_dust and (dust_amount > 0 or scratch_amount > 0):
+        # Create dust (dark spots)
+        if dust_amount > 0:
+            num_dust = int(h * w * dust_amount)
+            if num_dust > 0:
+                dust_y = np.random.randint(0, h, num_dust)
+                dust_x = np.random.randint(0, w, num_dust)
+                dust_sizes = np.random.randint(1, 4, num_dust)  # Small spots
+                
+                for y, x, size in zip(dust_y, dust_x, dust_sizes):
+                    y1, y2 = max(0, y-size), min(h, y+size)
+                    x1, x2 = max(0, x-size), min(w, x+size)
+                    # Darken the spot slightly
+                    img[y1:y2, x1:x2] *= 0.7
+        
+        # Create scratches (light lines)
+        if scratch_amount > 0:
+            num_scratches = int(h * scratch_amount * 10)  # Adjust multiplier for visible effect
+            if num_scratches > 0:
+                for _ in range(num_scratches):
+                    x = np.random.randint(0, w)
+                    y_start = np.random.randint(0, h // 2)
+                    y_end = y_start + np.random.randint(h // 4, h)
+                    y_end = min(y_end, h)
+                    thickness = np.random.randint(1, 2)
+                    
+                    # Draw a light vertical scratch
+                    x1, x2 = max(0, x-thickness), min(w, x+thickness)
+                    img[y_start:y_end, x1:x2] = np.clip(img[y_start:y_end, x1:x2] + 0.15, 0, 1)
+
+    # -------------------------------
+    # 11. JPEG artifacts
+    # -------------------------------
+    if apply_jpeg_artifacts:
+        encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), jpeg_quality]
+        _, enc = cv2.imencode(".jpg", (img * 255).astype(np.uint8), encode_param)
+        img = cv2.imdecode(enc, cv2.IMREAD_COLOR).astype(np.float32) / 255.0
+
+    # -------------------------------
+    # 12. Lens distortion
+    # -------------------------------
+    if apply_lens_distortion:
+        K = np.array([[w, 0, w/2], [0, w, h/2], [0, 0, 1]], dtype=np.float32)
+        D = np.array([distortion_strength, 0, 0, 0], dtype=np.float32)
+        img = cv2.undistort(img, K, D)
+
+    # -------------------------------
+    # 13. LUT (film stock)
+    # -------------------------------
+    if apply_lut and lut is not None:
+        img_uint = (img * 255).astype(np.uint8)
+        img = cv2.LUT(img_uint, lut).astype(np.float32) / 255.0
+
+    return (img * 255).astype(np.uint8)
+
         
 def main():
     # Check if required packages are available
