@@ -60,6 +60,7 @@ class FilmicEffectsProcessor:
         # Other options
         self.vintage_border = tk.BooleanVar(value=True)
         self.unsharp_sharpening = tk.BooleanVar(value=True)
+        self.unsharp_half_strength = tk.BooleanVar(value=False)  # 50% alpha blend option
         self.auto_contrast_stretch = tk.BooleanVar(value=True)
         
         # Internal parameters (not exposed in GUI)
@@ -267,6 +268,14 @@ class FilmicEffectsProcessor:
                                       activebackground='#808080', activeforeground='black',
                                       font=("Arial", 9))
         unsharp_check.pack(anchor='w', pady=2)
+        
+        # Unsharp half-strength option (indented sub-option)
+        unsharp_half_check = tk.Checkbutton(right_controls, text="  ↳ Apply at 50% (softer)", 
+                                           variable=self.unsharp_half_strength, command=self.update_preview,
+                                           bg='#808080', fg='black', selectcolor='#606060',
+                                           activebackground='#808080', activeforeground='black',
+                                           font=("Arial", 9))
+        unsharp_half_check.pack(anchor='w', pady=2)
         
         # Auto-contrast stretch checkbox
         contrast_check = tk.Checkbutton(right_controls, text="Auto-Contrast Stretch", 
@@ -1024,7 +1033,7 @@ class FilmicEffectsProcessor:
     def apply_unsharp_sharpening(self, image):
         """Apply unsharp mask sharpening to the image using internal parameters."""
         try:
-            from PIL import ImageFilter
+            from PIL import ImageFilter, ImageChops
             
             # Use internal parameters (not exposed in GUI)
             radius = self.unsharp_radius  # 2.0
@@ -1038,7 +1047,12 @@ class FilmicEffectsProcessor:
                 threshold=int(threshold)  # Convert to integer
             ))
             
-            return sharpened
+            # If half-strength is enabled, blend at 50% with original
+            if self.unsharp_half_strength.get():
+                # Blend: 50% original + 50% sharpened
+                return Image.blend(image, sharpened, 0.5)
+            else:
+                return sharpened
             
         except Exception as e:
             print(f"Error applying unsharp sharpening: {e}")
