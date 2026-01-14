@@ -36,7 +36,7 @@ class FilmicEffectsProcessor:
         self.processed_photo_ref = None
         
         # Default values for effects
-        self.DEFAULT_VIGNETTE = 0.34
+        self.DEFAULT_VIGNETTE = 0.15
         self.DEFAULT_SATURATION = 0.15
         self.DEFAULT_CHROMATIC = 0.03
         
@@ -61,10 +61,8 @@ class FilmicEffectsProcessor:
         self.auto_contrast_stretch = tk.BooleanVar(value=True)
         
         # NEW: Photographic effects toggles
-        self.apply_split_tone = tk.BooleanVar(value=False)
-        
         self.apply_photo_grain = tk.BooleanVar(value=False)
-        self.photo_grain_strength = tk.DoubleVar(value=0.03)
+        self.photo_grain_strength = tk.DoubleVar(value=0.025)
         
         self.apply_halation = tk.BooleanVar(value=False)
         self.halation_strength = tk.DoubleVar(value=0.05)
@@ -239,11 +237,8 @@ class FilmicEffectsProcessor:
         
         # COLUMN 1
         row = 0
-        # Split toning
-        self.create_large_checkbox(col1_p1, "Split Toning", self.apply_split_tone, bold=True).grid(row=row, column=0, columnspan=3, sticky='w', padx=5, pady=2)
-        row += 1
-        ttk.Label(col1_p1, text="(warm shadows/cool)", font=("Arial", 10, "italic")).grid(row=row, column=0, columnspan=3, sticky='w', padx=20, pady=0)
-        row += 1
+        # Split toning - REMOVED
+        # row += 1
         
         # COLUMN 2
         row = 0
@@ -750,8 +745,7 @@ class FilmicEffectsProcessor:
             current_result = self.create_vintage_border(current_result)
         
         # Apply new photographic effects if any are enabled
-        if (self.apply_split_tone.get() or 
-            self.apply_photo_grain.get() or 
+        if (self.apply_photo_grain.get() or 
             self.apply_halation.get() or 
             self.apply_jpeg_artifacts.get() or 
             self.apply_lens_distortion.get()):
@@ -783,7 +777,6 @@ class FilmicEffectsProcessor:
                 img_bgr,
                 apply_tone_curve=False,
                 tone_strength=0.5,
-                apply_split_tone=self.apply_split_tone.get(),
                 apply_grain=self.apply_photo_grain.get(),
                 grain_strength=self.photo_grain_strength.get(),
                 apply_chromatic_aberration=False,
@@ -1016,11 +1009,11 @@ class FilmicEffectsProcessor:
                     filmic_dir = image_path.parent / "filmic"
                     filmic_dir.mkdir(exist_ok=True)
                     
-                    # Create output filename in filmic subdirectory
-                    output_path = filmic_dir / f"{image_path.stem}_filmic{image_path.suffix}"
+                    # Create output filename in filmic subdirectory - always save as JPG
+                    output_path = filmic_dir / f"{image_path.stem}_filmic.jpg"
                     
-                    # Save processed image
-                    processed.save(output_path, quality=95 if image_path.suffix.lower() in ['.jpg', '.jpeg'] else None)
+                    # Save processed image as 88% quality JPG
+                    processed.save(output_path, quality=88)
                     processed_count += 1
                     
                 except Exception as e:
@@ -1242,11 +1235,6 @@ def make_image_look_photographed(
     apply_tone_curve=True,
     tone_strength=0.5,
 
-    # colour shaping
-    apply_split_tone=True,
-    shadow_tint=(1.05, 1.0, 0.95),
-    highlight_tint=(0.95, 1.0, 1.05),
-
     # grain
     apply_grain=True,
     grain_strength=0.04,
@@ -1306,16 +1294,7 @@ def make_image_look_photographed(
         img = s_curve(img)
 
     # -------------------------------
-    # 2. Split toning
-    # -------------------------------
-    if apply_split_tone:
-        shadows = np.clip(img * shadow_tint, 0, 1)
-        highlights = np.clip(img * highlight_tint, 0, 1)
-        mask = img > 0.5
-        img = np.where(mask, highlights, shadows)
-
-    # -------------------------------
-    # 3. Film grain
+    # 2. Film grain
     # -------------------------------
     if apply_grain:
         grain = np.random.normal(0, grain_strength, (h, w, 1))
