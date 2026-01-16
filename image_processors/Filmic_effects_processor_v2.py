@@ -36,20 +36,17 @@ class FilmicEffectsProcessor:
         self.processed_photo_ref = None
         
         # Default values for effects
-        self.DEFAULT_GRAIN = 0.22
-        self.DEFAULT_VIGNETTE = 0.34
-        self.DEFAULT_SATURATION = 0.30
-        self.DEFAULT_CHROMATIC = 0.09
+        self.DEFAULT_VIGNETTE = 0.15
+        self.DEFAULT_SATURATION = 0.15
+        self.DEFAULT_CHROMATIC = 0.03
         
         # Effect parameters (existing)
-        self.grain_intensity = tk.DoubleVar(value=self.DEFAULT_GRAIN)
         self.grain_edge_boost = tk.DoubleVar(value=1.8)
         self.vignette_strength = tk.DoubleVar(value=self.DEFAULT_VIGNETTE)
         self.saturation_reduction = tk.DoubleVar(value=self.DEFAULT_SATURATION)
         self.chromatic_aberration = tk.DoubleVar(value=self.DEFAULT_CHROMATIC)
         
         # Effect enable/disable toggles (existing)
-        self.grain_enabled = tk.BooleanVar(value=True)
         self.vignette_enabled = tk.BooleanVar(value=True)
         self.saturation_enabled = tk.BooleanVar(value=True)
         self.chromatic_enabled = tk.BooleanVar(value=True)
@@ -58,41 +55,20 @@ class FilmicEffectsProcessor:
         self.show_ca_center = tk.BooleanVar(value=False)
         
         # Other options (existing)
-        self.vintage_border = tk.BooleanVar(value=True)
+        self.vintage_border = tk.BooleanVar(value=False)
         self.unsharp_sharpening = tk.BooleanVar(value=True)
-        self.unsharp_half_strength = tk.BooleanVar(value=False)
+        self.unsharp_half_strength = tk.BooleanVar(value=True)
         self.auto_contrast_stretch = tk.BooleanVar(value=True)
         
         # NEW: Photographic effects toggles
-        self.apply_tone_curve = tk.BooleanVar(value=False)
-        self.tone_strength = tk.DoubleVar(value=0.5)
-        
-        self.apply_split_tone = tk.BooleanVar(value=False)
-        
         self.apply_photo_grain = tk.BooleanVar(value=False)
-        self.photo_grain_strength = tk.DoubleVar(value=0.04)
-        
-        self.apply_photo_chromatic = tk.BooleanVar(value=False)
-        self.ca_shift = tk.IntVar(value=1)
+        self.photo_grain_strength = tk.DoubleVar(value=0.025)
         
         self.apply_halation = tk.BooleanVar(value=False)
-        self.halation_strength = tk.DoubleVar(value=0.2)
-        
-        self.apply_photo_vignette = tk.BooleanVar(value=False)
-        self.photo_vignette_strength = tk.DoubleVar(value=0.5)
-        
-        self.apply_scan_banding = tk.BooleanVar(value=False)
-        self.banding_strength = tk.DoubleVar(value=0.01)
-        
-        self.apply_rgb_misalignment = tk.BooleanVar(value=False)
-        self.misalign_px = tk.IntVar(value=1)
-        
-        self.apply_dust = tk.BooleanVar(value=False)
-        self.dust_amount = tk.DoubleVar(value=0.001)
-        self.scratch_amount = tk.DoubleVar(value=0.0002)
+        self.halation_strength = tk.DoubleVar(value=0.05)
         
         self.apply_jpeg_artifacts = tk.BooleanVar(value=False)
-        self.jpeg_quality = tk.IntVar(value=70)
+        self.jpeg_quality = tk.IntVar(value=20)
         
         self.apply_lens_distortion = tk.BooleanVar(value=False)
         self.distortion_strength = tk.DoubleVar(value=-0.0005)
@@ -100,7 +76,7 @@ class FilmicEffectsProcessor:
         # Dithering options
         self.apply_dithering = tk.BooleanVar(value=False)
         self.dithering_type = tk.StringVar(value="floyd-steinberg")  # or "bayer"
-        self.dithering_colors = tk.IntVar(value=256)  # colors per channel
+        self.dithering_colors = tk.IntVar(value=4)  # colors per channel
         
         # Internal parameters (not exposed in GUI)
         self.unsharp_radius = 1.0        # Gaussian blur radius for unsharp mask
@@ -129,13 +105,14 @@ class FilmicEffectsProcessor:
         
         self.setup_ui()
     
-    def create_large_checkbox(self, parent, text, variable, command=None, font_size=12, bold=False):
+    def create_large_checkbox(self, parent, text, variable, command=None, font_size=13, bold=False):
         """Helper to create larger, more visible checkboxes"""
         font_style = ("Arial", font_size, "bold") if bold else ("Arial", font_size)
         cb = tk.Checkbutton(parent, text=text, variable=variable, 
                           command=command if command else self.update_preview,
-                          bg='#EBE1D2', selectcolor='#606060', font=font_style,
-                          borderwidth=2, relief='flat', padx=5, pady=3)
+                          bg='#EBE1D2', selectcolor='#707070', font=font_style,
+                          borderwidth=2, relief='flat', padx=6, pady=2,
+                          cursor='hand2')
         return cb
         
     def setup_ui(self):
@@ -190,198 +167,151 @@ class FilmicEffectsProcessor:
         original_tab = ttk.Frame(notebook, padding=10)
         notebook.add(original_tab, text="Original Effects")
         
-        # Create two column frames
-        left_col = ttk.Frame(original_tab)
-        left_col.grid(row=0, column=0, padx=10, sticky='n')
-        right_col = ttk.Frame(original_tab)
-        right_col.grid(row=0, column=1, padx=10, sticky='n')
+        # Create four column frames
+        col1 = ttk.Frame(original_tab)
+        col1.grid(row=0, column=0, padx=10, sticky='n')
+        col2 = ttk.Frame(original_tab)
+        col2.grid(row=0, column=1, padx=10, sticky='n')
+        col3 = ttk.Frame(original_tab)
+        col3.grid(row=0, column=2, padx=10, sticky='n')
+        col4 = ttk.Frame(original_tab)
+        col4.grid(row=0, column=3, padx=10, sticky='n')
         
-        # LEFT COLUMN
+        # COLUMN 1
         row = 0
-        # Film grain
-        self.create_large_checkbox(left_col, "Film Grain", self.grain_enabled, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=5)
-        ttk.Label(left_col, text="Intensity:", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
-        self.grain_entry = ttk.Entry(left_col, textvariable=self.grain_intensity, width=10, font=("Arial", 11))
-        self.grain_entry.grid(row=row, column=2, padx=5)
-        self.grain_entry.bind('<Return>', lambda e: self.update_preview())
-        self.grain_entry.bind('<FocusOut>', lambda e: self.update_preview())
-        ttk.Button(left_col, text="Reset", width=8,
-                  command=lambda: self.reset_value(self.grain_intensity, self.DEFAULT_GRAIN)).grid(row=row, column=3, padx=5)
-        row += 1
-        
         # Vignette
-        self.create_large_checkbox(left_col, "Vignette", self.vignette_enabled, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=5)
-        ttk.Label(left_col, text="Strength:", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
-        self.vignette_entry = ttk.Entry(left_col, textvariable=self.vignette_strength, width=10, font=("Arial", 11))
+        self.create_large_checkbox(col1, "Vignette", self.vignette_enabled, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=2)
+        ttk.Label(col1, text="Strength:", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
+        self.vignette_entry = ttk.Entry(col1, textvariable=self.vignette_strength, width=10, font=("Arial", 11))
         self.vignette_entry.grid(row=row, column=2, padx=5)
         self.vignette_entry.bind('<Return>', lambda e: self.update_preview())
         self.vignette_entry.bind('<FocusOut>', lambda e: self.update_preview())
-        ttk.Button(left_col, text="Reset", width=8,
+        ttk.Button(col1, text="Reset", width=8,
                   command=lambda: self.reset_value(self.vignette_strength, self.DEFAULT_VIGNETTE)).grid(row=row, column=3, padx=5)
         row += 1
         
-        # Saturation
-        self.create_large_checkbox(left_col, "Saturation Reduction", self.saturation_enabled, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=5)
-        ttk.Label(left_col, text="Amount:", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
-        self.saturation_entry = ttk.Entry(left_col, textvariable=self.saturation_reduction, width=10, font=("Arial", 11))
-        self.saturation_entry.grid(row=row, column=2, padx=5)
+        # COLUMN 2
+        row = 0
+        # Saturation (no reset button)
+        self.create_large_checkbox(col2, "Saturation Reduction", self.saturation_enabled, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=2)
+        ttk.Label(col2, text="Amount:", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
+        self.saturation_entry = ttk.Entry(col2, textvariable=self.saturation_reduction, width=10, font=("Arial", 11))
+        self.saturation_entry.grid(row=row, column=2, columnspan=2, padx=5)
         self.saturation_entry.bind('<Return>', lambda e: self.update_preview())
         self.saturation_entry.bind('<FocusOut>', lambda e: self.update_preview())
-        ttk.Button(left_col, text="Reset", width=8,
-                  command=lambda: self.reset_value(self.saturation_reduction, self.DEFAULT_SATURATION)).grid(row=row, column=3, padx=5)
         row += 1
         
-        # Chromatic aberration
-        self.create_large_checkbox(left_col, "Chromatic Aberration", self.chromatic_enabled, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=5)
-        ttk.Label(left_col, text="Amount:", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
-        self.aberration_entry = ttk.Entry(left_col, textvariable=self.chromatic_aberration, width=10, font=("Arial", 11))
-        self.aberration_entry.grid(row=row, column=2, padx=5)
+        # COLUMN 3
+        row = 0
+        # Chromatic aberration (no reset button)
+        self.create_large_checkbox(col3, "Chromatic Aberration", self.chromatic_enabled, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=2)
+        ttk.Label(col3, text="Amount:", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
+        self.aberration_entry = ttk.Entry(col3, textvariable=self.chromatic_aberration, width=10, font=("Arial", 11))
+        self.aberration_entry.grid(row=row, column=2, columnspan=2, padx=5)
         self.aberration_entry.bind('<Return>', lambda e: self.update_preview())
         self.aberration_entry.bind('<FocusOut>', lambda e: self.update_preview())
-        ttk.Button(left_col, text="Reset", width=8,
-                  command=lambda: self.reset_value(self.chromatic_aberration, self.DEFAULT_CHROMATIC)).grid(row=row, column=3, padx=5)
         
-        # RIGHT COLUMN - Additional options
-        row = 0
-        self.create_large_checkbox(right_col, "Photo Border", self.vintage_border).grid(row=row, column=0, sticky='w', padx=5, pady=5)
+        # Additional options in columns below
+        row = 1
+        self.create_large_checkbox(col1, "Photo Border", self.vintage_border).grid(row=row, column=0, columnspan=2, sticky='w', padx=5, pady=2)
+        self.create_large_checkbox(col2, "Unsharp Sharpening", self.unsharp_sharpening).grid(row=row, column=0, columnspan=2, sticky='w', padx=5, pady=2)
         row += 1
-        self.create_large_checkbox(right_col, "Unsharp Sharpening", self.unsharp_sharpening).grid(row=row, column=0, sticky='w', padx=5, pady=5)
-        row += 1
-        self.create_large_checkbox(right_col, "  ↳ Apply at 50%", self.unsharp_half_strength, font_size=11).grid(row=row, column=0, sticky='w', padx=5, pady=5)
-        row += 1
-        self.create_large_checkbox(right_col, "Auto-Contrast Stretch", self.auto_contrast_stretch).grid(row=row, column=0, sticky='w', padx=5, pady=5)
-        row += 1
-        self.create_large_checkbox(right_col, "Show Face Center", self.show_ca_center).grid(row=row, column=0, sticky='w', padx=5, pady=5)
+        self.create_large_checkbox(col2, "  ↳ Apply at 50%", self.unsharp_half_strength, font_size=11).grid(row=row, column=0, columnspan=2, sticky='w', padx=5, pady=2)
+        row = 1
+        self.create_large_checkbox(col3, "Auto-Contrast Stretch", self.auto_contrast_stretch).grid(row=row, column=0, columnspan=2, sticky='w', padx=5, pady=2)
+        self.create_large_checkbox(col4, "Show Face Center", self.show_ca_center).grid(row=row, column=0, columnspan=2, sticky='w', padx=5, pady=2)
         
-        # Tab 2: Photographic Effects - Part 1 (TWO COLUMNS)
+        # Tab 2: Photographic Effects - Part 1 (FOUR COLUMNS)
         photo_tab1 = ttk.Frame(notebook, padding=10)
         notebook.add(photo_tab1, text="Photo Effects 1")
         
-        # Create two column frames
-        left_col1 = ttk.Frame(photo_tab1)
-        left_col1.grid(row=0, column=0, padx=10, sticky='n')
-        right_col1 = ttk.Frame(photo_tab1)
-        right_col1.grid(row=0, column=1, padx=10, sticky='n')
+        # Create four column frames
+        col1_p1 = ttk.Frame(photo_tab1)
+        col1_p1.grid(row=0, column=0, padx=10, sticky='n')
+        col2_p1 = ttk.Frame(photo_tab1)
+        col2_p1.grid(row=0, column=1, padx=10, sticky='n')
+        col3_p1 = ttk.Frame(photo_tab1)
+        col3_p1.grid(row=0, column=2, padx=10, sticky='n')
+        col4_p1 = ttk.Frame(photo_tab1)
+        col4_p1.grid(row=0, column=3, padx=10, sticky='n')
         
-        # LEFT COLUMN
+        # COLUMN 1
         row = 0
-        # Tone curve
-        self.create_large_checkbox(left_col1, "Tone Curve (S-Curve)", self.apply_tone_curve, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=5)
-        ttk.Label(left_col1, text="Strength:", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
-        ttk.Entry(left_col1, textvariable=self.tone_strength, width=10, font=("Arial", 11)).grid(row=row, column=2, padx=5)
-        row += 1
+        # Split toning - REMOVED
+        # row += 1
         
-        # Split toning
-        self.create_large_checkbox(left_col1, "Split Toning", self.apply_split_tone, bold=True).grid(row=row, column=0, columnspan=3, sticky='w', padx=5, pady=5)
-        row += 1
-        ttk.Label(left_col1, text="(warm shadows/cool)", font=("Arial", 10, "italic")).grid(row=row, column=0, columnspan=3, sticky='w', padx=20, pady=0)
-        row += 1
-        
+        # COLUMN 2
+        row = 0
         # Photo grain
-        self.create_large_checkbox(left_col1, "Photo Grain", self.apply_photo_grain, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=5)
-        ttk.Label(left_col1, text="Strength:", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
-        ttk.Entry(left_col1, textvariable=self.photo_grain_strength, width=10, font=("Arial", 11)).grid(row=row, column=2, padx=5)
+        self.create_large_checkbox(col2_p1, "Photo Grain", self.apply_photo_grain, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=2)
+        ttk.Label(col2_p1, text="Strength:", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
+        ttk.Entry(col2_p1, textvariable=self.photo_grain_strength, width=10, font=("Arial", 11)).grid(row=row, column=2, padx=5)
         row += 1
         
-        # RIGHT COLUMN
+        # COLUMN 3
         row = 0
-        # Photo chromatic aberration
-        self.create_large_checkbox(right_col1, "Photo Chromatic Aberr.", self.apply_photo_chromatic, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=5)
-        ttk.Label(right_col1, text="Shift (px):", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
-        ttk.Entry(right_col1, textvariable=self.ca_shift, width=10, font=("Arial", 11)).grid(row=row, column=2, padx=5)
-        row += 1
-        
         # Halation
-        self.create_large_checkbox(right_col1, "Halation (Glow)", self.apply_halation, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=5)
-        ttk.Label(right_col1, text="Strength:", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
-        ttk.Entry(right_col1, textvariable=self.halation_strength, width=10, font=("Arial", 11)).grid(row=row, column=2, padx=5)
+        self.create_large_checkbox(col3_p1, "Halation (Glow)", self.apply_halation, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=2)
+        ttk.Label(col3_p1, text="Strength:", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
+        ttk.Entry(col3_p1, textvariable=self.halation_strength, width=10, font=("Arial", 11)).grid(row=row, column=2, padx=5)
         row += 1
         
-        # Photo vignette
-        self.create_large_checkbox(right_col1, "Photo Vignette", self.apply_photo_vignette, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=5)
-        ttk.Label(right_col1, text="Strength:", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
-        ttk.Entry(right_col1, textvariable=self.photo_vignette_strength, width=10, font=("Arial", 11)).grid(row=row, column=2, padx=5)
-        row += 1
-        
-        # Tab 3: Photographic Effects - Part 2 (TWO COLUMNS)
+        # Tab 3: Photographic Effects - Part 2 (FOUR COLUMNS)
         photo_tab2 = ttk.Frame(notebook, padding=10)
         notebook.add(photo_tab2, text="Photo Effects 2")
         
-        # Create two column frames
-        left_col2 = ttk.Frame(photo_tab2)
-        left_col2.grid(row=0, column=0, padx=10, sticky='n')
-        right_col2 = ttk.Frame(photo_tab2)
-        right_col2.grid(row=0, column=1, padx=10, sticky='n')
+        # Create four column frames
+        col1_p2 = ttk.Frame(photo_tab2)
+        col1_p2.grid(row=0, column=0, padx=10, sticky='n')
+        col2_p2 = ttk.Frame(photo_tab2)
+        col2_p2.grid(row=0, column=1, padx=10, sticky='n')
+        col3_p2 = ttk.Frame(photo_tab2)
+        col3_p2.grid(row=0, column=2, padx=10, sticky='n')
+        col4_p2 = ttk.Frame(photo_tab2)
+        col4_p2.grid(row=0, column=3, padx=10, sticky='n')
         
-        # LEFT COLUMN
-        row = 0
-        # Scan banding
-        self.create_large_checkbox(left_col2, "Scan Banding", self.apply_scan_banding, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=5)
-        ttk.Label(left_col2, text="Strength:", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
-        ttk.Entry(left_col2, textvariable=self.banding_strength, width=10, font=("Arial", 11)).grid(row=row, column=2, padx=5)
-        row += 1
-        
-        # RGB misalignment
-        self.create_large_checkbox(left_col2, "RGB Misalignment", self.apply_rgb_misalignment, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=5)
-        ttk.Label(left_col2, text="Shift (px):", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
-        ttk.Entry(left_col2, textvariable=self.misalign_px, width=10, font=("Arial", 11)).grid(row=row, column=2, padx=5)
-        row += 1
-        
-        # Dust & scratches
-        self.create_large_checkbox(left_col2, "Dust & Scratches", self.apply_dust, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=5)
-        ttk.Label(left_col2, text="Dust:", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
-        ttk.Entry(left_col2, textvariable=self.dust_amount, width=10, font=("Arial", 11)).grid(row=row, column=2, padx=5)
-        row += 1
-        ttk.Label(left_col2, text="Scratches:", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
-        ttk.Entry(left_col2, textvariable=self.scratch_amount, width=10, font=("Arial", 11)).grid(row=row, column=2, padx=5)
-        row += 1
-        
-        # RIGHT COLUMN
+        # COLUMN 1
         row = 0
         # JPEG artifacts
-        self.create_large_checkbox(right_col2, "JPEG Artifacts", self.apply_jpeg_artifacts, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=5)
-        ttk.Label(right_col2, text="Quality:", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
-        ttk.Entry(right_col2, textvariable=self.jpeg_quality, width=10, font=("Arial", 11)).grid(row=row, column=2, padx=5)
+        self.create_large_checkbox(col1_p2, "JPEG Artifacts", self.apply_jpeg_artifacts, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=2)
+        ttk.Label(col1_p2, text="Quality:", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
+        ttk.Entry(col1_p2, textvariable=self.jpeg_quality, width=10, font=("Arial", 11)).grid(row=row, column=2, padx=5)
         row += 1
-        ttk.Label(right_col2, text="(1-100)", font=("Arial", 9, "italic")).grid(row=row, column=0, columnspan=3, sticky='w', padx=20, pady=0)
+        ttk.Label(col1_p2, text="(1-100)", font=("Arial", 9, "italic")).grid(row=row, column=0, columnspan=3, sticky='w', padx=20, pady=0)
         row += 1
         
+        # COLUMN 2
+        row = 0
         # Lens distortion
-        self.create_large_checkbox(right_col2, "Lens Distortion", self.apply_lens_distortion, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=5)
-        ttk.Label(right_col2, text="Strength:", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
-        ttk.Entry(right_col2, textvariable=self.distortion_strength, width=10, font=("Arial", 11)).grid(row=row, column=2, padx=5)
+        self.create_large_checkbox(col2_p2, "Lens Distortion", self.apply_lens_distortion, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=2)
+        ttk.Label(col2_p2, text="Strength:", font=("Arial", 11)).grid(row=row, column=1, sticky='e', padx=5)
+        ttk.Entry(col2_p2, textvariable=self.distortion_strength, width=10, font=("Arial", 11)).grid(row=row, column=2, padx=5)
         row += 1
-        ttk.Label(right_col2, text="(-ve=barrel, +ve=pincushion)", font=("Arial", 9, "italic")).grid(row=row, column=0, columnspan=3, sticky='w', padx=20, pady=0)
-        row += 1
-        
-        # Add separator
-        ttk.Separator(right_col2, orient='horizontal').grid(row=row, column=0, columnspan=3, sticky='ew', pady=10)
+        ttk.Label(col2_p2, text="(-ve=barrel, +ve=pincushion)", font=("Arial", 9, "italic")).grid(row=row, column=0, columnspan=3, sticky='w', padx=20, pady=0)
         row += 1
         
-        # Dithering
-        self.create_large_checkbox(right_col2, "Color Dithering", self.apply_dithering, bold=True).grid(row=row, column=0, sticky='w', padx=5, pady=5)
+        # COLUMN 3
+        row = 0
+        # Color Dithering
+        self.create_large_checkbox(col3_p2, "Color Dithering", self.apply_dithering, bold=True).grid(row=row, column=0, columnspan=3, sticky='w', padx=5, pady=2)
         row += 1
         
         # Dithering type radio buttons
-        ttk.Label(right_col2, text="Type:", font=("Arial", 11)).grid(row=row, column=0, sticky='w', padx=20, pady=2)
-        rb1 = tk.Radiobutton(right_col2, text="Floyd-Steinberg", variable=self.dithering_type, value="floyd-steinberg",
+        ttk.Label(col3_p2, text="Type:", font=("Arial", 11)).grid(row=row, column=0, sticky='w', padx=20, pady=2)
+        rb1 = tk.Radiobutton(col3_p2, text="Floyd-Steinberg", variable=self.dithering_type, value="floyd-steinberg",
                       command=self.update_preview, bg='#EBE1D2', selectcolor='#606060',
                       font=("Arial", 11), borderwidth=2, pady=3)
-        rb1.grid(row=row, column=1, sticky='w', padx=5, pady=2)
+        rb1.grid(row=row, column=1, columnspan=2, sticky='w', padx=5, pady=2)
         row += 1
-        rb2 = tk.Radiobutton(right_col2, text="Bayer", variable=self.dithering_type, value="bayer",
+        rb2 = tk.Radiobutton(col3_p2, text="Bayer", variable=self.dithering_type, value="bayer",
                       command=self.update_preview, bg='#EBE1D2', selectcolor='#606060',
                       font=("Arial", 11), borderwidth=2, pady=3)
-        rb2.grid(row=row, column=1, sticky='w', padx=5, pady=2)
+        rb2.grid(row=row, column=1, columnspan=2, sticky='w', padx=5, pady=2)
         row += 1
         
-        ttk.Label(right_col2, text="Colors/ch:", font=("Arial", 11)).grid(row=row, column=0, sticky='w', padx=20, pady=2)
-        ttk.Entry(right_col2, textvariable=self.dithering_colors, width=10, font=("Arial", 11)).grid(row=row, column=1, padx=5, pady=2)
+        ttk.Label(col3_p2, text="Colors/ch:", font=("Arial", 11)).grid(row=row, column=0, sticky='w', padx=20, pady=2)
+        ttk.Entry(col3_p2, textvariable=self.dithering_colors, width=10, font=("Arial", 11)).grid(row=row, column=1, padx=5, pady=2)
         row += 1
-        
-        # Restore defaults button
-        ttk.Button(control_frame, text="Restore All Defaults", 
-                  command=self.restore_all_defaults).pack(pady=(10, 0))
         
         # Preview and processing controls
         action_frame = ttk.Frame(main_frame)
@@ -481,7 +411,6 @@ class FilmicEffectsProcessor:
         
     def restore_all_defaults(self):
         """Restore all values to their defaults"""
-        self.grain_intensity.set(self.DEFAULT_GRAIN)
         self.vignette_strength.set(self.DEFAULT_VIGNETTE)
         self.saturation_reduction.set(self.DEFAULT_SATURATION)
         self.chromatic_aberration.set(self.DEFAULT_CHROMATIC)
@@ -799,10 +728,6 @@ class FilmicEffectsProcessor:
         if self.chromatic_enabled.get():
             current_result = self.apply_chromatic_aberration(current_result, self.chromatic_aberration.get())
         
-        # Apply film grain if enabled
-        if self.grain_enabled.get():
-            current_result = self.apply_film_grain_rgb(current_result, self.grain_intensity.get())
-        
         # Apply saturation reduction if enabled
         if self.saturation_enabled.get():
             current_result = self.apply_saturation_reduction_rgb(current_result, self.saturation_reduction.get())
@@ -820,11 +745,9 @@ class FilmicEffectsProcessor:
             current_result = self.create_vintage_border(current_result)
         
         # Apply new photographic effects if any are enabled
-        if (self.apply_tone_curve.get() or self.apply_split_tone.get() or 
-            self.apply_photo_grain.get() or self.apply_photo_chromatic.get() or 
-            self.apply_halation.get() or self.apply_photo_vignette.get() or 
-            self.apply_scan_banding.get() or self.apply_rgb_misalignment.get() or 
-            self.apply_dust.get() or self.apply_jpeg_artifacts.get() or 
+        if (self.apply_photo_grain.get() or 
+            self.apply_halation.get() or 
+            self.apply_jpeg_artifacts.get() or 
             self.apply_lens_distortion.get()):
             
             # Convert PIL to numpy/cv2 format (BGR)
@@ -852,24 +775,23 @@ class FilmicEffectsProcessor:
             # Apply the photographic effects
             result_bgr = make_image_look_photographed(
                 img_bgr,
-                apply_tone_curve=self.apply_tone_curve.get(),
-                tone_strength=self.tone_strength.get(),
-                apply_split_tone=self.apply_split_tone.get(),
+                apply_tone_curve=False,
+                tone_strength=0.5,
                 apply_grain=self.apply_photo_grain.get(),
                 grain_strength=self.photo_grain_strength.get(),
-                apply_chromatic_aberration=self.apply_photo_chromatic.get(),
-                ca_shift=self.ca_shift.get(),
+                apply_chromatic_aberration=False,
+                ca_shift=1,
                 apply_halation=self.apply_halation.get(),
                 halation_strength=self.halation_strength.get(),
-                apply_vignette=self.apply_photo_vignette.get(),
-                vignette_strength=self.photo_vignette_strength.get(),
-                apply_scan_banding=self.apply_scan_banding.get(),
-                banding_strength=self.banding_strength.get(),
-                apply_rgb_misalignment=self.apply_rgb_misalignment.get(),
-                misalign_px=self.misalign_px.get(),
-                apply_dust=self.apply_dust.get(),
-                dust_amount=self.dust_amount.get(),
-                scratch_amount=self.scratch_amount.get(),
+                apply_vignette=False,
+                vignette_strength=0.5,
+                apply_scan_banding=False,
+                banding_strength=0.01,
+                apply_rgb_misalignment=False,
+                misalign_px=1,
+                apply_dust=False,
+                dust_amount=0.001,
+                scratch_amount=0.0002,
                 apply_jpeg_artifacts=self.apply_jpeg_artifacts.get(),
                 jpeg_quality=self.jpeg_quality.get(),
                 apply_lens_distortion=self.apply_lens_distortion.get(),
@@ -892,22 +814,26 @@ class FilmicEffectsProcessor:
             return pil_image
     
     def apply_dithering_effect(self, image):
-        """Apply Floyd-Steinberg or Bayer dithering to the image"""
+        """Apply Floyd-Steinberg or Bayer dithering to the image (optimized)"""
         try:
             img_array = np.array(image).astype(np.float32)
             h, w, c = img_array.shape
             colors_per_channel = max(2, min(256, self.dithering_colors.get()))
             
             if self.dithering_type.get() == "floyd-steinberg":
-                # Floyd-Steinberg dithering
+                # Floyd-Steinberg dithering - vectorized per-row
                 result = img_array.copy()
+                
+                # Pre-calculate quantization steps for efficiency
+                scale_factor = (colors_per_channel - 1) / 255.0
+                inv_scale_factor = 255.0 / (colors_per_channel - 1)
                 
                 for y in range(h):
                     for x in range(w):
                         old_pixel = result[y, x].copy()
                         
                         # Quantize to reduced color palette
-                        new_pixel = np.round(old_pixel * (colors_per_channel - 1) / 255.0) * 255.0 / (colors_per_channel - 1)
+                        new_pixel = np.round(old_pixel * scale_factor) * inv_scale_factor
                         result[y, x] = new_pixel
                         
                         # Calculate quantization error
@@ -925,7 +851,7 @@ class FilmicEffectsProcessor:
                 
                 result = np.clip(result, 0, 255).astype(np.uint8)
                 
-            else:  # Bayer dithering
+            else:  # Bayer dithering - FULLY VECTORIZED
                 # 8x8 Bayer matrix
                 bayer_matrix = np.array([
                     [ 0, 32,  8, 40,  2, 34, 10, 42],
@@ -938,18 +864,22 @@ class FilmicEffectsProcessor:
                     [63, 31, 55, 23, 61, 29, 53, 21]
                 ]) / 64.0  # Normalize to 0-1
                 
-                # Apply Bayer dithering
-                result = img_array.copy()
+                # Tile the Bayer matrix to cover the entire image
+                tile_h = (h + 7) // 8  # Ceiling division
+                tile_w = (w + 7) // 8
+                tiled_bayer = np.tile(bayer_matrix, (tile_h, tile_w))[:h, :w]
                 
-                for y in range(h):
-                    for x in range(w):
-                        # Get threshold from Bayer matrix
-                        threshold = bayer_matrix[y % 8, x % 8] * (255.0 / colors_per_channel)
-                        
-                        # Quantize with threshold
-                        pixel = result[y, x] + threshold - 127.5 / colors_per_channel
-                        result[y, x] = np.round(pixel * (colors_per_channel - 1) / 255.0) * 255.0 / (colors_per_channel - 1)
+                # Add channel dimension for broadcasting
+                tiled_bayer = tiled_bayer[:, :, np.newaxis]
                 
+                # Apply threshold and quantize all pixels at once
+                threshold = tiled_bayer * (255.0 / colors_per_channel)
+                adjusted = img_array + threshold - 127.5 / colors_per_channel
+                
+                # Vectorized quantization
+                scale_factor = (colors_per_channel - 1) / 255.0
+                inv_scale_factor = 255.0 / (colors_per_channel - 1)
+                result = np.round(adjusted * scale_factor) * inv_scale_factor
                 result = np.clip(result, 0, 255).astype(np.uint8)
             
             return Image.fromarray(result)
@@ -1079,11 +1009,11 @@ class FilmicEffectsProcessor:
                     filmic_dir = image_path.parent / "filmic"
                     filmic_dir.mkdir(exist_ok=True)
                     
-                    # Create output filename in filmic subdirectory
-                    output_path = filmic_dir / f"{image_path.stem}_filmic{image_path.suffix}"
+                    # Create output filename in filmic subdirectory - always save as JPG
+                    output_path = filmic_dir / f"{image_path.stem}_filmic.jpg"
                     
-                    # Save processed image
-                    processed.save(output_path, quality=95 if image_path.suffix.lower() in ['.jpg', '.jpeg'] else None)
+                    # Save processed image as 88% quality JPG
+                    processed.save(output_path, quality=88)
                     processed_count += 1
                     
                 except Exception as e:
@@ -1305,11 +1235,6 @@ def make_image_look_photographed(
     apply_tone_curve=True,
     tone_strength=0.5,
 
-    # colour shaping
-    apply_split_tone=True,
-    shadow_tint=(1.05, 1.0, 0.95),
-    highlight_tint=(0.95, 1.0, 1.05),
-
     # grain
     apply_grain=True,
     grain_strength=0.04,
@@ -1369,16 +1294,7 @@ def make_image_look_photographed(
         img = s_curve(img)
 
     # -------------------------------
-    # 2. Split toning
-    # -------------------------------
-    if apply_split_tone:
-        shadows = np.clip(img * shadow_tint, 0, 1)
-        highlights = np.clip(img * highlight_tint, 0, 1)
-        mask = img > 0.5
-        img = np.where(mask, highlights, shadows)
-
-    # -------------------------------
-    # 3. Film grain
+    # 2. Film grain
     # -------------------------------
     if apply_grain:
         grain = np.random.normal(0, grain_strength, (h, w, 1))

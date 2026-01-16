@@ -14,43 +14,8 @@ from datetime import datetime
 # PRIMARY STAGES (9)
 PRIMARY_STAGES = {
     "Subject identity": [
-        "female, early 30s, freckled skin",
-        "male, late 20s, light stubble",
-        "nonbinary, mid 20s, short hair",
-        "female, mid 40s, glasses",
-        "male, early 40s, salt-and-pepper beard",
-        "female, late 20s, long curly hair",
-        "male, mid 30s, shaved head",
-        "female, early 20s, natural makeup",
-        "male, late 30s, athletic build",
-        "female, mid 50s, silver hair",
-        "male, early 20s, gap-toothed smile",
-        "female, late 30s, freckles and glasses",
-        "male, mid 50s, lined face",
-        "female, early 40s, short bob",
-        "male, late 40s, receding hairline",
-        "female, mid 20s, pierced ear",
-        "male, early 30s, tattooed forearm",
-        "female, late 40s, warm complexion",
-        "male, mid 20s, tousled hair",
-        "female, early 50s, soft features",
-        "male, late 20s, glasses and beard",
-        "female, mid 30s, athletic build",
-        "male, early 60s, weathered hands",
-        "female, late 20s, short cropped hair",
-        "male, mid 40s, wearing a cap",
-        "female, early 30s, light tan",
-        "male, late 30s, warm smile",
-        "female, mid 20s, natural freckles",
-        "male, early 50s, salt-and-pepper stubble",
-        "female, late 30s, long straight hair",
-        "male, mid 20s, slim build",
-        "female, early 40s, wearing glasses",
-        "male, late 50s, lined smile",
-        "female, mid 30s, visible birthmark",
-        "male, early 40s, casual beard",
-        "female, late 20s, relaxed posture",
-        "male, mid 30s, cropped hair and stubble",
+        "male, late 40s, light stubble",
+        
     ],
     "Pose and action": [
         "three-quarter turn, left arm raised",
@@ -216,42 +181,13 @@ PRIMARY_STAGES = {
         "calm, neutral expression",
     ],
     "Body descriptors": [
-        "athletic build",
-        "slim build",
-        "curvy body type",
-        "visible tattoos on forearm",
-        "broad shoulders",
-        "petite frame",
-        "average build",
-        "long limbs",
-        "stocky build",
-        "lean silhouette",
-        "soft body shape",
-        "muscular forearms visible",
-        "slender waist",
-        "rounded shoulders",
-        "tall and slim",
-        "shorter stature",
-        "broad hips",
-        "narrow shoulders",
         "visible freckles on arms",
         "light sun tan",
         "pale complexion",
         "strong posture",
         "relaxed shoulders",
         "slight stoop",
-        "long neck",
-        "compact frame",
-        "soft midsection",
-        "defined jawline",
-        "rounded face",
-        "visible collarbones",
-        "broad chest",
-        "lean legs",
-        "callused hands",
-        "slight baby weight",
         "toned calves",
-        "visible veins on hands",
         "natural posture, relaxed",
         "slight asymmetry in stance",
     ],
@@ -410,16 +346,16 @@ SECONDARY_CATEGORIES = {
         "muted overcast backlight",
         "soft cafe ambient light",
         "soft porch light at dusk",
-        "soft daylight through thin curtain",
+        "harsh daylight through thin curtain",
         "soft natural light, slight warmth",
-        "soft directional light, low contrast",
+        "harsh directional light, high contrast",
         "soft evening window light, cool tone",
-        "soft lamp light with subtle shadow",
+        "harsh lamp light with shadows",
         "soft daylight with gentle highlights",
         "soft natural light, even skin tones",
         "soft backlight with subtle lens flare",
         "soft ambient market stall light",
-        "soft train window light, muted",
+        "train window light",
     ],
     "Camera / Perspective": [
         "eye-level perspective",
@@ -647,8 +583,10 @@ def generate_and_display(*checkboxes):
     # Generate prompts
     prompts = generate_prompts(primary_enabled, secondary_enabled)
     
-    # Format output
-    output = "\n".join([f"{i+1}. {prompt}" for i, prompt in enumerate(prompts)])
+    # Format output - show only last 8 prompts with prefix and suffix
+    last_8 = prompts[-8:]
+    output_lines = [f'--prompt "{prompt}" --negative_prompt "asian, poor quality"' for prompt in last_8]
+    output = "\n\n".join(output_lines)
     
     return output, prompts
 
@@ -662,8 +600,8 @@ def save_prompts(prompts_data):
     filename = f"sdxl_combined_prompts_{timestamp}.txt"
     
     with open(filename, 'w', encoding='utf-8') as f:
-        for i, prompt in enumerate(prompts_data, 1):
-            f.write(f"{i}. {prompt}\n")
+        for prompt in prompts_data:
+            f.write(f'--prompt "{prompt}" --negative_prompt "asian, poor quality"\n')
     
     return f"✓ Saved {len(prompts_data)} prompts to {filename}"
 
