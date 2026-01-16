@@ -10,9 +10,7 @@ echo   DepthFlow - Gradio Web Interface
 echo ====================================
 echo.
 echo Starting web interface...
-echo A browser window will open automatically.
-echo.
-echo Press Ctrl+C to stop the server when done.
+echo browser will auto-launch shortly...
 echo.
 
 C:\MyCoding\depthflow_env\Scripts\python.exe -m DepthFlow gradio

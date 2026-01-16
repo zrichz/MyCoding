@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Generate .data files containing random numbers.
-Creates files with 1024 * 2^n numbers, up to approximately 10 million.
+Creates files with 1024 * 2^n numbers.
+line 45 determines the range of n.
 """
 
 import random
