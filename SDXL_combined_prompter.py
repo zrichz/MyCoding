@@ -114,6 +114,8 @@ PRIMARY_STAGES = {
         "knit sweater and skirt",
         "polo shirt and jeans",
         "yoga top and leggings",
+        "bikini and sarong",
+        "rave outfit with glowsticks",
         "oversized knit and leggings",
         "simple blouse and mid-length skirt",
         "sweatshirt and joggers",
