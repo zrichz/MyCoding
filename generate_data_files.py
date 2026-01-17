@@ -43,13 +43,13 @@ def main():
     print("=" * 50)
     
     # Generate files for n = 0 to 10
-    for n in range(11):  # 0 to 10 inclusive
+    for n in range(22):  # 0 to 10 inclusive
         num_count = 2 ** n
         generate_data_file(num_count, n)
     
     print("=" * 50)
-    print(f"Generated {11} files")
-    print(f"Total numbers across all files: {sum(2**i for i in range(11)):,}")
+    print(f"Generated {22} files")
+    print(f"Total numbers across all files: {sum(2**i for i in range(22)):,}")
 
 
 if __name__ == "__main__":
