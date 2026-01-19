@@ -375,8 +375,67 @@ def create_interface():
                     info="Choose model based on your image type"
                 )
                 
-                model_info = gr.Markdown(f"**{MODELS['u2net']}**")
+                gr.Markdown("### Actions")
                 
+                with gr.Row():
+                    remove_btn = gr.Button("🗑️ Remove Background", variant="primary", size="lg")
+                
+                with gr.Row():
+                    fg_only_btn = gr.Button("📄 Save Foreground Only", variant="secondary")
+                    bg_only_btn = gr.Button("🖼️ Save Background Only", variant="secondary")
+                
+                with gr.Row():
+                    both_btn = gr.Button("📑 Save Both Layers", variant="secondary", size="lg")
+                
+                gr.Markdown("### Replace Background (Optional)")
+                
+                bg_color = gr.ColorPicker(
+                    label="Background Color",
+                    value="#FFFFFF",
+                    info="Choose color to replace background"
+                )
+                
+                replace_btn = gr.Button("🎨 Replace Background", variant="secondary", size="lg")
+            
+            with gr.Column(scale=1):
+                gr.Markdown("### Instructions")
+                
+                gr.Markdown("""
+        1. **Upload an image** - Any format works (JPG, PNG, etc.)
+        2. **Choose a model** - Select based on your subject:
+           - **u2net**: Best for general use (people, objects, animals) - Default choice
+           - **u2netp**: Faster, lighter version (good for portraits, batch processing)
+           - **u2net_human_seg**: Optimized for people (fashion, fitness, full-body)
+           - **u2net_cloth_seg**: Isolates clothing only (e-commerce garments)
+           - **silueta**: Alternative general model (try if u2net fails)
+           - **isnet-general-use**: Highest quality (best for professional work, slower)
+           - **isnet-anime**: Anime/cartoon specialist (manga, illustrated characters)
+        3. **Enable Alpha Matting** - For better edge quality (hair, fur, fine details)
+        4. **Choose an action**:
+           - **Remove Background**: Standard foreground extraction with transparent background
+           - **Save Foreground Only**: Same as above (PNG with alpha channel)
+           - **Save Background Only**: Extract background, make foreground transparent
+           - **Save Both Layers**: Get both foreground and background as separate PNG files
+           - **Replace Background**: Replace with solid color (no transparency)
+        5. **Download PNG** - Transparent backgrounds preserved
+        
+        ### Output Formats
+        - **Foreground Only**: Subject with transparent background (standard use case)
+        - **Background Only**: Background with transparent subject area (for compositing)
+        - **Both Layers**: Two separate files - foreground + background (for maximum flexibility)
+        - All outputs include alpha channels for proper transparency
+        - **IMPORTANT**: Foreground + Background layers use EXACT original RGB values
+        - When composited together in Photoshop (Normal blend mode), they reproduce the original image EXACTLY
+        - No quality loss or color shift - perfect pixel-perfect reconstruction guaranteed
+        
+        ### Models Download
+        Models are downloaded automatically on first use (~4.7MB to 176MB per model).
+        Subsequent uses are fast as models are cached in: `~/.u2net/`
+        """)
+                
+                model_info = gr.Markdown(f"**Current Model: {MODELS['u2net']}**")
+            
+            with gr.Column(scale=1):
                 gr.Markdown("### Processing Options")
                 
                 alpha_matting_check = gr.Checkbox(
@@ -418,28 +477,6 @@ def create_interface():
                     value=False,
                     info="Clean up mask with morphological operations"
                 )
-                
-                gr.Markdown("### Actions")
-                
-                with gr.Row():
-                    remove_btn = gr.Button("🗑️ Remove Background", variant="primary", size="lg")
-                
-                with gr.Row():
-                    fg_only_btn = gr.Button("📄 Save Foreground Only", variant="secondary")
-                    bg_only_btn = gr.Button("🖼️ Save Background Only", variant="secondary")
-                
-                with gr.Row():
-                    both_btn = gr.Button("📑 Save Both Layers", variant="secondary", size="lg")
-                
-                gr.Markdown("### Replace Background (Optional)")
-                
-                bg_color = gr.ColorPicker(
-                    label="Background Color",
-                    value="#FFFFFF",
-                    info="Choose color to replace background"
-                )
-                
-                replace_btn = gr.Button("🎨 Replace Background", variant="secondary", size="lg")
             
             with gr.Column(scale=1):
                 gr.Markdown("### Output")
@@ -471,57 +508,6 @@ def create_interface():
                     lines=8,
                     interactive=False
                 )
-        
-        gr.Markdown("""
-        ### Instructions
-        1. **Upload an image** - Any format works (JPG, PNG, etc.)
-        2. **Choose a model** - Select based on your subject:
-           - **u2net**: Best for general use (people, objects, animals) - Default choice
-           - **u2netp**: Faster, lighter version (good for portraits, batch processing)
-           - **u2net_human_seg**: Optimized for people (fashion, fitness, full-body)
-           - **u2net_cloth_seg**: Isolates clothing only (e-commerce garments)
-           - **silueta**: Alternative general model (try if u2net fails)
-           - **isnet-general-use**: Highest quality (best for professional work, slower)
-           - **isnet-anime**: Anime/cartoon specialist (manga, illustrated characters)
-        3. **Enable Alpha Matting** - For better edge quality (hair, fur, fine details)
-        4. **Choose an action**:
-           - **Remove Background**: Standard foreground extraction with transparent background
-           - **Save Foreground Only**: Same as above (PNG with alpha channel)
-           - **Save Background Only**: Extract background, make foreground transparent
-           - **Save Both Layers**: Get both foreground and background as separate PNG files
-           - **Replace Background**: Replace with solid color (no transparency)
-        5. **Download PNG** - Transparent backgrounds preserved
-        
-        ### Output Formats
-        - **Foreground Only**: Subject with transparent background (standard use case)
-        - **Background Only**: Background with transparent subject area (for compositing)
-        - **Both Layers**: Two separate files - foreground + background (for maximum flexibility)
-        - All outputs include alpha channels for proper transparency
-        - **IMPORTANT**: Foreground + Background layers use EXACT original RGB values
-        - When composited together in Photoshop (Normal blend mode), they reproduce the original image EXACTLY
-        - No quality loss or color shift - perfect pixel-perfect reconstruction guaranteed
-        
-        ### Model Selection Quick Guide
-        - **Need speed?** → u2netp
-        - **Best quality?** → isnet-general-use
-        - **Person in photo?** → u2net_human_seg
-        - **Cartoon/anime?** → isnet-anime
-        - **Not sure?** → u2net (default)
-        - **Product/object?** → u2net or isnet-general-use
-        - **Just clothing?** → u2net_cloth_seg
-        
-        ### Tips
-        - **For portraits**: Use u2netp or u2net_human_seg with alpha matting
-        - **For products**: Use u2net with alpha matting disabled (faster)
-        - **For detailed edges**: Enable alpha matting and adjust thresholds
-        - **Slow processing?**: Try u2netp or disable alpha matting
-        - **Complex backgrounds**: Use isnet-general-use with alpha matting
-        - **Layer compositing**: Use "Save Both Layers" to get separate foreground/background
-        
-        ### Models Download
-        Models are downloaded automatically on first use (~4.7MB to 176MB per model).
-        Subsequent uses are fast as models are cached in: `~/.u2net/`
-        """)
         
         # Event handlers
         def update_model_info(model_name):

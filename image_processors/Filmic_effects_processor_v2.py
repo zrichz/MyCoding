@@ -59,9 +59,10 @@ class FilmicEffectsProcessor:
         self.unsharp_sharpening = tk.BooleanVar(value=True)
         self.unsharp_half_strength = tk.BooleanVar(value=True)
         self.auto_contrast_stretch = tk.BooleanVar(value=True)
+        self.auto_contrast_strength = tk.DoubleVar(value=50.0)  # Percentage (default 50%)
         
         # NEW: Photographic effects toggles
-        self.apply_photo_grain = tk.BooleanVar(value=False)
+        self.apply_photo_grain = tk.BooleanVar(value=True)
         self.photo_grain_strength = tk.DoubleVar(value=0.025)
         
         self.apply_halation = tk.BooleanVar(value=False)
@@ -219,6 +220,13 @@ class FilmicEffectsProcessor:
         self.create_large_checkbox(col2, "  ↳ Apply at 50%", self.unsharp_half_strength, font_size=11).grid(row=row, column=0, columnspan=2, sticky='w', padx=5, pady=2)
         row = 1
         self.create_large_checkbox(col3, "Auto-Contrast Stretch", self.auto_contrast_stretch).grid(row=row, column=0, columnspan=2, sticky='w', padx=5, pady=2)
+        row += 1
+        ttk.Label(col3, text="Strength %:", font=("Arial", 11)).grid(row=row, column=0, sticky='e', padx=5)
+        self.contrast_strength_entry = ttk.Entry(col3, textvariable=self.auto_contrast_strength, width=10, font=("Arial", 11))
+        self.contrast_strength_entry.grid(row=row, column=1, padx=5)
+        self.contrast_strength_entry.bind('<Return>', lambda e: self.update_preview())
+        self.contrast_strength_entry.bind('<FocusOut>', lambda e: self.update_preview())
+        row = 1
         self.create_large_checkbox(col4, "Show Face Center", self.show_ca_center).grid(row=row, column=0, columnspan=2, sticky='w', padx=5, pady=2)
         
         # Tab 2: Photographic Effects - Part 1 (FOUR COLUMNS)
@@ -1191,11 +1199,18 @@ class FilmicEffectsProcessor:
         try:
             import numpy as np
             
+            # Get strength parameter (0-100%)
+            strength = self.auto_contrast_strength.get() / 100.0
+            
+            # If strength is 0, return original image
+            if strength <= 0:
+                return image
+            
             # Convert to numpy array
-            img_array = np.array(image)
+            img_array = np.array(image).astype(np.float32)
             
             # Use internal parameter (not exposed in GUI)
-            percentile = self.contrast_percentile  # 2.0
+            percentile = self.contrast_percentile  # 0.5
             
             # Calculate percentiles for each channel
             low_percentiles = np.percentile(img_array, percentile, axis=(0, 1))
@@ -1205,7 +1220,7 @@ class FilmicEffectsProcessor:
             stretched_array = np.zeros_like(img_array, dtype=np.float32)
             
             for i in range(img_array.shape[2]):  # For each color channel
-                channel = img_array[:, :, i].astype(np.float32)
+                channel = img_array[:, :, i]
                 low_val = float(low_percentiles[i])
                 high_val = float(high_percentiles[i])
                 
@@ -1219,9 +1234,15 @@ class FilmicEffectsProcessor:
                 
                 stretched_array[:, :, i] = stretched_channel
             
+            # Blend between original and stretched based on strength
+            if strength < 1.0:
+                result_array = img_array * (1.0 - strength) + stretched_array * strength
+            else:
+                result_array = stretched_array
+            
             # Convert back to uint8 and PIL Image
-            stretched_array = stretched_array.astype(np.uint8)
-            return Image.fromarray(stretched_array)
+            result_array = np.clip(result_array, 0, 255).astype(np.uint8)
+            return Image.fromarray(result_array)
             
         except Exception as e:
             print(f"Error applying auto contrast stretch: {e}")
