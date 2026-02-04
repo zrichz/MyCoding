@@ -1,0 +1,6 @@
+@echo off
+echo Activating virtual environment...
+call ..\newvenv2026\Scripts\activate.bat
+echo Starting Optimal Transport Color Matcher...
+python color_matcher_ot.py
+pause

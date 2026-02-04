@@ -14,7 +14,7 @@ from datetime import datetime
 # PRIMARY STAGES (9)
 PRIMARY_STAGES = {
     "Subject identity": [
-        "personxyz",
+        "full-body shot, legs, (nude-colored platform heels), <lora:last-000014:1> a photo of a (swedish:0.3) woman (personXYZ:1) ,hair up,40 years old,(smile:0.35),(teeth:0.2),average-looking",
         
     ],
     "Pose and action": [
@@ -100,15 +100,8 @@ PRIMARY_STAGES = {
         "close-up with soft edge vignette",
     ],
     "Clothing and key props": [
-        "cream linen shirt",
-        "blue leather jacket",
-        "striped sweater",
-        "tailored coat and scarf",
-        "denim jacket and white tee",
-        "wool jumper and jeans",
         "floral minidress, simple cut",
         "casual hoodie and trainers",
-        "raincoat and wellies",
         "t-shirt and shorts",
         "checked shirt and denim",
         "knit sweater and skirt",
@@ -120,24 +113,14 @@ PRIMARY_STAGES = {
         "simple blouse and mid-length skirt",
         "sweatshirt and joggers",
         "cosplay Soul Calibur outfit",
-        "casual blazer and tee",
         "striped tee and denim shorts",
-        "light rain jacket and umbrella",
-        "wool coat and scarf",
-        "evening dress and shawl",
-        "checked scarf and beanie",
+        "evening dress",
         "summer dress and sandals",
         "puffer jacket and jeans",
-        "uniform style blazer",
-        "cycling jacket and helmet",
-        "sweater vest and shirt",
-        "casual shirt and backpack",
-        "striped jumper and coat",
+        "casual shirt",
         "athleisure wear",
         "simple tee and denim jacket",
-        "fitted coat and scarf",
         "clubbing outfit",
-        "wool hat and gloves",
         "silk shirt and trousers",
         "light gilet and jeans",
         "casual shirt and watch",
@@ -365,24 +348,20 @@ SECONDARY_CATEGORIES = {
     "Lens / Focal length": [
         "50mm standard lens look",
         "35mm environmental portrait",
-        "85mm short telephoto portrait",
         "24mm slight wide environmental",
         "70mm short telephoto feel",
         "28mm modest wide angle",
-        "100mm short telephoto tight portrait",
         "40mm natural field of view",
         "60mm gentle compression",
         "35mm with natural context",
-        "85mm with soft compression",
         "50mm with slight bokeh",
         "24-70mm versatile zoom feel",
         "35mm slightly intimate",
         "50mm close portrait",
-        "85mm head-and-shoulders",
         "28mm for modest environmental hint",
         "35mm for casual feel",
         "50mm for natural skin rendering",
-        "85mm for flattering compression",
+        
     ],
     "Color grading / Film style": [
         "neutral color balance, natural skin tones",
@@ -530,9 +509,9 @@ def generate_and_display(*checkboxes):
     
     # Format output - show only last 8 prompts with prefix and suffix
     last_8 = prompts[-8:]
-    output_lines = [f'--prompt "{prompt}" --negative_prompt "asian, poor quality"' for prompt in last_8]
+    output_lines = [f'--prompt "{prompt}" --negative_prompt "asian, makeup, (tanned:0.15)"' for prompt in last_8]
     output = "\n\n".join(output_lines)
-    
+
     return output, prompts
 
 
@@ -546,7 +525,7 @@ def save_prompts(prompts_data):
     
     with open(filename, 'w', encoding='utf-8') as f:
         for prompt in prompts_data:
-            f.write(f'--prompt "{prompt}" --negative_prompt "asian, poor quality"\n')
+            f.write(f'--prompt "{prompt}" --negative_prompt "asian, makeup, (tanned:0.15)"\n')
     
     return f"✓ Saved {len(prompts_data)} prompts to {filename}"
 
