@@ -1,6 +1,6 @@
 """
 SDXL Combined Prompt Generator
-Python/Gradio version - generates 200 complete SDXL prompts with Primary and Secondary stages.
+Python/Gradio version - generates 400 complete SDXL prompts with Primary and Secondary stages.
 Format: <primary> | <secondary>
 
 Author: Copilot
@@ -14,11 +14,11 @@ from datetime import datetime
 # PRIMARY STAGES (9)
 PRIMARY_STAGES = {
     "Subject identity": [
-        "full-body shot, legs, (nude-colored platform heels), <lora:last-000014:1> a photo of a (swedish:0.3) woman (personXYZ:1) ,hair up,40 years old,(smile:0.35),(teeth:0.2),average-looking",
+        "full-body shot, legs, (nude-colored platform heels), a photo of a woman,hair up,30 years old,(smiling:0.5)",
         
     ],
     "Pose and action": [
-        "three-quarter turn, left arm raised",
+        "three-quarter turn",
         "standing, hands in pockets",
         "seated, one knee up",
         "walking toward camera",
@@ -31,7 +31,6 @@ PRIMARY_STAGES = {
         "brushing hair back with one hand",
         "standing with arms folded loosely",
         "sitting on stairs, elbows on knees",
-        "walking dog on a short lead",
         "holding a takeaway coffee, mid-sip",
         "checking phone while standing",
         "leaning against doorframe, relaxed",
@@ -65,39 +64,10 @@ PRIMARY_STAGES = {
         "three-quarter body",
         "close-up face",
         "knee-up",
-        "hip-up",
         "environmental portrait, subject small in frame",
         "tight portrait, eyes centered",
-        "half-body, slight tilt",
-        "over-the-shoulder crop",
-        "waist-up, slight left offset",
-        "head-to-toe, centered",
-        "upper torso, three-quarter turn",
-        "close crop on hands and face",
         "mid-shot with foreground blur",
         "portrait orientation, headroom",
-        "landscape orientation, subject left",
-        "tight headshot with soft bokeh",
-        "full body with negative space above",
-        "waist-up, slight downward angle",
-        "head and shoulders, eye-level",
-        "three-quarter body, slight wide angle",
-        "close-up of profile",
-        "mid-shot with environmental context",
-        "candid half-body crop",
-        "full body, slight motion blur",
-        "tight portrait, off-center composition",
-        "head and shoulders, soft framing",
-        "waist-up, natural posture",
-        "full body, slight low angle",
-        "close-up with hands visible",
-        "three-quarter body, centered",
-        "mid-shot with foreground element",
-        "tight crop on face and shoulders",
-        "full body, environmental detail visible",
-        "head and shoulders, slight side lighting",
-        "waist-up, casual stance",
-        "close-up with soft edge vignette",
     ],
     "Clothing and key props": [
         "floral minidress, simple cut",
@@ -130,40 +100,13 @@ PRIMARY_STAGES = {
         "soft smile, looking at camera",
         "neutral expression, direct gaze to viewer",
         "candid smile, eyes to camera",
-        "contemplative, looking at viewer",
         "gentle laugh, eyes to camera",
-        "focused, looking at viewer",
+        "contemplative, looking at viewer",
         "relaxed, eyes to camera",
-        "slight grin, looking at camera",
-        "thoughtful, direct gaze",
-        "subtle smile, direct eye contact",
-        "soft expression, looking at viewer",
-        "calm, eyes to camera",
-        "mild amusement, looking at camera",
-        "serene, slight smile to viewer",
         "warm smile, eyes crinkled at camera",
-        "reserved smile, eyes to viewer",
-        "gentle smirk, looking at camera",
-        "open smile, eyes to camera",
         "softly serious, direct gaze at viewer",
-        "subdued smile, eyes to camera",
-        "mild surprise, looking at viewer",
-        "relaxed grin, eyes to camera",
-        "quiet contentment, looking at viewer",
-        "slight frown, eyes to camera",
-        "gentle curiosity, looking at viewer",
-        "soft laugh, eyes to camera",
+        "subtle smile, direct eye contact",
         "calm, steady gaze at viewer",
-        "subtle amusement, looking at camera",
-        "warm, approachable smile to viewer",
-        "reflective, eyes to camera",
-        "mildly inquisitive, direct gaze at viewer",
-        "soft grin, eyes to camera",
-        "content expression, looking at viewer",
-        "quiet smile, eyes to camera",
-        "gentle amusement, looking at viewer",
-        "softly bemused, eyes to camera",
-        "calm, neutral expression looking at viewer",
     ],
     "Body descriptors": [
         "visible freckles on arms",
@@ -295,7 +238,6 @@ PRIMARY_STAGES = {
         "warm morning light",
         "cool evening window light",
         "handheld phone with slight motion",
-        "camera on tripod, slight depth",
         "shot through glass, subtle reflection",
         "soft backlight with rim highlight",
         "natural light with subtle shadow",
@@ -353,14 +295,11 @@ SECONDARY_CATEGORIES = {
         "28mm modest wide angle",
         "40mm natural field of view",
         "60mm gentle compression",
-        "35mm with natural context",
         "50mm with slight bokeh",
         "24-70mm versatile zoom feel",
-        "35mm slightly intimate",
-        "50mm close portrait",
         "28mm for modest environmental hint",
         "35mm for casual feel",
-        "50mm for natural skin rendering",
+        
         
     ],
     "Color grading / Film style": [
@@ -375,33 +314,30 @@ SECONDARY_CATEGORIES = {
         "faded film look, low contrast",
         "clean digital look, minimal processing",
         "slightly desaturated, natural",
-        "soft pastel highlights, restrained",
         "warm indoor tungsten balance",
         "warm grading, neutral skin",
-        "soft contrast, natural shadows",
+        "natural shadows",
         "gentle contrast boost, realistic",
         "slight vintage fade, subtle",
         "natural color with slight warmth",
-        "soft film grain and neutral color",
+        "film grain and neutral color",
         "low-key natural color, realistic",
         "muted autumnal palette",
         "soft morning warmth, low saturation",
         "neutral with slight highlight roll-off",
         "clean daylight balance, realistic",
-        "soft contrast, warm midtones",
         "slight cross-processed feel, subtle",
         "gentle matte finish, natural",
-        "soft warm highlights, neutral shadows",
+        "warm highlights, neutral shadows",
         "cool evening tones, restrained",
-        "soft filmic warmth, low vibrance",
+        "filmic warmth, low vibrance",
         "natural color, slight clarity",
-        "soft pastel wash, subtle",
         "neutral with slight vignette",
-        "soft cinematic teal-orange, very subtle",
+        "cinematic teal-orange, very subtle",
         "muted color with natural skin",
         "soft warm kitchen tones",
         "clean neutral with slight warmth",
-        "soft low-contrast film look",
+        "high-contrast film look",
     ],
     "Depth of field / Bokeh": [
         "shallow depth of field, soft bokeh",
@@ -464,10 +400,10 @@ SECONDARY_CATEGORIES = {
 
 
 def generate_prompts(primary_enabled, secondary_enabled):
-    """Generate 200 combined prompts based on enabled stages."""
+    """Generate 400 combined prompts based on enabled stages."""
     prompts = []
     
-    for _ in range(200):
+    for _ in range(400):
         # Generate primary prompt
         primary_parts = []
         for stage_name, options in PRIMARY_STAGES.items():
@@ -533,30 +469,32 @@ def save_prompts(prompts_data):
 # Build Gradio interface
 with gr.Blocks() as demo:
     gr.Markdown("# SDXL Combined Prompt Generator")
-    gr.Markdown("Generate 200 randomized prompts in format: `<primary> | <secondary>`")
+    gr.Markdown("Generate 400 randomized prompts in format: `<primary> | <secondary>`")
     gr.Markdown("Enable/disable stages to customize output. All stages enabled by default.")
     
     with gr.Row():
         with gr.Column(scale=1):
             gr.Markdown("### PRIMARY STAGES")
             primary_checks = []
-            for stage_name in PRIMARY_STAGES.keys():
-                primary_checks.append(gr.Checkbox(label=stage_name, value=True))
+            primary_defaults = [True, True, False, False, True, False, False, False, False]  # 1,2,5 enabled
+            for i, stage_name in enumerate(PRIMARY_STAGES.keys()):
+                primary_checks.append(gr.Checkbox(label=stage_name, value=primary_defaults[i]))
         
         with gr.Column(scale=1):
             gr.Markdown("### SECONDARY CATEGORIES")
             secondary_checks = []
-            for cat_name in SECONDARY_CATEGORIES.keys():
-                secondary_checks.append(gr.Checkbox(label=cat_name, value=True))
+            secondary_defaults = [False, False, True, False, True, True]  # 3,5,6 enabled
+            for i, cat_name in enumerate(SECONDARY_CATEGORIES.keys()):
+                secondary_checks.append(gr.Checkbox(label=cat_name, value=secondary_defaults[i]))
     
-    generate_btn = gr.Button("Generate 200 Prompts", variant="primary", size="lg")
+    generate_btn = gr.Button("Generate 400 Prompts", variant="primary", size="lg")
     
     with gr.Row():
         save_btn = gr.Button("Save to File", size="sm")
         save_status = gr.Textbox(label="Save Status", interactive=False, scale=3)
     
     output_text = gr.Textbox(
-        label="Generated Prompts (200 total)",
+        label="Generated Prompts (400 total)",
         lines=20,
         max_lines=30,
         interactive=False
