@@ -1,15 +1,16 @@
 """
 a GUI for batch processing images to either 720x1600 or 2560x1440 pixels
-with percentage-based cropping.
+with percentage-based cropping, or scale to max 1440px height preserving aspect ratio.
 
 Key Features:
 - directory SELECTION
-- Choose output res: 720x1600 (portrait) or 2560x1440 (landscape)
+- Choose output res: 720x1600 (portrait), 2560x1440 (landscape), or 1440px Height
 - Accepts ANY initial image size
 - Configurable crop percentage (0-25% in 1% steps): crops from each side / dimension before expansion
 - choose between high-quality JPEG (Q=90) or PNG format
 - 720x1600: center crops width by percentage, expands height to (20/9) aspect ratio with 1:2 top:bottom split
 - 2560x1440: center crops height by percentage, expands width to (16/9) aspect ratio with 50/50 left:right split
+- 1440px Height: scales image to max 1440px height while preserving aspect ratio (no cropping/blurring)
 - blur applied to expanded regions, with luminance reduction for fade effect
 - Generates unique timestamped filenames with conflict resolution
 """
@@ -196,7 +197,7 @@ class ImageExpanderProcessor:
             # Load image
             original_image = Image.open(input_path)
             
-            if resolution_mode == "720x1600":
+            if resolution_mode == "720x1600 (with blurring)":
                 # Portrait mode: crop width, expand height
                 # Step 1: Apply percentage-based center crop to width only
                 if crop_percent_per_side > 0:
@@ -262,7 +263,7 @@ class ImageExpanderProcessor:
                 processed_image = processed_image.resize((720, 1600), 
                                                         Image.Resampling.LANCZOS)
             
-            else:  # resolution_mode == "2560x1440"
+            elif resolution_mode == "2560x1440 (with blurring)":
                 # Landscape mode: crop height, expand width
                 # Step 1: Apply percentage-based center crop to height only
                 if crop_percent_per_side > 0:
@@ -324,6 +325,22 @@ class ImageExpanderProcessor:
                 # Step 3: Resize to exactly 2560x1440 using high-quality resampling
                 processed_image = processed_image.resize((2560, 1440), 
                                                         Image.Resampling.LANCZOS)
+            
+            elif resolution_mode == "1440px Height (Aspect Preserved)":
+                # Simple aspect-preserving scaling to 1440px height
+                # No cropping or blurring - just scale
+                img_array = np.array(original_image)
+                orig_height, orig_width = img_array.shape[:2]
+                
+                # Calculate new dimensions while preserving aspect ratio
+                # Always scale to 1440px height regardless of original size
+                scale_factor = 1440 / orig_height
+                new_height = 1440
+                new_width = int(orig_width * scale_factor)
+                
+                # Resize using highest quality LANCZOS resampling
+                processed_image = original_image.resize((new_width, new_height), 
+                                                       Image.Resampling.LANCZOS)
             
             # Save the processed image
             if output_path.lower().endswith('.jpg') or output_path.lower().endswith('.jpeg'):
@@ -532,10 +549,10 @@ with gr.Blocks(title="Image Auto-Expander (Percentage)", css=css) as demo:
     gr.Markdown("Accepts any image size • Choose resolution • Crops by percentage • Expands and scales")
     
     resolution_mode = gr.Radio(
-        choices=["720x1600", "2560x1440"],
-        value="720x1600",
+        choices=["720x1600 (with blurring)", "2560x1440 (with blurring)", "1440px Height (Aspect Preserved)"],
+        value="720x1600 (with blurring)",
         label="Output Resolution",
-        info="720x1600 = Portrait (crops width, expands height 1:2 top:bottom) | 2560x1440 = Landscape (crops height, expands width 50:50 left:right)"
+        info="720x1600 = Portrait (crops width, expands height 1:2 top:bottom) | 2560x1440 = Landscape (crops height, expands width 50:50 left:right) | 1440px Height = Scale to max 1440px height, preserving aspect ratio"
     )
     
     browse_btn = gr.Button("📁 Browse Folder", size="lg", scale=1)
