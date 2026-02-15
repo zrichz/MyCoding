@@ -4,7 +4,6 @@ Slideshow Video Creator
 Creates a video slideshow from images with:
 - Each image displays for 5 seconds
 - 2-second fade transitions between images
-- Gentle zoom effect (100% to 105% or 105% to 100%) while each image is visible
 - Exports as 24fps MP4 video
 
 Usage:
@@ -13,7 +12,7 @@ Usage:
 The script will:
 1. Launch Gradio interface
 2. Select image directory and options
-3. Create the slideshow with fade transitions and zoom effects
+3. Create the slideshow with fade transitions
 4. Save as output.mp4
 """
 
@@ -39,8 +38,8 @@ class SlideshowVideoCreator:
         
         # Timing settings
         self.fps = 24
-        self.display_duration = 4.0  # seconds per image
-        self.fade_duration = 2.0  # seconds for fade transition
+        self.display_duration = 6.0  # seconds per image
+        self.fade_duration = 2.5  # seconds for fade transition
         
         # Image management
         self.image_directory = None
@@ -101,40 +100,6 @@ class SlideshowVideoCreator:
             print(f"Error loading image {filename}: {e}")
             return None
     
-    def render_frame(self, image_array, alpha=1.0):
-        """Render a frame with the given image, zoom, and opacity"""
-        # Create a black background at output resolution
-        frame = np.zeros((self.output_height, self.output_width, 3), dtype=np.float32)
-        
-        # Scale the image with high-quality interpolation
-        scaled_image = self.scale_surface(image_array, zoom_scale).astype(np.float32)
-        scaled_height, scaled_width = scaled_image.shape[:2]
-        
-        # Center the scaled image
-        y = (self.output_height - scaled_height) // 2
-        x = (self.output_width - scaled_width) // 2
-        
-        # Calculate the region to place the image
-        y1 = max(0, y)
-        y2 = min(self.output_height, y + scaled_height)
-        x1 = max(0, x)
-        x2 = min(self.output_width, x + scaled_width)
-        
-        # Calculate source region
-        sy1 = max(0, -y)
-        sy2 = sy1 + (y2 - y1)
-        sx1 = max(0, -x)
-        sx2 = sx1 + (x2 - x1)
-        
-        # Apply alpha blending with proper float precision
-        if alpha < 1.0:
-            frame[y1:y2, x1:x2] = scaled_image[sy1:sy2, sx1:sx2] * alpha
-        else:
-            frame[y1:y2, x1:x2] = scaled_image[sy1:sy2, sx1:sx2]
-        
-        # Convert back to uint8
-        return np.clip(frame, 0, 255).astype(np.uint8)
-    
     def create_slideshow_frames(self, progress=gr.Progress()):
         """Create all frames for the slideshow"""
         if not self.image_files:
@@ -144,7 +109,6 @@ class SlideshowVideoCreator:
         
         display_frames = int(self.display_duration * self.fps)
         fade_frames = int(self.fade_duration * self.fps)
-        total_visible_frames = display_frames + fade_frames
         
         total_frames_needed = len(self.image_files) * display_frames + (len(self.image_files) - 1) * fade_frames
         current_frame = 0
@@ -167,7 +131,6 @@ class SlideshowVideoCreator:
             
             # Generate frames for the display duration
             for frame_num in range(display_frames):
-                # Simply show the image without zoom
                 self.frames.append(current_image.copy())
                 current_frame += 1
             
@@ -176,17 +139,18 @@ class SlideshowVideoCreator:
                 for frame_num in range(fade_frames):
                     fade_progress = float(frame_num) / float(fade_frames - 1) if fade_frames > 1 else 1.0
                     
-                    # Simple fade between images
+                    # Calculate alpha values for blending
                     current_alpha = 1.0 - fade_progress
                     next_alpha = fade_progress
                     
-                    # Blend frames in float space for smooth fading
+                    # Simple fade between images
                     frame1 = current_image.astype(np.float32) * current_alpha
                     frame2 = next_image.astype(np.float32) * next_alpha
                     
                     composite_frame = (frame1 + frame2)
                     composite_frame = np.clip(composite_frame, 0, 255).astype(np.uint8)
                     self.frames.append(composite_frame)
+                    
                     current_frame += 1
         
         progress(1.0, desc="Frames complete!")
@@ -203,14 +167,12 @@ class SlideshowVideoCreator:
             # Get frame dimensions
             height, width = self.frames[0].shape[:2]
             
-            # Use H.264 codec for better compression and quality
-            fourcc = cv2.VideoWriter_fourcc(*'avc1')  # H.264 codec
+            # Use mp4v codec (most compatible on Windows)
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
             out = cv2.VideoWriter(output_path, fourcc, self.fps, (width, height))
             
             if not out.isOpened():
-                # Fallback to mp4v if avc1 fails
-                fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-                out = cv2.VideoWriter(output_path, fourcc, self.fps, (width, height))
+                raise Exception("Failed to initialize video writer")
             
             # Write frames with progress
             total_frames = len(self.frames)
@@ -298,7 +260,8 @@ def launch_gradio():
                 
                 video_output = gr.Video(
                     label="Output Video",
-                    interactive=False
+                    interactive=False,
+                    height=500
                 )
         
         gr.Markdown("### Instructions")

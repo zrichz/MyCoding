@@ -1,18 +1,17 @@
 """
-Image Auto-Expander - Batch Processing Gradio Application (Percentage-Based Cropping)
-
-This script provides a GUI for batch processing images to a fixed 720x1600 pixels
-with percentage-based width cropping.
+a GUI for batch processing images to either 720x1600 or 2560x1440 pixels
+with percentage-based cropping, or scale to max 1440px height preserving aspect ratio.
 
 Key Features:
-- Select directory containing images using file dialog
+- directory SELECTION
+- Choose output res: 720x1600 (portrait), 2560x1440 (landscape), or 1440px Height
 - Accepts ANY initial image size
-- Configurable width crop percentage (0-25% in 1% steps): crops from each side
-- Output format selection: choose between high-quality JPEG (Q=100) or PNG format
-- Automatically processes images to exactly 720x1600 pixels (width x height)
-- Intelligent preprocessing: center crops width by percentage, expands height to (20/9) aspect ratio, then scales
-- Fixed, 160px maximum blur applied to expanded regions
-- Fixed, 25% luminance reduction for fade effect
+- Configurable crop percentage (0-25% in 1% steps): crops from each side / dimension before expansion
+- choose between high-quality JPEG (Q=90) or PNG format
+- 720x1600: center crops width by percentage, expands height to (20/9) aspect ratio with 1:2 top:bottom split
+- 2560x1440: center crops height by percentage, expands width to (16/9) aspect ratio with 50/50 left:right split
+- 1440px Height: scales image to max 1440px height while preserving aspect ratio (no cropping/blurring)
+- blur applied to expanded regions, with luminance reduction for fade effect
 - Generates unique timestamped filenames with conflict resolution
 """
 
@@ -24,7 +23,7 @@ import os
 from datetime import datetime
 from tkinter import Tk, filedialog
 
-# Ensure numpy is properly imported
+# Ensure numpy is imported
 try:
     import numpy as np
 except ImportError:
@@ -34,7 +33,7 @@ except ImportError:
 
 class ImageExpanderProcessor:
     def __init__(self):
-        # Target dimensions
+        # Target dimensions (will be set per resolution choice)
         self.target_width = 720
         self.target_height = 1600
         
@@ -96,7 +95,7 @@ class ImageExpanderProcessor:
         
         return sorted(image_files)
     
-    def generate_timestamp_filename(self, output_dir, ext):
+    def generate_timestamp_filename(self, output_dir, ext, resolution_str):
         """Generate a timestamp-based filename with conflict resolution"""
         now = datetime.now()
         timestamp = now.strftime("%Y%m%d%H%M%S")
@@ -104,7 +103,7 @@ class ImageExpanderProcessor:
         counter = 1
         while True:
             counter_str = f"{counter:03d}"
-            filename = f"{timestamp}_{counter_str}_720x1600{ext}"
+            filename = f"{timestamp}_{counter_str}_{resolution_str}{ext}"
             output_path = os.path.join(output_dir, filename)
             
             if not os.path.exists(output_path):
@@ -192,75 +191,156 @@ class ImageExpanderProcessor:
         reduced = line_array.astype(np.float32) * reduction_multiplier
         return np.clip(reduced, 0, 255).astype(np.uint8)
     
-    def process_single_image(self, input_path, output_path, crop_percent_per_side):
+    def process_single_image(self, input_path, output_path, crop_percent_per_side, resolution_mode):
         """Process a single image file with percentage-based cropping"""
         try:
             # Load image
             original_image = Image.open(input_path)
             
-            # Step 1: Apply percentage-based center crop to width only
-            if crop_percent_per_side > 0:
-                # Calculate total crop percentage (both sides)
-                total_crop_percent = crop_percent_per_side * 2
-                # Calculate new width after cropping
-                new_width = int(original_image.width * (1 - total_crop_percent / 100.0))
-                # Calculate crop positions (centered)
-                left = (original_image.width - new_width) // 2
-                right = left + new_width
-                # Crop only the width, keep full height
-                original_image = original_image.crop((left, 0, right, original_image.height))
+            if resolution_mode == "720x1600 (with blurring)":
+                # Portrait mode: crop width, expand height
+                # Step 1: Apply percentage-based center crop to width only
+                if crop_percent_per_side > 0:
+                    # Calculate total crop percentage (both sides)
+                    total_crop_percent = crop_percent_per_side * 2
+                    # Calculate new width after cropping
+                    new_width = int(original_image.width * (1 - total_crop_percent / 100.0))
+                    # Calculate crop positions (centered)
+                    left = (original_image.width - new_width) // 2
+                    right = left + new_width
+                    # Crop only the width, keep full height
+                    original_image = original_image.crop((left, 0, right, original_image.height))
+                
+                # Get the cropped width (z in the requirements)
+                z = original_image.width
+                
+                # Step 2: Calculate target height based on (20/9) aspect ratio
+                # Target height should be (20/9) * z
+                target_expanded_height = int((20.0 / 9.0) * z)
             
-            # Get the cropped width (z in the requirements)
-            z = original_image.width
+                # Convert to numpy array for processing
+                img_array = np.array(original_image)
+                orig_height, orig_width = img_array.shape[:2]
+                
+                # Calculate how much height expansion is needed
+                height_expansion = max(0, target_expanded_height - orig_height)
+                
+                # Vertical padding: 1:2 ratio (top:bottom)
+                # Top gets 1/3, bottom gets 2/3 of the expansion
+                top_pad = height_expansion // 3
+                bottom_pad = height_expansion - top_pad
+                
+                # Create expanded image array with new dimensions
+                final_height = orig_height + height_expansion
+                if len(img_array.shape) == 3:  # Color image
+                    expanded_array = np.zeros((final_height, orig_width, img_array.shape[2]), dtype=img_array.dtype)
+                else:  # Grayscale
+                    expanded_array = np.zeros((final_height, orig_width), dtype=img_array.dtype)
+                
+                # Copy original image to position (top-weighted due to 1:3, 2:3 ratio)
+                y_start = top_pad
+                y_end = y_start + orig_height
+                expanded_array[y_start:y_end, :] = img_array
+                
+                max_blur = self.blur_amount
+                max_luminance_drop = self.luminance_drop
+                
+                # Process top and bottom expansions
+                if top_pad > 0:
+                    self._process_top_expansion_vectorized(expanded_array, img_array, 
+                                                         top_pad, 0, orig_width, 
+                                                         max_blur, max_luminance_drop)
+                
+                if bottom_pad > 0:
+                    self._process_bottom_expansion_vectorized(expanded_array, img_array, 
+                                                            bottom_pad, y_end, 0, orig_width,
+                                                            max_blur, max_luminance_drop)
+                
+                # Convert back to PIL Image
+                processed_image = Image.fromarray(expanded_array.astype('uint8'))
+                
+                # Step 3: Resize to exactly 720x1600 using high-quality resampling
+                processed_image = processed_image.resize((720, 1600), 
+                                                        Image.Resampling.LANCZOS)
             
-            # Step 2: Calculate target height based on (20/9) aspect ratio
-            # Target height should be (20/9) * z
-            target_expanded_height = int((20.0 / 9.0) * z)
+            elif resolution_mode == "2560x1440 (with blurring)":
+                # Landscape mode: crop height, expand width
+                # Step 1: Apply percentage-based center crop to height only
+                if crop_percent_per_side > 0:
+                    # Calculate total crop percentage (both sides)
+                    total_crop_percent = crop_percent_per_side * 2
+                    # Calculate new height after cropping
+                    new_height = int(original_image.height * (1 - total_crop_percent / 100.0))
+                    # Calculate crop positions (centered)
+                    top = (original_image.height - new_height) // 2
+                    bottom = top + new_height
+                    # Crop only the height, keep full width
+                    original_image = original_image.crop((0, top, original_image.width, bottom))
+                
+                # Get the cropped height (z in the requirements)
+                z = original_image.height
+                
+                # Step 2: Calculate target width based on (16/9) aspect ratio
+                # Target width should be (16/9) * z
+                target_expanded_width = int((16.0 / 9.0) * z)
+                
+                # Convert to numpy array for processing
+                img_array = np.array(original_image)
+                orig_height, orig_width = img_array.shape[:2]
+                
+                # Calculate how much width expansion is needed
+                width_expansion = max(0, target_expanded_width - orig_width)
+                
+                # Horizontal padding: 50/50 centered split
+                left_pad = width_expansion // 2
+                right_pad = width_expansion - left_pad
+                
+                # Create expanded image array with new dimensions
+                final_width = orig_width + width_expansion
+                if len(img_array.shape) == 3:  # Color image
+                    expanded_array = np.zeros((orig_height, final_width, img_array.shape[2]), dtype=img_array.dtype)
+                else:  # Grayscale
+                    expanded_array = np.zeros((orig_height, final_width), dtype=img_array.dtype)
+                
+                # Copy original image to position (centered)
+                x_start = left_pad
+                x_end = x_start + orig_width
+                expanded_array[:, x_start:x_end] = img_array
+                
+                max_blur = self.blur_amount
+                max_luminance_drop = self.luminance_drop
+                
+                # Process left and right expansions
+                if left_pad > 0:
+                    self._process_left_expansion_vectorized(expanded_array, left_pad, x_start, 
+                                                           max_blur, max_luminance_drop)
+                
+                if right_pad > 0:
+                    self._process_right_expansion_vectorized(expanded_array, right_pad, x_end,
+                                                            max_blur, max_luminance_drop)
+                
+                # Convert back to PIL Image
+                processed_image = Image.fromarray(expanded_array.astype('uint8'))
+                
+                # Step 3: Resize to exactly 2560x1440 using high-quality resampling
+                processed_image = processed_image.resize((2560, 1440), 
+                                                        Image.Resampling.LANCZOS)
             
-            # Convert to numpy array for processing
-            img_array = np.array(original_image)
-            orig_height, orig_width = img_array.shape[:2]
-            
-            # Calculate how much height expansion is needed
-            height_expansion = max(0, target_expanded_height - orig_height)
-            
-            # Vertical padding: 1:2 ratio (top:bottom)
-            # Top gets 1/3, bottom gets 2/3 of the expansion
-            top_pad = height_expansion // 3
-            bottom_pad = height_expansion - top_pad
-            
-            # Create expanded image array with new dimensions
-            final_height = orig_height + height_expansion
-            if len(img_array.shape) == 3:  # Color image
-                expanded_array = np.zeros((final_height, orig_width, img_array.shape[2]), dtype=img_array.dtype)
-            else:  # Grayscale
-                expanded_array = np.zeros((final_height, orig_width), dtype=img_array.dtype)
-            
-            # Copy original image to position (top-weighted due to 1:3, 2:3 ratio)
-            y_start = top_pad
-            y_end = y_start + orig_height
-            expanded_array[y_start:y_end, :] = img_array
-            
-            max_blur = self.blur_amount
-            max_luminance_drop = self.luminance_drop
-            
-            # Process top and bottom expansions
-            if top_pad > 0:
-                self._process_top_expansion_vectorized(expanded_array, img_array, 
-                                                     top_pad, 0, orig_width, 
-                                                     max_blur, max_luminance_drop)
-            
-            if bottom_pad > 0:
-                self._process_bottom_expansion_vectorized(expanded_array, img_array, 
-                                                        bottom_pad, y_end, 0, orig_width,
-                                                        max_blur, max_luminance_drop)
-            
-            # Convert back to PIL Image
-            processed_image = Image.fromarray(expanded_array.astype('uint8'))
-            
-            # Step 3: Resize to exactly 720x1600 using high-quality resampling
-            processed_image = processed_image.resize((self.target_width, self.target_height), 
-                                                    Image.Resampling.LANCZOS)
+            elif resolution_mode == "1440px Height (Aspect Preserved)":
+                # Simple aspect-preserving scaling to 1440px height
+                # No cropping or blurring - just scale
+                img_array = np.array(original_image)
+                orig_height, orig_width = img_array.shape[:2]
+                
+                # Calculate new dimensions while preserving aspect ratio
+                # Always scale to 1440px height regardless of original size
+                scale_factor = 1440 / orig_height
+                new_height = 1440
+                new_width = int(orig_width * scale_factor)
+                
+                # Resize using highest quality LANCZOS resampling
+                processed_image = original_image.resize((new_width, new_height), 
+                                                       Image.Resampling.LANCZOS)
             
             # Save the processed image
             if output_path.lower().endswith('.jpg') or output_path.lower().endswith('.jpeg'):
@@ -370,7 +450,7 @@ class ImageExpanderProcessor:
                     final_column = self.apply_luminance_reduction(blurred_column, luminance_reductions[idx])
                     expanded_array[:, x_end + idx] = final_column
     
-    def process_batch(self, input_folder, crop_percent_per_side, save_as_jpg, progress=gr.Progress()):
+    def process_batch(self, input_folder, crop_percent_per_side, save_as_jpg, resolution_mode, progress=gr.Progress()):
         """Process all images in the selected directory"""
         if not input_folder or not os.path.exists(input_folder):
             return "Please select a valid input folder."
@@ -385,11 +465,12 @@ class ImageExpanderProcessor:
         if total_files == 0:
             return "No image files found in the selected folder."
         
-        # Create output directory
+        # Create output directory based on resolution mode
+        resolution_str = resolution_mode.replace("x", "x")
         if crop_percent_per_side > 0:
-            dir_name = f"processed_720x1600_crop{int(crop_percent_per_side)}pct"
+            dir_name = f"processed_{resolution_str}_crop{int(crop_percent_per_side)}pct"
         else:
-            dir_name = "processed_720x1600"
+            dir_name = f"processed_{resolution_str}"
         output_dir = os.path.join(input_folder, dir_name)
         os.makedirs(output_dir, exist_ok=True)
         
@@ -400,7 +481,9 @@ class ImageExpanderProcessor:
         
         log_lines.append(f"Input folder: {os.path.normpath(input_folder)}")
         log_lines.append(f"Output folder: {os.path.normpath(output_dir)}")
-        log_lines.append(f"Width crop: {crop_percent_per_side}% per side ({crop_percent_per_side * 2}% total)")
+        log_lines.append(f"Resolution mode: {resolution_mode}")
+        crop_dimension = "Width" if resolution_mode == "720x1600" else "Height"
+        log_lines.append(f"{crop_dimension} crop: {crop_percent_per_side}% per side ({crop_percent_per_side * 2}% total)")
         log_lines.append(f"Format: {'JPEG (Q=90)' if save_as_jpg else 'PNG'}")
         log_lines.append(f"Found {total_files} images to process\n")
         
@@ -412,9 +495,10 @@ class ImageExpanderProcessor:
                 
                 # Determine output format
                 ext = ".jpg" if save_as_jpg else ".png"
-                output_filename, output_path = self.generate_timestamp_filename(output_dir, ext)
+                resolution_str = resolution_mode.replace("x", "x")
+                output_filename, output_path = self.generate_timestamp_filename(output_dir, ext, resolution_str)
                 
-                if self.process_single_image(input_path, output_path, crop_percent_per_side):
+                if self.process_single_image(input_path, output_path, crop_percent_per_side, resolution_mode):
                     successful += 1
                     log_lines.append(f"✓ {filename} → {output_filename}")
                 else:
@@ -461,8 +545,15 @@ css = """
 """
 
 with gr.Blocks(title="Image Auto-Expander (Percentage)", css=css) as demo:
-    gr.Markdown("# Image Auto-Expander - Percentage-Based Cropping (720x1600)")
-    gr.Markdown("Accepts any image size • Crops by percentage • Expands to 20:9 ratio • Scales to 720x1600")
+    gr.Markdown("# Image Auto-Expander - Percentage-Based Cropping")
+    gr.Markdown("Accepts any image size • Choose resolution • Crops by percentage • Expands and scales")
+    
+    resolution_mode = gr.Radio(
+        choices=["720x1600 (with blurring)", "2560x1440 (with blurring)", "1440px Height (Aspect Preserved)"],
+        value="720x1600 (with blurring)",
+        label="Output Resolution",
+        info="720x1600 = Portrait (crops width, expands height 1:2 top:bottom) | 2560x1440 = Landscape (crops height, expands width 50:50 left:right) | 1440px Height = Scale to max 1440px height, preserving aspect ratio"
+    )
     
     browse_btn = gr.Button("📁 Browse Folder", size="lg", scale=1)
     
@@ -477,8 +568,8 @@ with gr.Blocks(title="Image Auto-Expander (Percentage)", css=css) as demo:
         maximum=25,
         step=1,
         value=0,
-        label="Width Crop Percentage (per side)",
-        info="0% = no crop, 8% = crops 8% from left + 8% from right (16% total). Crop is applied before expansion."
+        label="Crop Percentage (per side)",
+        info="0% = no crop, 8% = crops 8% from each side (16% total). For 720x1600: crops width. For 2560x1440: crops height. Crop is applied before expansion."
     )
     
     save_as_jpg = gr.Checkbox(
@@ -504,7 +595,7 @@ with gr.Blocks(title="Image Auto-Expander (Percentage)", css=css) as demo:
     
     process_btn.click(
         fn=processor.process_batch,
-        inputs=[input_folder, crop_percent_per_side, save_as_jpg],
+        inputs=[input_folder, crop_percent_per_side, save_as_jpg, resolution_mode],
         outputs=output_log
     )
 

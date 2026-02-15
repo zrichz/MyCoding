@@ -1,4 +1,4 @@
-# Filmic Effects Processor v2 - Applies film grain and vignette effects to 720x1600 images
+# Filmic Effects Processor v2 - Applies film grain and vignette effects to images
 
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
@@ -20,7 +20,7 @@ except ImportError:
 class FilmicEffectsProcessor:
     def __init__(self, root):
         self.root = root
-        self.root.title("Filmic Effects Processor v2 - 720x1600")
+        self.root.title("Filmic Effects Processor v2")
         self.root.geometry("1600x1400")
         self.root.configure(bg="#EBE1D2")
         
@@ -59,9 +59,10 @@ class FilmicEffectsProcessor:
         self.unsharp_sharpening = tk.BooleanVar(value=True)
         self.unsharp_half_strength = tk.BooleanVar(value=True)
         self.auto_contrast_stretch = tk.BooleanVar(value=True)
+        self.auto_contrast_strength = tk.DoubleVar(value=50.0)  # Percentage (default 50%)
         
         # NEW: Photographic effects toggles
-        self.apply_photo_grain = tk.BooleanVar(value=False)
+        self.apply_photo_grain = tk.BooleanVar(value=True)
         self.photo_grain_strength = tk.DoubleVar(value=0.025)
         
         self.apply_halation = tk.BooleanVar(value=False)
@@ -219,6 +220,13 @@ class FilmicEffectsProcessor:
         self.create_large_checkbox(col2, "  ↳ Apply at 50%", self.unsharp_half_strength, font_size=11).grid(row=row, column=0, columnspan=2, sticky='w', padx=5, pady=2)
         row = 1
         self.create_large_checkbox(col3, "Auto-Contrast Stretch", self.auto_contrast_stretch).grid(row=row, column=0, columnspan=2, sticky='w', padx=5, pady=2)
+        row += 1
+        ttk.Label(col3, text="Strength %:", font=("Arial", 11)).grid(row=row, column=0, sticky='e', padx=5)
+        self.contrast_strength_entry = ttk.Entry(col3, textvariable=self.auto_contrast_strength, width=10, font=("Arial", 11))
+        self.contrast_strength_entry.grid(row=row, column=1, padx=5)
+        self.contrast_strength_entry.bind('<Return>', lambda e: self.update_preview())
+        self.contrast_strength_entry.bind('<FocusOut>', lambda e: self.update_preview())
+        row = 1
         self.create_large_checkbox(col4, "Show Face Center", self.show_ca_center).grid(row=row, column=0, columnspan=2, sticky='w', padx=5, pady=2)
         
         # Tab 2: Photographic Effects - Part 1 (FOUR COLUMNS)
@@ -350,14 +358,14 @@ class FilmicEffectsProcessor:
                                  bg='#808080', fg='black', font=("Arial", 8))
         original_label.pack(pady=2)
         
-        # Create frame for canvas and scrollbar
+        # Create frame for canvas and scrollbars
         original_canvas_frame = tk.Frame(original_frame, bg='#808080')
         original_canvas_frame.pack()
         
-        self.original_canvas = tk.Canvas(original_canvas_frame, width=720, height=800, 
+        self.original_canvas = tk.Canvas(original_canvas_frame, width=1200, height=900, 
                                         bg='#1a1a1a', highlightthickness=1, 
                                         highlightbackground='#555555')
-        self.original_canvas.pack(side=tk.LEFT)
+        self.original_canvas.grid(row=0, column=0, sticky='nsew')
         
         # Bind mouse wheel scrolling to original canvas
         self.original_canvas.bind("<MouseWheel>", self.on_mousewheel)
@@ -365,10 +373,17 @@ class FilmicEffectsProcessor:
         self.original_canvas.bind("<Button-5>", self.on_mousewheel)  # Linux scroll down
         
         # Vertical scrollbar for original canvas
-        original_scrollbar = tk.Scrollbar(original_canvas_frame, orient='vertical', 
-                                         command=self.sync_scroll)
-        original_scrollbar.pack(side=tk.RIGHT, fill='y')
-        self.original_canvas.configure(yscrollcommand=original_scrollbar.set)
+        original_vscrollbar = tk.Scrollbar(original_canvas_frame, orient='vertical', 
+                                          command=self.sync_scroll_vertical)
+        original_vscrollbar.grid(row=0, column=1, sticky='ns')
+        
+        # Horizontal scrollbar for original canvas
+        original_hscrollbar = tk.Scrollbar(original_canvas_frame, orient='horizontal',
+                                          command=self.sync_scroll_horizontal)
+        original_hscrollbar.grid(row=1, column=0, sticky='ew')
+        
+        self.original_canvas.configure(yscrollcommand=original_vscrollbar.set,
+                                      xscrollcommand=original_hscrollbar.set)
         
         # Processed image canvas (right side) with scrollbar
         processed_frame = tk.Frame(canvas_container, bg='#808080')
@@ -380,14 +395,14 @@ class FilmicEffectsProcessor:
                                   bg='#808080', fg='black', font=("Arial", 8))
         processed_label.pack(pady=2)
         
-        # Create frame for canvas and scrollbar
+        # Create frame for canvas and scrollbars
         processed_canvas_frame = tk.Frame(processed_frame, bg='#808080')
         processed_canvas_frame.pack()
         
-        self.processed_canvas = tk.Canvas(processed_canvas_frame, width=720, height=800, 
+        self.processed_canvas = tk.Canvas(processed_canvas_frame, width=1200, height=900, 
                                          bg='#1a1a1a', highlightthickness=1, 
                                          highlightbackground='#555555')
-        self.processed_canvas.pack(side=tk.LEFT)
+        self.processed_canvas.grid(row=0, column=0, sticky='nsew')
         
         # Bind mouse wheel scrolling to processed canvas
         self.processed_canvas.bind("<MouseWheel>", self.on_mousewheel)
@@ -395,14 +410,23 @@ class FilmicEffectsProcessor:
         self.processed_canvas.bind("<Button-5>", self.on_mousewheel)  # Linux scroll down
         
         # Vertical scrollbar for processed canvas
-        processed_scrollbar = tk.Scrollbar(processed_canvas_frame, orient='vertical', 
-                                          command=self.sync_scroll)
-        processed_scrollbar.pack(side=tk.RIGHT, fill='y')
-        self.processed_canvas.configure(yscrollcommand=processed_scrollbar.set)
+        processed_vscrollbar = tk.Scrollbar(processed_canvas_frame, orient='vertical', 
+                                           command=self.sync_scroll_vertical)
+        processed_vscrollbar.grid(row=0, column=1, sticky='ns')
+        
+        # Horizontal scrollbar for processed canvas
+        processed_hscrollbar = tk.Scrollbar(processed_canvas_frame, orient='horizontal',
+                                           command=self.sync_scroll_horizontal)
+        processed_hscrollbar.grid(row=1, column=0, sticky='ew')
+        
+        self.processed_canvas.configure(yscrollcommand=processed_vscrollbar.set,
+                                       xscrollcommand=processed_hscrollbar.set)
         
         # Store scrollbar references for synchronization
-        self.original_scrollbar = original_scrollbar
-        self.processed_scrollbar = processed_scrollbar
+        self.original_vscrollbar = original_vscrollbar
+        self.original_hscrollbar = original_hscrollbar
+        self.processed_vscrollbar = processed_vscrollbar
+        self.processed_hscrollbar = processed_hscrollbar
         
     def reset_value(self, variable, default_value):
         """Reset a specific value to its default"""
@@ -422,7 +446,9 @@ class FilmicEffectsProcessor:
         """Detect face center using MediaPipe Face Detection optimized for small faces"""
         if not FACE_DETECTION_AVAILABLE or self.face_detection is None:
             self.face_detected = False
-            return (360, 360)  # Default center
+            # Calculate center as: horizontal center, 25% down from top
+            width, height = image.size
+            return (width // 2, int(height * 0.25))
             
         try:
             # Convert PIL Image to numpy array
@@ -516,13 +542,7 @@ class FilmicEffectsProcessor:
             image_path = self.image_files[self.current_preview_index]
             self.preview_image = Image.open(image_path)
             
-            # Verify image dimensions
-            if self.preview_image.size != (720, 1600):
-                messagebox.showwarning("Wrong Dimensions", 
-                                     f"Image {image_path.name} is {self.preview_image.size}, expected 720x1600")
-                return
-                
-            self.progress_var.set(f"Preview: {image_path.name} ({self.current_preview_index + 1}/{len(self.image_files)})")
+            self.progress_var.set(f"Preview: {image_path.name} ({self.current_preview_index + 1}/{len(self.image_files)}) - Size: {self.preview_image.size[0]}x{self.preview_image.size[1]}")
             
             # Detect face center for dynamic effect positioning
             self.effect_center = self.detect_face_center(self.preview_image)
@@ -897,7 +917,7 @@ class FilmicEffectsProcessor:
             # Save current scroll position before updating
             current_scroll_pos = self.original_canvas.yview()
             
-            # Use full image (720x1600)
+            # Use full image at original size
             original_full = self.preview_image.copy()
             
             # Apply effects to full image
@@ -936,9 +956,10 @@ class FilmicEffectsProcessor:
             self.original_canvas.create_image(0, 0, image=original_photo, anchor='nw')
             self.processed_canvas.create_image(0, 0, image=processed_photo, anchor='nw')
             
-            # Configure scroll regions for full image height (1600px)
-            self.original_canvas.configure(scrollregion=(0, 0, 720, 1600))
-            self.processed_canvas.configure(scrollregion=(0, 0, 720, 1600))
+            # Configure scroll regions based on actual image size
+            img_width, img_height = self.preview_image.size
+            self.original_canvas.configure(scrollregion=(0, 0, img_width, img_height))
+            self.processed_canvas.configure(scrollregion=(0, 0, img_width, img_height))
             
             # Keep references to prevent garbage collection
             self.original_photo_ref = original_photo
@@ -994,10 +1015,7 @@ class FilmicEffectsProcessor:
                     # Load image
                     image = Image.open(image_path)
                     
-                    # Check dimensions
-                    if image.size != (720, 1600):
-                        print(f"Skipping {image_path.name} - wrong dimensions: {image.size}")
-                        continue
+                    print(f"Processing {image_path.name} - dimensions: {image.size}")
                     
                     # Detect face center for this specific image
                     self.effect_center = self.detect_face_center(image)
@@ -1034,8 +1052,8 @@ class FilmicEffectsProcessor:
             self.root.after(0, lambda: messagebox.showerror("Processing Error", 
                                                            f"An error occurred during processing: {str(e)}"))
     
-    def sync_scroll(self, *args):
-        """Synchronize scrolling between both preview canvases"""
+    def sync_scroll_vertical(self, *args):
+        """Synchronize vertical scrolling between both preview canvases"""
         # Get the scroll position from whichever scrollbar was moved
         if args[0] == 'scroll':
             # Apply the same scroll to both canvases
@@ -1048,8 +1066,25 @@ class FilmicEffectsProcessor:
         
         # Update both scrollbars to show the same position
         pos = self.original_canvas.yview()
-        self.original_scrollbar.set(*pos)
-        self.processed_scrollbar.set(*pos)
+        self.original_vscrollbar.set(*pos)
+        self.processed_vscrollbar.set(*pos)
+    
+    def sync_scroll_horizontal(self, *args):
+        """Synchronize horizontal scrolling between both preview canvases"""
+        # Get the scroll position from whichever scrollbar was moved
+        if args[0] == 'scroll':
+            # Apply the same scroll to both canvases
+            self.original_canvas.xview(*args)
+            self.processed_canvas.xview(*args)
+        elif args[0] == 'moveto':
+            # Move both canvases to the same position
+            self.original_canvas.xview_moveto(args[1])
+            self.processed_canvas.xview_moveto(args[1])
+        
+        # Update both scrollbars to show the same position
+        pos = self.original_canvas.xview()
+        self.original_hscrollbar.set(*pos)
+        self.processed_hscrollbar.set(*pos)
     
     def on_mousewheel(self, event):
         """Handle mouse wheel scrolling for synchronized canvas scrolling"""
@@ -1074,10 +1109,10 @@ class FilmicEffectsProcessor:
         self.original_canvas.yview_scroll(delta * scroll_units, "units")
         self.processed_canvas.yview_scroll(delta * scroll_units, "units")
         
-        # Update both scrollbars to show the same position
+        # Update both vertical scrollbars to show the same position
         pos = self.original_canvas.yview()
-        self.original_scrollbar.set(*pos)
-        self.processed_scrollbar.set(*pos)
+        self.original_vscrollbar.set(*pos)
+        self.processed_vscrollbar.set(*pos)
         
         return "break"  # Prevent event from propagating
 
@@ -1191,11 +1226,18 @@ class FilmicEffectsProcessor:
         try:
             import numpy as np
             
+            # Get strength parameter (0-100%)
+            strength = self.auto_contrast_strength.get() / 100.0
+            
+            # If strength is 0, return original image
+            if strength <= 0:
+                return image
+            
             # Convert to numpy array
-            img_array = np.array(image)
+            img_array = np.array(image).astype(np.float32)
             
             # Use internal parameter (not exposed in GUI)
-            percentile = self.contrast_percentile  # 2.0
+            percentile = self.contrast_percentile  # 0.5
             
             # Calculate percentiles for each channel
             low_percentiles = np.percentile(img_array, percentile, axis=(0, 1))
@@ -1205,7 +1247,7 @@ class FilmicEffectsProcessor:
             stretched_array = np.zeros_like(img_array, dtype=np.float32)
             
             for i in range(img_array.shape[2]):  # For each color channel
-                channel = img_array[:, :, i].astype(np.float32)
+                channel = img_array[:, :, i]
                 low_val = float(low_percentiles[i])
                 high_val = float(high_percentiles[i])
                 
@@ -1219,9 +1261,15 @@ class FilmicEffectsProcessor:
                 
                 stretched_array[:, :, i] = stretched_channel
             
+            # Blend between original and stretched based on strength
+            if strength < 1.0:
+                result_array = img_array * (1.0 - strength) + stretched_array * strength
+            else:
+                result_array = stretched_array
+            
             # Convert back to uint8 and PIL Image
-            stretched_array = stretched_array.astype(np.uint8)
-            return Image.fromarray(stretched_array)
+            result_array = np.clip(result_array, 0, 255).astype(np.uint8)
+            return Image.fromarray(result_array)
             
         except Exception as e:
             print(f"Error applying auto contrast stretch: {e}")

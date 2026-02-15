@@ -1,24 +1,40 @@
 """
-SDXL Combined Prompt Generator
-Python/Gradio version - generates 200 complete SDXL prompts with Primary and Secondary stages.
-Format: <primary> | <secondary>
+SDXL Prompt Generator
+generates 400no. SDXL prompts, with 'Primary' and 'Secondary' stages.
+(although auto1111 doesn't split them like comfyui)
+Date: 2026-Feb
 
-Author: Copilot
-Date: 2026-01-09
+PRIMARY STAGES (8):
+  1. Subject identity
+  2. Pose and action
+  3. Framing and crop
+  4. Clothing and key props
+  5. Expression and gaze
+  6. Body descriptors
+  7. Context or location
+  8. Semantic technical anchors
+
+SECONDARY CATEGORIES (6):
+  1. Camera / Perspective
+  2. Lens / Focal length
+  3. Color grading / Film style
+  4. Depth of field / Bokeh
+  5. Texture / Finish
+  6. Mood / Subtle effects
 """
 
 import gradio as gr
 import random
 from datetime import datetime
 
-# PRIMARY STAGES (9)
+# PRIMARY STAGES (8)
 PRIMARY_STAGES = {
     "Subject identity": [
-        "personxyz",
+        "full-body shot, legs, (nude-colored platform heels), a photo of a woman,hair up,30 years old,(smiling:0.5)",
         
     ],
     "Pose and action": [
-        "three-quarter turn, left arm raised",
+        "three-quarter turn",
         "standing, hands in pockets",
         "seated, one knee up",
         "walking toward camera",
@@ -31,7 +47,6 @@ PRIMARY_STAGES = {
         "brushing hair back with one hand",
         "standing with arms folded loosely",
         "sitting on stairs, elbows on knees",
-        "walking dog on a short lead",
         "holding a takeaway coffee, mid-sip",
         "checking phone while standing",
         "leaning against doorframe, relaxed",
@@ -40,7 +55,6 @@ PRIMARY_STAGES = {
         "standing, slight smile",
         "carrying a backpack, mid-step",
         "sitting on a bench, one arm draped",
-        "holding bicycle by the handlebars",
         "walking up a short flight of steps",
         "adjusting glasses, slight tilt of head",
         "reaching for a shelf, casual stance",
@@ -54,7 +68,6 @@ PRIMARY_STAGES = {
         "sitting on a windowsill, knees drawn up",
         "holding a newspaper, reading",
         "standing with coat draped over shoulder",
-        "leaning on a bicycle, casual",
         "sitting on a low wall, feet dangling",
         "mid-laugh, head thrown back slightly",
     ],
@@ -65,122 +78,63 @@ PRIMARY_STAGES = {
         "three-quarter body",
         "close-up face",
         "knee-up",
-        "hip-up",
         "environmental portrait, subject small in frame",
         "tight portrait, eyes centered",
-        "half-body, slight tilt",
-        "over-the-shoulder crop",
-        "waist-up, slight left offset",
-        "head-to-toe, centered",
-        "upper torso, three-quarter turn",
-        "close crop on hands and face",
         "mid-shot with foreground blur",
         "portrait orientation, headroom",
-        "landscape orientation, subject left",
-        "tight headshot with soft bokeh",
-        "full body with negative space above",
-        "waist-up, slight downward angle",
-        "head and shoulders, eye-level",
-        "three-quarter body, slight wide angle",
-        "close-up of profile",
-        "mid-shot with environmental context",
-        "candid half-body crop",
-        "full body, slight motion blur",
-        "tight portrait, off-center composition",
-        "head and shoulders, soft framing",
-        "waist-up, natural posture",
-        "full body, slight low angle",
-        "close-up with hands visible",
-        "three-quarter body, centered",
-        "mid-shot with foreground element",
-        "tight crop on face and shoulders",
-        "full body, environmental detail visible",
-        "head and shoulders, slight side lighting",
-        "waist-up, casual stance",
-        "close-up with soft edge vignette",
     ],
     "Clothing and key props": [
-        "cream linen shirt",
-        "blue leather jacket",
-        "striped sweater",
-        "tailored coat and scarf",
-        "denim jacket and white tee",
-        "wool jumper and jeans",
-        "floral minidress, simple cut",
-        "casual hoodie and trainers",
-        "raincoat and wellies",
-        "t-shirt and shorts",
-        "checked shirt and denim",
-        "knit sweater and skirt",
-        "polo shirt and jeans",
-        "yoga top and leggings",
-        "bikini and sarong",
-        "rave outfit with glowsticks",
-        "oversized knit and leggings",
-        "simple blouse and mid-length skirt",
-        "sweatshirt and joggers",
+        "botanical print minidress, simple cut",
+        "plaid casual hoodie and trainers",
+        "striped t-shirt and shorts",
+        "gingham checked shirt and denim",
+        "polka dot knit sweater and skirt",
+        "tie-dye polo shirt and jeans",
+        "geometric pattern yoga top and leggings",
+        "animal print bikini and sarong",
+        "camouflage rave outfit with glowsticks",
+        "tartan oversized knit and leggings",
+        "ikat simple gossamer blouse and mid-length skirt",
+        "logo print sweatshirt and joggers",
         "cosplay Soul Calibur outfit",
-        "casual blazer and tee",
-        "striped tee and denim shorts",
-        "light rain jacket and umbrella",
-        "wool coat and scarf",
-        "evening dress and shawl",
-        "checked scarf and beanie",
-        "summer dress and sandals",
+        "abstract art print striped tee and denim shorts",
+        "monogram print evening dress",
+        "botanical print thin summer dress",
         "puffer jacket and jeans",
-        "uniform style blazer",
-        "cycling jacket and helmet",
-        "sweater vest and shirt",
-        "casual shirt and backpack",
-        "striped jumper and coat",
-        "athleisure wear",
-        "simple tee and denim jacket",
-        "fitted coat and scarf",
-        "clubbing outfit",
-        "wool hat and gloves",
-        "silk shirt and trousers",
-        "light gilet and jeans",
-        "casual shirt and watch",
-        "pyjama top and slippers",
+        "tartan casual shirt",
+        "geometric pattern colorful athleisure wear",
+        "plaid simple tee and denim hotpants",
+        "animal print revealing colorful clubbing outfit",
+        "polka dot silk shirt and trousers",
+        "camouflage light orange gilet and jeans",
+        "striped casual shirt and watch",
+        "gingham pink pyjama top and slippers",
+        "botanical print blouse and jeans",
+        "geometric pattern dress",
+        "animal print top and skirt",
+        "tie-dye t-shirt and shorts",
+        "plaid shirt and chinos",
+        "tartan skirt and cardigan",
+        "stripe sweater and trousers",
+        "gingham sundress",
+        "abstract art print tunic",
+        "camouflage jacket and jeans",
+        "monogram print scarf and blazer",
+        "logo print hoodie and leggings",
+        "polka dot blouse and midi skirt",
+        "ikat pattern kaftan",
     ],
     "Expression and gaze": [
         "soft smile, looking at camera",
         "neutral expression, direct gaze to viewer",
         "candid smile, eyes to camera",
-        "contemplative, looking at viewer",
         "gentle laugh, eyes to camera",
-        "focused, looking at viewer",
+        "contemplative, looking at viewer",
         "relaxed, eyes to camera",
-        "slight grin, looking at camera",
-        "thoughtful, direct gaze",
-        "subtle smile, direct eye contact",
-        "soft expression, looking at viewer",
-        "calm, eyes to camera",
-        "mild amusement, looking at camera",
-        "serene, slight smile to viewer",
         "warm smile, eyes crinkled at camera",
-        "reserved smile, eyes to viewer",
-        "gentle smirk, looking at camera",
-        "open smile, eyes to camera",
         "softly serious, direct gaze at viewer",
-        "subdued smile, eyes to camera",
-        "mild surprise, looking at viewer",
-        "relaxed grin, eyes to camera",
-        "quiet contentment, looking at viewer",
-        "slight frown, eyes to camera",
-        "gentle curiosity, looking at viewer",
-        "soft laugh, eyes to camera",
+        "subtle smile, direct eye contact",
         "calm, steady gaze at viewer",
-        "subtle amusement, looking at camera",
-        "warm, approachable smile to viewer",
-        "reflective, eyes to camera",
-        "mildly inquisitive, direct gaze at viewer",
-        "soft grin, eyes to camera",
-        "content expression, looking at viewer",
-        "quiet smile, eyes to camera",
-        "gentle amusement, looking at viewer",
-        "softly bemused, eyes to camera",
-        "calm, neutral expression looking at viewer",
     ],
     "Body descriptors": [
         "visible freckles on arms",
@@ -191,45 +145,6 @@ PRIMARY_STAGES = {
         "toned calves",
         "natural posture, relaxed",
         "slight asymmetry in stance",
-    ],
-    "Composition anchors": [
-        "centered, negative space to the right",
-        "leaning against wall, left side of frame",
-        "slight head tilt, off-center composition",
-        "foreground subject, blurred background",
-        "subject slightly left, leading lines to right",
-        "tight framing with window light behind",
-        "subject near bottom third, sky visible",
-        "balanced with props on either side",
-        "subject framed by doorway",
-        "subject in lower-left, negative space above",
-        "diagonal composition, subject moving right",
-        "symmetrical composition, centered subject",
-        "subject against textured wall",
-        "soft foreground element partially obscuring",
-        "subject offset to create breathing room",
-        "tight crop with hands visible",
-        "subject framed by bookshelf",
-        "leading lines from foreground to subject",
-        "subject leaning into frame from right",
-        "low-angle composition, subject dominant",
-        "high-angle, subject small in frame",
-        "subject centered with shallow depth",
-        "subject placed on left third, open space right",
-        "subject framed by archway",
-        "soft vignette, subject centered",
-        "subject partially behind foreground object",
-        "balanced negative space above head",
-        "subject aligned with vertical lines",
-        "subject in foreground, street in background",
-        "subject leaning into negative space",
-        "tight portrait with environmental hint",
-        "subject slightly off-center, natural pose",
-        "subject framed by window light",
-        "subject against plain backdrop, natural pose",
-        "subject interacting with prop in frame",
-        "subject centered with subtle motion blur",
-        "subject placed near leading architectural lines",
     ],
     "Context or location": [
         "studio portrait",
@@ -312,7 +227,6 @@ PRIMARY_STAGES = {
         "warm morning light",
         "cool evening window light",
         "handheld phone with slight motion",
-        "camera on tripod, slight depth",
         "shot through glass, subtle reflection",
         "soft backlight with rim highlight",
         "natural light with subtle shadow",
@@ -326,103 +240,31 @@ SECONDARY_CATEGORIES = {
         "slightly above eye-level",
         "slightly below eye-level",
         "three-quarter angle, natural",
-        "straight-on, relaxed",
-        "slight downward tilt",
-        "slight upward tilt",
         "environmental portrait perspective",
-        "intimate close perspective",
-        "medium distance, natural",
-        "wide environmental perspective",
-        "tight headshot perspective",
-        "over-the-shoulder viewpoint",
-        "candid handheld viewpoint",
-        "phone-chest-height viewpoint",
-        "mirror selfie perspective",
-        "tripod-stable eye-level",
-        "slight motion perspective, natural",
-        "table-top timer perspective",
-        "window-seat perspective",
-        "bench-side perspective",
-        "doorway-framed perspective",
-        "street-level perspective",
-        "car-interior passenger perspective",
-        "train-window perspective",
         "low-angle, modest dominance",
         "high-angle, modest vulnerability",
-        "three-quarter environmental view",
-        "tight profile perspective",
-        "softly off-center perspective",
-        "balanced centered perspective",
-        "slight wide-angle environmental",
-        "natural handheld framing",
-        "softly cropped portrait perspective",
-        "mid-distance candid framing",
-        "soft foreground framing viewpoint",
-        "slight tilt for casual feel",
-        "eye-level with slight headroom",
-        "three-quarter with negative space",
     ],
     "Lens / Focal length": [
         "50mm standard lens look",
         "35mm environmental portrait",
-        "85mm short telephoto portrait",
         "24mm slight wide environmental",
         "70mm short telephoto feel",
         "28mm modest wide angle",
-        "100mm short telephoto tight portrait",
         "40mm natural field of view",
         "60mm gentle compression",
-        "35mm with natural context",
-        "85mm with soft compression",
         "50mm with slight bokeh",
         "24-70mm versatile zoom feel",
-        "35mm slightly intimate",
-        "50mm close portrait",
-        "85mm head-and-shoulders",
         "28mm for modest environmental hint",
         "35mm for casual feel",
-        "50mm for natural skin rendering",
-        "85mm for flattering compression",
+        
+        
     ],
     "Color grading / Film style": [
-        "neutral color balance, natural skin tones",
-        "slightly warm, low saturation",
-        "muted tones, low contrast",
-        "soft film-like color, subtle grain",
-        "cool tones, natural look",
-        "soft teal and warm highlights, restrained",
-        "gentle Kodak-like warmth, subtle",
-        "subtle Portra-inspired warmth",
-        "faded film look, low contrast",
         "clean digital look, minimal processing",
-        "slightly desaturated, natural",
-        "soft pastel highlights, restrained",
-        "warm indoor tungsten balance",
-        "cool overcast grading, neutral skin",
-        "soft contrast, natural shadows",
-        "gentle contrast boost, realistic",
-        "slight vintage fade, subtle",
-        "natural color with slight warmth",
-        "soft film grain and neutral color",
-        "low-key natural color, realistic",
-        "muted autumnal palette",
-        "soft morning warmth, low saturation",
-        "neutral with slight highlight roll-off",
-        "clean daylight balance, realistic",
-        "soft contrast, warm midtones",
-        "slight cross-processed feel, subtle",
-        "gentle matte finish, natural",
-        "soft warm highlights, neutral shadows",
-        "cool evening tones, restrained",
-        "soft filmic warmth, low vibrance",
-        "natural color, slight clarity",
-        "soft pastel wash, subtle",
-        "neutral with slight vignette",
-        "soft cinematic teal-orange, very subtle",
-        "muted color with natural skin",
-        "soft warm kitchen tones",
-        "clean neutral with slight warmth",
-        "soft low-contrast film look",
+        "slightly warm, low saturation",
+        "cool tones, natural look",
+        "faded film look, low contrast",
+        "cinematic teal-orange, very subtle",
     ],
     "Depth of field / Bokeh": [
         "shallow depth of field, soft bokeh",
@@ -431,64 +273,31 @@ SECONDARY_CATEGORIES = {
         "soft background blur, natural",
         "slight background separation",
         "soft foreground blur, subject sharp",
-        "gentle bokeh with circular highlights",
-        "soft bokeh, low contrast background",
-        "moderate DOF, subject isolated",
-        "shallow DOF, eyes sharply focused",
-        "soft bokeh with subtle chromatic fringing",
-        "shallow DOF, subtle rim separation",
-        "shallow DOF, slight motion blur in background",
+        
         
     ],
     "Texture / Finish": [
-        "subtle film grain",
         "clean digital finish",
-        "very light film grain, natural",
-        "soft clarity, minimal sharpening",
-        "gentle texture, realistic skin",
+        "subtle film grain",
         "matte finish, low contrast",
-        "slight clarity boost, natural",
-        "soft micro-contrast, realistic",
-        "minimal noise reduction, natural",
-        "light film grain and subtle texture",
-        "clean skin rendering, low retouch",
         "natural skin texture preserved",
-        "softened highlights, natural detail",
-        "subtle sharpening on eyes",
-        "gentle clarity on facial features",
-        "minimal post-processing look",
-        "soft matte skin finish",
-        "natural pores visible, realistic",
-        "slight vignette, natural",
-        "low-key finish, realistic texture",
+        "soft clarity, minimal sharpening",
     ],
     "Mood / Subtle effects": [
-        "quiet, candid mood",
-        "everyday, unposed feel",
         "natural, documentary tone",
-        "calm, approachable atmosphere",
+        "quiet, candid mood",
         "subtle warmth, homely",
         "cheerful, candid",
-        "understated, authentic",
-        "modest travel vibe, realistic",
-        "weekday morning routine feel",
-        "casual weekend mood",
-        "quiet domestic scene",
-        "subtle motion hint, natural",
-        "low-key documentary feel",
-        "gentle intimacy, not posed",
-        "everyday errand, candid",
         "subtle story-telling, natural",
-        "restrained, competent amateur look",
     ],
 }
 
 
 def generate_prompts(primary_enabled, secondary_enabled):
-    """Generate 200 combined prompts based on enabled stages."""
+    """Generate 400 combined prompts based on enabled stages."""
     prompts = []
     
-    for _ in range(200):
+    for _ in range(400):
         # Generate primary prompt
         primary_parts = []
         for stage_name, options in PRIMARY_STAGES.items():
@@ -512,7 +321,7 @@ def generate_prompts(primary_enabled, secondary_enabled):
 
 def generate_and_display(*checkboxes):
     """Generate prompts and return formatted text with save option."""
-    # Parse checkboxes (9 primary + 7 secondary = 16 total)
+    # Parse checkboxes (8 primary + 7 secondary = 15 total)
     primary_enabled = {}
     secondary_enabled = {}
     
@@ -530,9 +339,9 @@ def generate_and_display(*checkboxes):
     
     # Format output - show only last 8 prompts with prefix and suffix
     last_8 = prompts[-8:]
-    output_lines = [f'--prompt "{prompt}" --negative_prompt "asian, poor quality"' for prompt in last_8]
+    output_lines = [f'--prompt "{prompt}" --negative_prompt "asian, makeup, (tanned:0.15)"' for prompt in last_8]
     output = "\n\n".join(output_lines)
-    
+
     return output, prompts
 
 
@@ -546,7 +355,7 @@ def save_prompts(prompts_data):
     
     with open(filename, 'w', encoding='utf-8') as f:
         for prompt in prompts_data:
-            f.write(f'--prompt "{prompt}" --negative_prompt "asian, poor quality"\n')
+            f.write(f'--prompt "{prompt}" --negative_prompt "asian, makeup, (tanned:0.15)"\n')
     
     return f"✓ Saved {len(prompts_data)} prompts to {filename}"
 
@@ -554,30 +363,32 @@ def save_prompts(prompts_data):
 # Build Gradio interface
 with gr.Blocks() as demo:
     gr.Markdown("# SDXL Combined Prompt Generator")
-    gr.Markdown("Generate 200 randomized prompts in format: `<primary> | <secondary>`")
+    gr.Markdown("Generate 400 randomized prompts in format: `<primary> | <secondary>`")
     gr.Markdown("Enable/disable stages to customize output. All stages enabled by default.")
     
     with gr.Row():
         with gr.Column(scale=1):
             gr.Markdown("### PRIMARY STAGES")
             primary_checks = []
-            for stage_name in PRIMARY_STAGES.keys():
-                primary_checks.append(gr.Checkbox(label=stage_name, value=True))
+            primary_defaults = [True, True, False, False, True, False, False, False]  # 1,2,5 enabled
+            for i, stage_name in enumerate(PRIMARY_STAGES.keys()):
+                primary_checks.append(gr.Checkbox(label=stage_name, value=primary_defaults[i]))
         
         with gr.Column(scale=1):
             gr.Markdown("### SECONDARY CATEGORIES")
             secondary_checks = []
-            for cat_name in SECONDARY_CATEGORIES.keys():
-                secondary_checks.append(gr.Checkbox(label=cat_name, value=True))
+            secondary_defaults = [False, False, True, False, True, True]  # 3,5,6 enabled
+            for i, cat_name in enumerate(SECONDARY_CATEGORIES.keys()):
+                secondary_checks.append(gr.Checkbox(label=cat_name, value=secondary_defaults[i]))
     
-    generate_btn = gr.Button("Generate 200 Prompts", variant="primary", size="lg")
+    generate_btn = gr.Button("Generate 400 Prompts", variant="primary", size="lg")
     
     with gr.Row():
         save_btn = gr.Button("Save to File", size="sm")
         save_status = gr.Textbox(label="Save Status", interactive=False, scale=3)
     
     output_text = gr.Textbox(
-        label="Generated Prompts (200 total)",
+        label="Generated Prompts (400 total)",
         lines=20,
         max_lines=30,
         interactive=False
