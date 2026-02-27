@@ -92,7 +92,7 @@ with gr.Blocks(title="Keyword Permutation Prompter") as demo:
         with gr.Column():
             prefix_input = gr.Textbox(
                 label="Prefix",
-                placeholder="e.g., A beautiful photograph of",
+                placeholder="e.g., A photo of",
                 lines=2
             )
             
@@ -116,7 +116,7 @@ with gr.Blocks(title="Keyword Permutation Prompter") as demo:
             
             suffix_input = gr.Textbox(
                 label="Suffix",
-                placeholder="e.g., professional photography, detailed",
+                placeholder="e.g., detailed",
                 lines=2
             )
             
