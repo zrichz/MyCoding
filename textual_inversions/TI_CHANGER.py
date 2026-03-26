@@ -316,10 +316,9 @@ def get_user_choice(is_single_vector=False):
     print("="*60)
     
     if is_single_vector:
-        print("\n📌 NOTE: This is a single-vector file. Some operations that require")
-        print("   multiple vectors are unavailable or will work on duplicated vectors.")
-        print("   Recommended operations: 3, 4, 5, 10, 11, 12")
-    
+        print("\n NOTE: This is a single-vector file. Some operations that require")
+        print("   multiple vectors are unavailable")
+        
     # Define which operations are available for single vectors
     single_vector_ops = ['1', '3', '4', '5', '10', '11', '12', '15']
     multi_vector_ops = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15']
@@ -344,8 +343,8 @@ def get_user_choice(is_single_vector=False):
                 return user_input
             elif user_input in ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15']:
                 if is_single_vector:
-                    print(f"❌ Operation {user_input} is not available for single-vector files.")
-                    print(f"   Available operations: {', '.join(single_vector_ops)}")
+                    print(f"Operation {user_input} is not available for single-vector files.")
+                    print(f"Available operations: {', '.join(single_vector_ops)}")
                 else:
                     return user_input
             else:
@@ -1455,12 +1454,12 @@ def show_transformation_plots(original_data, transformed_data, title, filename):
     
     # Print statistics
     print(f"\n📊 {title} Statistics:")
-    print(f"   Original range: [{orig_flat.min():.6f}, {orig_flat.max():.6f}]")
-    print(f"   Original mean: {orig_flat.mean():.6f}")
-    print(f"   Original std: {orig_flat.std():.6f}")
-    print(f"   Transformed range: [{trans_flat.min():.6f}, {trans_flat.max():.6f}]")
-    print(f"   Transformed mean: {trans_flat.mean():.6f}")
-    print(f"   Transformed std: {trans_flat.std():.6f}")
+    print(f"   Orig range: [{orig_flat.min():.6f}, {orig_flat.max():.6f}]")
+    print(f"   Orig mean: {orig_flat.mean():.6f}")
+    print(f"   Orig std: {orig_flat.std():.6f}")
+    print(f"   Trans range: [{trans_flat.min():.6f}, {trans_flat.max():.6f}]")
+    print(f"   Trans mean: {trans_flat.mean():.6f}")
+    print(f"   Trans std: {trans_flat.std():.6f}")
 
 
 def quantile_transform(data, original_filename, numvectors, np_array):

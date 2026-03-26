@@ -96,7 +96,7 @@ PRIMARY_STAGES = {
         "dark red tartan oversized knit with black leggings",
         "turquoise ikat pattern gossamer blouse with light beige midi skirt",
         "bright yellow logo print sweatshirt with grey pleated skirt",
-        "Soul Calibur cosplay outfit in electric blue and silver",
+        "Soul Calibur cosplay outfit in light blue and silver",
         "pastel pink abstract art print tee with light wash denim shorts",
         "dark purple monogram print evening dress",
         "sage green botanical print summer dress with floral pattern",
@@ -156,12 +156,11 @@ PRIMARY_STAGES = {
     "Body descriptors": [
         "visible freckles on arms",
         "light sun tan",
-        "pale complexion",
         "strong posture",
         "relaxed shoulders",
         "toned calves",
         "natural posture, relaxed",
-        "slight asymmetry in stance",
+        "asymmetric stance",
     ],
     "Context or location": [
         "studio portrait",
