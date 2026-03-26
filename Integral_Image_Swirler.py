@@ -57,19 +57,54 @@ def swirliness_map(image, block=8):
 
     return energy
 
-def process(img, block):
-    return swirliness_map(img, block)
+def circle_similarity_map(image, kernel_size=15):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY).astype(np.float32)
+
+    size = max(3, int(kernel_size))
+    if size % 2 == 0:
+        size += 1
+
+    kernel = np.zeros((size, size), dtype=np.uint8)
+    radius = size // 2
+    cv2.circle(kernel, (radius, radius), radius, 1, -1)
+
+    response = cv2.matchTemplate(gray, kernel.astype(np.float32), cv2.TM_CCOEFF_NORMED)
+    response = cv2.normalize(response, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+
+    pad = size // 2
+    response = cv2.copyMakeBorder(response, pad, pad, pad, pad, cv2.BORDER_CONSTANT, value=0)
+    response = cv2.resize(response, (gray.shape[1], gray.shape[0]), interpolation=cv2.INTER_LINEAR)
+
+    return response
+
+def process(img, filter_type, block, circle_size, normalise):
+    if filter_type == "Filled Circle Similarity":
+        result = circle_similarity_map(img, circle_size)
+    else:
+        result = swirliness_map(img, block)
+
+    if normalise:
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        result = clahe.apply(result)
+    return result
 
 with gr.Blocks() as demo:
-    gr.Markdown("# 🌀 Swirliness Map Generator\nUpload an image to compute Haar-based structure energy.")
+    gr.Markdown("# 🌀 Pattern Energy Mapper\nUse Haar swirliness or filled-circle similarity filters.")
     with gr.Row():
         with gr.Column():
             inp = gr.Image(type="numpy", label="Input Image")
-            block_slider = gr.Slider(minimum=1, maximum=16, step=1, value=8, label="Block Size")
-            btn = gr.Button("Generate Swirliness Map")
+            filter_type = gr.Radio(
+                choices=["Haar Swirliness", "Filled Circle Similarity"],
+                value="Haar Swirliness",
+                label="Filter Type",
+            )
+            block_slider = gr.Slider(minimum=2, maximum=16, step=2, value=8, label="Block Size")
+            circle_size_slider = gr.Slider(minimum=3, maximum=65, step=2, value=15, label="Circle Kernel Size")
+            normalise_toggle = gr.Checkbox(value=False, label="Enhance contrast (CLAHE)")
+            btn = gr.Button("Generate Output Map")
         with gr.Column():
-            out = gr.Image(type="numpy", label="Swirliness Map")
+            out = gr.Image(type="numpy", label="Output Map")
             gr.Markdown("You can right-click → Save Image As to download the result.")
-    btn.click(process, [inp, block_slider], out)
+    btn.click(process, [inp, filter_type, block_slider, circle_size_slider, normalise_toggle], out)
 
 demo.launch(inbrowser=True)
