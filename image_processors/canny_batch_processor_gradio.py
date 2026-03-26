@@ -28,7 +28,7 @@ def process_single_image(input_image, low_threshold, high_threshold):
                 img = img_array
         
         if img is None:
-            return None, "❌ Could not read the uploaded image"
+            return None, "Could not read the uploaded image"
         
         # Convert to grayscale if not already
         if len(img.shape) == 3:
@@ -49,16 +49,16 @@ def process_single_image(input_image, low_threshold, high_threshold):
         result_image = Image.fromarray(inverted_edges)
         
         # Create success message
-        success_msg = f"✅ **Canny Edge Detection Complete!**\n\n"
-        success_msg += f"🔧 **Parameters Used:**\n"
+        success_msg = f"Canny Edge Detection Complete\n\n"
+        success_msg += f"Parameters Used:\n"
         success_msg += f"   • Low Threshold: {int(low_threshold)}\n"
         success_msg += f"   • High Threshold: {int(high_threshold)}\n\n"
-        success_msg += f"💡 **Tip:** Right-click on the result image to save it"
+        success_msg += f"Right-click on result image to save"
         
         return result_image, success_msg
         
     except Exception as e:
-        return None, f"❌ **Error processing image:** {str(e)}"
+        return None, f"Error processing image: {str(e)}"
 
 # Create Gradio interface
 with gr.Blocks(
@@ -88,7 +88,7 @@ with gr.Blocks(
     with gr.Row():
         with gr.Column(scale=1):
             # Image upload
-            input_image = gr.Image(
+            in_image = gr.Image(
                 label="📁 Upload Image",
                 type="pil",
                 height=400
@@ -98,35 +98,35 @@ with gr.Blocks(
             with gr.Group():
                 gr.Markdown("### ⚙️ Canny Parameters")
                 
-                low_threshold = gr.Slider(
+                thr_low = gr.Slider(
                     minimum=1,
                     maximum=255,
                     value=50,
                     step=1,
                     label="🔽 Low Threshold",
-                    info="Lower values detect more edges"
+                    info="detect more edges"
                 )
                 
-                high_threshold = gr.Slider(
+                thr_hi = gr.Slider(
                     minimum=1,
                     maximum=255,
                     value=150,
                     step=1,
                     label="🔼 High Threshold",
-                    info="Higher values detect stronger edges"
+                    info="detect less edges"
                 )
             
             # Process button
             process_btn = gr.Button(
-                "🚀 Apply Canny Edge Detection",
+                "Apply Canny Edge Detection",
                 variant="primary",
                 size="lg"
             )
         
         with gr.Column(scale=1):
             # Result image
-            result_image = gr.Image(
-                label="🎯 Canny Edge Detection Result",
+            out_image = gr.Image(
+                label="Detection Result",
                 height=400,
                 show_download_button=True
             )
@@ -134,26 +134,35 @@ with gr.Blocks(
     # Wire up the processing
     process_btn.click(
         fn=lambda img, low, high: process_single_image(img, low, high)[0],
-        inputs=[input_image, low_threshold, high_threshold],
-        outputs=[result_image]
+        inputs=[in_image, thr_low, thr_hi],
+        outputs=[out_image]
     )
     
     # Auto-process when sliders change
-    for slider in [low_threshold, high_threshold]:
-        slider.change(
-            fn=lambda img, low, high: process_single_image(img, low, high)[0],
-            inputs=[input_image, low_threshold, high_threshold],
-            outputs=[result_image]
-        )
+    def update_image(img, low, high):
+        result_image, message = process_single_image(img, low, high)
+        return result_image
+    
+    thr_low.change(
+        fn=update_image,
+        inputs=[in_image, thr_low, thr_hi],
+        outputs=[out_image]
+    )
+    
+    thr_hi.change(
+        fn=update_image,
+        inputs=[in_image, thr_low, thr_hi],
+        outputs=[out_image]
+    )
 
 def main():
     """Launch the Gradio app"""
-    print("🚀 Starting Canny Edge Detection Processor...")
-    print("🌐 Opening web interface...")
+    print("Starting Canny Edge Detection Processor...")
+    print("Opening web interface...")
     
     app.launch(
         server_name="127.0.0.1",
-        server_port=None,  # Let Gradio find an available port
+        server_port=None,  # Gradio finds an available port
         share=False,
         inbrowser=True,
         show_error=True
