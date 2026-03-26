@@ -1,3 +1,28 @@
+"""
+CLIP Image Similarity Analyzer
+
+This script analyzes visual similarity between images in a directory using OpenAI's CLIP 
+(Contrastive Language-Image Pre-Training) neural network models. It provides multiple 
+visualizations to help identify similar images:
+
+1. Loads multiple CLIP models (ensemble approach: ViT-L/14@336px and RN50x4) for improved 
+   accuracy and robustness
+2. Encodes all images as feature vectors using CLIP's vision encoder
+3. Computes pairwise similarity scores using a hybrid ensemble method (60% Euclidean 
+   distance + 40% correlation coefficient)
+4. Generates three visualizations:
+   - Full similarity matrix heatmap showing all image-to-image comparisons
+   - Top N most similar image pairs displayed side-by-side with similarity scores
+   - 2D PCA projection map with actual image thumbnails positioned by visual similarity
+     (similar images cluster together spatially)
+
+Usage:
+    python CLIP_imager.py --input_dir /path/to/images
+    (or run without arguments to launch a GUI folder picker)
+
+The script automatically detects and uses GPU acceleration if available via CUDA.
+"""
+
 import os
 import numpy as np
 import torch
