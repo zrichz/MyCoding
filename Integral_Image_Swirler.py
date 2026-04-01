@@ -89,7 +89,6 @@ def process(img, filter_type, block, circle_size, normalise):
     return result
 
 with gr.Blocks() as demo:
-    gr.Markdown("# 🌀 Pattern Energy Mapper\nUse Haar swirliness or filled-circle similarity filters.")
     with gr.Row():
         with gr.Column():
             inp = gr.Image(type="numpy", label="Input Image")
