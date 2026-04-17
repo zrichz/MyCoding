@@ -14,13 +14,8 @@ PRIMARY STAGES (8):
   7. Context or location
   8. Semantic technical anchors
 
-SECONDARY OPTIONS:
-  Combined list of 18 options covering:
-  - Color grading / Film style
-  - Depth of field / Bokeh
-  - Texture / Finish
-  - Mood / Subtle effects
-  (3 random options selected per prompt when enabled)
+SECONDARY CATEGORY (1):
+  1. Secondary effects (color/depth/texture/mood)
 """
 
 import gradio as gr
@@ -30,7 +25,7 @@ from datetime import datetime
 # PRIMARY STAGES (8)
 PRIMARY_STAGES = {
     "Subject identity": [
-        "amateur photo, full-body shot, boobs, a photo of a short blonde woman",
+        "an award-winning anime illustration of a stunning, young, beautiful woman, boobs focus, blonde, hair up,",
         
     ],
     "Pose and action": [
@@ -57,56 +52,22 @@ PRIMARY_STAGES = {
     ],
     "Clothing and key props": [
         "light coral botanical print minidress, simple cut",
-        "string bikini",
-        "green and light olive rave outfit",
+        "leopard print bikini in tan and dark brown with coral sarong",
+        "green and dark olive camouflage rave outfit with neon glowsticks",
         "turquoise ikat pattern gossamer blouse with light beige mini skirt",
-        "bright yellow logo print sweatshirt with grey pleated mini skirt",
-        "cosplay outfit in light blue and silver",
-        "pastel pink abstract art print tee with light wash denim hot pants",
+        "bright yellow logo print sweatshirt with grey pleated skirt",
+        "Soul Calibur cosplay outfit in light blue and white",
+        "pastel pink abstract art print tee with light wash denim shorts",
         "sage green botanical print summer dress with floral pattern",
-        "rainbow geometric pattern athleisure wear",
-        "pink print clubbing outfit",
-        "baby pink silk babydoll top with platform heels",
+        "neon rainbow geometric pattern athleisure wear",
+        "hot pink zebra print clubbing outfit",
+        "baby pink silk babydoll top with fuzzy white slippers",
         "cheetah print tank top in golden brown with dark navy skirt",
         "sunset tie-dye t-shirt (orange, pink, yellow) with khaki shorts",
         "classic red tartan skirt",
         "sunny yellow tank top with tropical leaf print shorts",
-        "light mint skirt with matching crop top",
-        "bright fuchsia mesh top with geometric print shorts",
-        "white ribbed crop top with high-waisted orange linen shorts",
-        "red halter bikini top with matching high-cut bottoms",
-        "grey bodycon mini dress with side panels",
-        "lavender satin slip dress with thin straps",
-        "emerald green off-shoulder crop top with white denim mini skirt",
-        "coral pink bandeau top with flowing slit skirt in cream",
-        "electric blue sports bra with matching shorts",
-        "peach silk camisole with high-waisted wide-leg shorts",
-        "burgundy velvet crop top with gold chain straps and black mini skirt",
-        "aqua halter neck swimsuit with cutout waist detail",
-        "soft pink ribbed tank dress, fitted, mid-thigh length",
-        "sunshine yellow wrap crop top with tropical print sarong skirt",
-        "royal blue one-shoulder bodysuit with white shorts",
-        "mint green crop tank with matching running shorts",
-        "dusty rose backless halter dress, knee length",
-        "cobalt blue triangle bikini with sheer white cover-up",
-        "cherry red fitted tank top with distressed denim cutoffs",
-        "lilac tie-front crop top with high-waisted floral shorts",
-        "tangerine asymmetric one-shoulder top",
-        "sage green strappy sports bra with matching leggings",
-        "hot coral bodycon dress with sweetheart neckline",
-        "periwinkle blue choker",
-        "crimson red wrap dress, short, tied at waist",
-        "turquoise crop hoodie sleeveless",
-        "champagne satin slip skirt with white ribbed crop tank",
-        "powder blue tube top",
-        "magenta cutout swimsuit with geometric side panels",
-        "buttercup yellow sundress with spaghetti straps, mini length",
-        "forest green halter crop top with tan cargo shorts",
-        "blush pink mesh overlay crop top with white denim skirt",
-        "teal blue asymmetric draped top with shorts",
-        "raspberry red fitted ribbed dress, sleeveless, above knee",
-        "seafoam green tie-dye crop tank with matching jogger shorts",
-        "violet purple bandeau bikini with high-waisted bottoms",
+        "light mint tennis skirt with matching crop top",
+        "bright fuchsia mesh athletic top with geometric print shorts",
         
     ],
     "Expression and gaze": [
@@ -157,7 +118,7 @@ PRIMARY_STAGES = {
         "overhead light",
         "golden hour shot",
         "soft overcast daylight",
-        "phone selfie",
+        "phone selfie with arm extended",
         "shot from above eye level",
         "shot from below eye level",
         "natural light from left",
@@ -173,33 +134,35 @@ PRIMARY_STAGES = {
     ],
 }
 
-# SECONDARY CATEGORIES - Combined into single list
-SECONDARY_OPTIONS = [
-    # Color grading / Film style
-    "clean digital look, minimal processing",
-    "slightly warm, low saturation",
-    "slightly cool tones, natural look",
-    "faded film look, low contrast",
-    "cinematic teal-orange, very subtle",
-    # Depth of field / Bokeh
-    "shallow depth of field, soft bokeh",
-    "moderate depth, background readable",
-    "deep focus, environmental detail",
-    "soft background blur, natural",
-    "slight background separation",
-    "soft foreground blur, subject sharp",
-    # Texture / Finish
-    "subtle film grain",
-    "soft clarity, minimal sharpening",
-    # Mood / Subtle effects
-    "natural, documentary tone",
-    "quiet, candid mood",
-    "subtle warmth, homely",
-    "cheerful, candid",
-    "subtle story-telling, natural",
-]
+# SECONDARY CATEGORY (1)
+SECONDARY_CATEGORIES = {
+    "Secondary effects": [
+        # Color grading / Film style
+        "clean digital look, minimal processing",
+        "slightly warm, low saturation",
+        "cool tones, natural look",
+        "faded film look, low contrast",
+        "cinematic teal-orange, very subtle",
+        # Depth of field / Bokeh
+        "shallow depth of field, soft bokeh",
+        "moderate depth, background readable",
+        "deep focus, environmental detail",
+        "soft background blur, natural",
+        "slight background separation",
+        "soft foreground blur, subject sharp",
+        # Texture / Finish
+        "subtle film grain",
+        "soft clarity, minimal sharpening",
+        # Mood / Subtle effects
+        "natural, documentary tone",
+        "quiet, candid mood",
+        "subtle warmth, homely",
+        "cheerful, candid",
+        "subtle story-telling, natural",
+    ],
+}
 
-def generate_prompts(primary_enabled, use_secondary):
+def generate_prompts(primary_enabled, secondary_enabled):
     """Generate 400 combined prompts based on enabled stages."""
     prompts = []
     
@@ -211,17 +174,15 @@ def generate_prompts(primary_enabled, use_secondary):
                 primary_parts.append(random.choice(options))
         primary = "; ".join(primary_parts)
         
-        # Generate secondary prompt (pick random items from combined list)
-        if use_secondary:
-            # Pick 3 random secondary options
-            num_secondary = min(3, len(SECONDARY_OPTIONS))
-            secondary_parts = random.sample(SECONDARY_OPTIONS, num_secondary)
-            secondary = ", ".join(secondary_parts)
-            # Combine in format: <primary> | <secondary>
-            combined = f"{primary} | {secondary}"
-        else:
-            combined = primary
+        # Generate secondary prompt
+        secondary_parts = []
+        for cat_name, options in SECONDARY_CATEGORIES.items():
+            if secondary_enabled.get(cat_name, True):
+                secondary_parts.append(random.choice(options))
+        secondary = ", ".join(secondary_parts)
         
+        # Combine in format: <primary> | <secondary>
+        combined = f"{primary} | {secondary}"
         prompts.append(combined)
     
     return prompts
@@ -231,21 +192,23 @@ def generate_and_display(*checkboxes):
     """Generate prompts and return formatted text with save option."""
     # Parse checkboxes (8 primary + 1 secondary = 9 total)
     primary_enabled = {}
+    secondary_enabled = {}
     
     primary_names = list(PRIMARY_STAGES.keys())
+    secondary_names = list(SECONDARY_CATEGORIES.keys())
     
     for i, name in enumerate(primary_names):
         primary_enabled[name] = checkboxes[i]
     
-    # Last checkbox is for secondary
-    use_secondary = checkboxes[len(primary_names)]
+    for i, name in enumerate(secondary_names):
+        secondary_enabled[name] = checkboxes[len(primary_names) + i]
     
     # Generate prompts
-    prompts = generate_prompts(primary_enabled, use_secondary)
+    prompts = generate_prompts(primary_enabled, secondary_enabled)
     
     # Format output - show only last 8 prompts with prefix and suffix
     last_8 = prompts[-8:]
-    output_lines = [f'--prompt "{prompt}" --negative_prompt "asian, makeup"' for prompt in last_8]
+    output_lines = [f'--prompt "{prompt}" --negative_prompt "photo, asian, makeup"' for prompt in last_8]
     output = "\n\n".join(output_lines)
 
     return output, prompts
@@ -281,11 +244,11 @@ with gr.Blocks() as demo:
                 primary_checks.append(gr.Checkbox(label=stage_name, value=primary_defaults[i]))
         
         with gr.Column(scale=1):
-            gr.Markdown("### SECONDARY OPTIONS")
-            secondary_check = gr.Checkbox(
-                label="Use Secondary (3 random from combined list)", 
-                value=True
-            )
+            gr.Markdown("### SECONDARY CATEGORY")
+            secondary_checks = []
+            secondary_defaults = [True]  # enabled by default
+            for i, cat_name in enumerate(SECONDARY_CATEGORIES.keys()):
+                secondary_checks.append(gr.Checkbox(label=cat_name, value=secondary_defaults[i]))
     
     generate_btn = gr.Button("Generate 400 Prompts", variant="primary", size="lg")
     
@@ -304,7 +267,7 @@ with gr.Blocks() as demo:
     prompts_state = gr.State([])
     
     # Wire up interactions
-    all_checkboxes = primary_checks + [secondary_check]
+    all_checkboxes = primary_checks + secondary_checks
     generate_btn.click(
         fn=generate_and_display,
         inputs=all_checkboxes,
