@@ -1,23 +1,27 @@
 """
-SDXL Prompt Generator
+SDXL Prompt Generator - Dual Mode (Photo & Illustration)
 generates 400no. SDXL prompts, with 'Primary' and 'Secondary' stages.
 (although auto1111 doesn't split them like comfyui)
-Date: 2026-Feb
+Date: 2026-Feb, Updated: 2026-Apr
 
-PRIMARY STAGES (8):
-  1. Subject identity
+MODES:
+  - Photo: Realistic photo prompts with camera-specific terms
+  - Illustration: Artwork prompts without photo-specific terms
+
+PRIMARY STAGES (7 + Subject Identity):
+  1. Subject identity (mode-specific, always included)
   2. Pose and action
   3. Framing and crop
   4. Clothing and key props
   5. Expression and gaze
   6. Body descriptors
   7. Context or location
-  8. Semantic technical anchors
+  8. Shot and light variations (mode-specific)
 
 SECONDARY OPTIONS:
-  Combined list of 18 options covering:
-  - Color grading / Film style
-  - Depth of field / Bokeh
+  Mode-specific list of 18 options covering:
+  - Color grading / Color treatment
+  - Depth of field (photo) / Detail rendering (illustration)
   - Texture / Finish
   - Mood / Subtle effects
   (3 random options selected per prompt when enabled)
@@ -28,26 +32,27 @@ import random
 from datetime import datetime
 
 # PRIMARY STAGES (8)
+# Subject identity is now mode-specific (not in PRIMARY_STAGES dict)
+SUBJECT_IDENTITY = {
+    "photo": "amateur photo, full-body shot, boobs, a photo of a blonde woman, average build, hair up, (faint smile:0.2), (teeth:0.3)",
+    "illustration": "illustration, artwork, a full-length illustration of a blonde woman, hair up, smile, teeth, boobs"
+}
+
 PRIMARY_STAGES = {
-    "Subject identity": [
-        "amateur photo, full-body shot, boobs, a photo of a short blonde woman",
-        
-    ],
     "Pose and action": [
         "three-quarter turn",
         "standing",
-        "seated",
+        "lying down",
         "walking toward camera",
         "sitting, legs crossed",
         "leaning",
-        "brushing hair back with one hand",
-        "standing with arms folded loosely",
-        "sitting, elbows on knees",
+        "stretching"
+        "posing"
         "leaning, relaxed",
         "sitting",
-        "looking, thoughtful",
+        "on all fours"
+        "looking",
         "reaching, casual stance",
-        "sitting cross-legged on the floor",
         "leaning over",
         
     ],
@@ -56,57 +61,58 @@ PRIMARY_STAGES = {
         
     ],
     "Clothing and key props": [
-        "light coral botanical print minidress, simple cut",
-        "string bikini",
-        "green and light olive rave outfit",
-        "turquoise ikat pattern gossamer blouse with light beige mini skirt",
-        "bright yellow logo print sweatshirt with grey pleated mini skirt",
-        "cosplay outfit in light blue and silver",
-        "pastel pink abstract art print tee with light wash denim hot pants",
-        "sage green botanical print summer dress with floral pattern",
-        "rainbow geometric pattern athleisure wear",
-        "pink print clubbing outfit",
-        "baby pink silk babydoll top with platform heels",
-        "cheetah print tank top in golden brown with dark navy skirt",
-        "sunset tie-dye t-shirt (orange, pink, yellow) with khaki shorts",
-        "classic red tartan skirt",
-        "sunny yellow tank top with tropical leaf print shorts",
-        "light mint skirt with matching crop top",
-        "bright fuchsia mesh top with geometric print shorts",
-        "white ribbed crop top with high-waisted orange linen shorts",
-        "red halter bikini top with matching high-cut bottoms",
-        "grey bodycon mini dress with side panels",
-        "lavender satin slip dress with thin straps",
-        "emerald green off-shoulder crop top with white denim mini skirt",
-        "coral pink bandeau top with flowing slit skirt in cream",
-        "electric blue sports bra with matching shorts",
-        "peach silk camisole with high-waisted wide-leg shorts",
-        "burgundy velvet crop top with gold chain straps and black mini skirt",
-        "aqua halter neck swimsuit with cutout waist detail",
-        "soft pink ribbed tank dress, fitted, mid-thigh length",
-        "sunshine yellow wrap crop top with tropical print sarong skirt",
-        "royal blue one-shoulder bodysuit with white shorts",
-        "mint green crop tank with matching running shorts",
-        "dusty rose backless halter dress, knee length",
-        "cobalt blue triangle bikini with sheer white cover-up",
-        "cherry red fitted tank top with distressed denim cutoffs",
-        "lilac tie-front crop top with high-waisted floral shorts",
-        "tangerine asymmetric one-shoulder top",
-        "sage green strappy sports bra with matching leggings",
-        "hot coral bodycon dress with sweetheart neckline",
-        "periwinkle blue choker",
-        "crimson red wrap dress, short, tied at waist",
-        "turquoise crop hoodie sleeveless",
-        "champagne satin slip skirt with white ribbed crop tank",
-        "powder blue tube top",
-        "magenta cutout swimsuit with geometric side panels",
-        "buttercup yellow sundress with spaghetti straps, mini length",
-        "forest green halter crop top with tan cargo shorts",
-        "blush pink mesh overlay crop top with white denim skirt",
-        "teal blue asymmetric draped top with shorts",
-        "raspberry red fitted ribbed dress, sleeveless, above knee",
-        "seafoam green tie-dye crop tank with matching jogger shorts",
-        "violet purple bandeau bikini with high-waisted bottoms",
+        "black lace bralette with matching high-cut panties",
+        "white satin babydoll with sheer overlay",
+        "red lace teddy with cutout details",
+        "pink silk chemise with thin straps",
+        "purple mesh bodysuit with strategic lace panels",
+        "emerald green satin corset with garter straps",
+        "champagne silk camisole with French lace trim",
+        "navy blue lace bralette with strappy back detail",
+        "crimson silk slip with deep V-neckline",
+        "white triangle bikini with gold ring details",
+        "neon pink micro bikini with side ties",
+        "turquoise Brazilian cut bikini with scrunch back",
+        "black string bikini with minimal coverage",
+        "yellow bandeau bikini top with thong bottom",
+        "coral high-cut one-piece with cutout sides",
+        "orange halter bikini with cheeky bottoms",
+        "mint green bikini with crisscross straps",
+        "leopard print micro bikini",
+        "sheer white mesh beach cover-up with nothing underneath",
+        "silver metallic micro shorts with matching bandeau top",
+        "chrome bodysuit with strategic cutouts",
+        "holographic skirt with cyber bikini top",
+        "neon blue latex crop top with matching hot pants",
+        "white futuristic bodysuit with transparent panels",
+        "iridescent purple micro dress with tech accessories",
+        "black tactical harness with minimal coverage",
+        "glowing cyan circuit-pattern bodysuit",
+        "rose gold metallic bikini with tech details",
+        "translucent prismatic bodysuit",
+        "copper chainmail bikini with armored accents",
+        "forest green velvet bikini with leaf details",
+        "golden scale-pattern micro dress",
+        "white elvish-style lingerie with delicate chains",
+        "burgundy medieval corset with sheer skirt",
+        "silver warrior bikini with ornate shoulder guards",
+        "purple sorceress outfit with bare midriff and leg slits",
+        "leather fantasy harness with minimal fabric coverage",
+        "celestial blue sheer dress with star patterns",
+        "tribal feather bikini with beaded accessories",
+        "dark enchantress outfit with strategic fabric cuts",
+        "jade silk dragon-scale bikini",
+        "black fishnet bodysuit with leather accents",
+        "scarlet burlesque outfit with feathers",
+        "platinum blonde fur-trim micro dress",
+        "sheer crimson veil with jeweled bikini beneath",
+        "gold body chains over minimal black lingerie",
+        "electric pink rave outfit with cutouts",
+        "holographic club wear with exposed sides",
+        "latex catsuit unzipped to navel",
+        "sheer lace robe over matching thong and bra",
+        "crystal-studded micro bikini",
+        "velvet choker with matching velvet thong bodysuit",
         
     ],
     "Expression and gaze": [
@@ -128,11 +134,10 @@ PRIMARY_STAGES = {
         "natural posture, relaxed",
         "asymmetric stance",
     ],
-    "Context or location": [
+    "location": [
         "window-lit interior",
         "bathroom mirror selfie",
         "kitchen counter in morning light",
-        "park bench near river",
         "coastal, sunny",
         "living room",
         "garden patio with potted plants",
@@ -140,41 +145,63 @@ PRIMARY_STAGES = {
         "tropical beach",
         "garden",
         "country lane with hedgerows",
-        "canal towpath, morning mist",
-        "railway bridge, industrial backdrop",
-        "seaside pier, muted light",
         "city rooftop with distant skyline",
         "holiday cottage kitchen",
-        "home office with desk lamp",
-        "hotel lobby with soft lighting",
+        "home office",
+        "bedroom",
         
-    ],
-    "Semantic technical anchors": [
-        "mirror selfie",
-        "candid handheld shot",
-        "selfie",
-        "natural portrait",
-        "overhead light",
-        "golden hour shot",
-        "soft overcast daylight",
-        "phone selfie",
-        "shot from above eye level",
-        "shot from below eye level",
-        "natural light from left",
-        "natural light from right",
-        "softbox-like diffused light",
-        "subject half-lit",
-        "natural shade",
-        "ambient lighting",
-        "overcast diffuse, even light",
-        "warm morning light",
-        "cool evening light",
-        "natural light with subtle shadow",
     ],
 }
 
-# SECONDARY CATEGORIES - Combined into single list
-SECONDARY_OPTIONS = [
+# MODE-SPECIFIC: Shot and light variations
+SHOT_LIGHT_PHOTO = [
+    "mirror selfie",
+    "candid handheld shot",
+    "selfie",
+    "natural portrait",
+    "overhead light",
+    "golden hour shot",
+    "soft overcast daylight",
+    "phone selfie",
+    "shot from above eye level",
+    "shot from below eye level",
+    "natural light from left",
+    "natural light from right",
+    "softbox-like diffused light",
+    "subject half-lit",
+    "natural shade",
+    "ambient lighting",
+    "overcast diffuse, even light",
+    "warm morning light",
+    "cool evening light",
+    "natural light with subtle shadow",
+]
+
+SHOT_LIGHT_ILLUSTRATION = [
+    "intimate framing",
+    "casual composition",
+    "natural composition",
+    "overhead lighting direction",
+    "golden hour lighting mood",
+    "soft diffused lighting",
+    "dynamic perspective",
+    "close framing",
+    "view from above eye level",
+    "view from below eye level",
+    "lighting from left",
+    "lighting from right",
+    "soft diffused light source",
+    "dramatic half-lighting",
+    "even natural shade",
+    "ambient soft lighting",
+    "overcast even lighting",
+    "warm morning light tone",
+    "cool evening light tone",
+    "natural lighting with subtle shadow",
+]
+
+# SECONDARY CATEGORIES - Split by mode
+SECONDARY_PHOTO = [
     # Color grading / Film style
     "clean digital look, minimal processing",
     "slightly warm, low saturation",
@@ -199,23 +226,59 @@ SECONDARY_OPTIONS = [
     "subtle story-telling, natural",
 ]
 
-def generate_prompts(primary_enabled, use_secondary):
-    """Generate 400 combined prompts based on enabled stages."""
+SECONDARY_ILLUSTRATION = [
+    # Color treatment
+    "clean digital colors, minimal noise",
+    "slightly warm color palette",
+    "slightly cool color palette",
+    "subtle color harmony, low contrast",
+    "cinematic color balance, teal-orange hints",
+    # Depth and detail
+    "detailed foreground, soft background",
+    "moderate detail throughout",
+    "sharp detail, environmental context",
+    "soft background rendering",
+    "gentle background separation",
+    "soft surrounding elements, sharp subject",
+    # Texture / Finish
+    "subtle canvas texture",
+    "smooth digital finish",
+    # Mood / Style effects
+    "natural, narrative style",
+    "quiet, intimate mood",
+    "subtle warmth, inviting",
+    "cheerful, engaging",
+    "subtle storytelling atmosphere",
+]
+
+def generate_prompts(mode, primary_enabled, shot_light_enabled, use_secondary):
+    """Generate 400 combined prompts based on mode and enabled stages."""
     prompts = []
+    
+    # Select mode-specific options
+    subject_identity = SUBJECT_IDENTITY[mode]
+    shot_light_options = SHOT_LIGHT_PHOTO if mode == "photo" else SHOT_LIGHT_ILLUSTRATION
+    secondary_options = SECONDARY_PHOTO if mode == "photo" else SECONDARY_ILLUSTRATION
     
     for _ in range(400):
         # Generate primary prompt
-        primary_parts = []
+        primary_parts = [subject_identity]  # Always include subject identity
+        
         for stage_name, options in PRIMARY_STAGES.items():
             if primary_enabled.get(stage_name, True):
                 primary_parts.append(random.choice(options))
+        
+        # Add shot and light if enabled
+        if shot_light_enabled:
+            primary_parts.append(random.choice(shot_light_options))
+        
         primary = "; ".join(primary_parts)
         
-        # Generate secondary prompt (pick random items from combined list)
+        # Generate secondary prompt (pick random items from mode-specific list)
         if use_secondary:
             # Pick 3 random secondary options
-            num_secondary = min(3, len(SECONDARY_OPTIONS))
-            secondary_parts = random.sample(SECONDARY_OPTIONS, num_secondary)
+            num_secondary = min(3, len(secondary_options))
+            secondary_parts = random.sample(secondary_options, num_secondary)
             secondary = ", ".join(secondary_parts)
             # Combine in format: <primary> | <secondary>
             combined = f"{primary} | {secondary}"
@@ -227,9 +290,9 @@ def generate_prompts(primary_enabled, use_secondary):
     return prompts
 
 
-def generate_and_display(*checkboxes):
+def generate_and_display(mode, shot_light_check, *checkboxes):
     """Generate prompts and return formatted text with save option."""
-    # Parse checkboxes (8 primary + 1 secondary = 9 total)
+    # Parse checkboxes (7 primary stages + 1 secondary = 8 total)
     primary_enabled = {}
     
     primary_names = list(PRIMARY_STAGES.keys())
@@ -241,50 +304,75 @@ def generate_and_display(*checkboxes):
     use_secondary = checkboxes[len(primary_names)]
     
     # Generate prompts
-    prompts = generate_prompts(primary_enabled, use_secondary)
+    prompts = generate_prompts(mode, primary_enabled, shot_light_check, use_secondary)
+    
+    # Mode-specific negative prompts
+    negative_prompt = "asian, makeup" if mode == "photo" else "(photo:1.25),(asian:1.2), makeup, loli"
     
     # Format output - show only last 8 prompts with prefix and suffix
     last_8 = prompts[-8:]
-    output_lines = [f'--prompt "{prompt}" --negative_prompt "asian, makeup"' for prompt in last_8]
+    output_lines = [f'--prompt "{prompt}" --negative_prompt "{negative_prompt}"' for prompt in last_8]
     output = "\n\n".join(output_lines)
 
-    return output, prompts
+    return output, prompts, mode
 
 
-def save_prompts(prompts_data):
+def save_prompts(prompts_data, mode):
     """Save prompts to file."""
     if not prompts_data:
         return "No prompts to save. Generate prompts first."
     
+    # Mode-specific negative prompts
+    negative_prompt = "asian, makeup" if mode == "photo" else "(photo:1.25),(asian:1.2), makeup, loli"
+    
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"sdxl_combined_prompts_{timestamp}.txt"
+    filename = f"sdxl_combined_prompts_{mode}_{timestamp}.txt"
     
     with open(filename, 'w', encoding='utf-8') as f:
         for prompt in prompts_data:
-            f.write(f'--prompt "{prompt}" --negative_prompt "asian, makeup, (tanned:0.15)"\n')
+            f.write(f'--prompt "{prompt}" --negative_prompt "{negative_prompt}"\n')
     
-    return f"✓ Saved {len(prompts_data)} prompts to {filename}"
+    return f"Saved {len(prompts_data)} prompts to {filename}"
 
 
 # Build Gradio interface
 with gr.Blocks() as demo:
     gr.Markdown("# SDXL Combined Prompt Generator")
     gr.Markdown("Generate 400 randomized prompts in format: `<primary> | <secondary>`")
-    gr.Markdown("Enable/disable stages to customize output.")
+    gr.Markdown("Choose mode (Photo or Illustration) and enable/disable stages to customize output.")
+    
+    # Mode selection
+    with gr.Row():
+        mode_radio = gr.Radio(
+            choices=["photo", "illustration"],
+            value="photo",
+            label="Output Mode",
+            info="Choose between realistic photo prompts or illustration prompts"
+        )
     
     with gr.Row():
         with gr.Column(scale=1):
             gr.Markdown("### PRIMARY STAGES")
+            gr.Markdown("*Subject identity is automatically included based on mode*")
             primary_checks = []
-            primary_defaults = [True, True, False, False, True, False, False, False]  # 1,2,5 enabled
+            # Updated defaults for 7 stages (removed Subject identity)
+            primary_defaults = [True, False, False, True, False, False]  # pose, framing, clothing, expression, body, location
             for i, stage_name in enumerate(PRIMARY_STAGES.keys()):
                 primary_checks.append(gr.Checkbox(label=stage_name, value=primary_defaults[i]))
+            
+            # Add shot and light as separate checkbox
+            shot_light_check = gr.Checkbox(
+                label="Shot and light variations",
+                value=False,
+                info="Mode-appropriate lighting and framing options"
+            )
         
         with gr.Column(scale=1):
             gr.Markdown("### SECONDARY OPTIONS")
             secondary_check = gr.Checkbox(
-                label="Use Secondary (3 random from combined list)", 
-                value=True
+                label="Use Secondary (3 random from mode-specific list)", 
+                value=True,
+                info="Includes color, depth, texture, and mood options appropriate to the selected mode"
             )
     
     generate_btn = gr.Button("Generate 400 Prompts", variant="primary", size="lg")
@@ -300,20 +388,21 @@ with gr.Blocks() as demo:
         interactive=False
     )
     
-    # Hidden state to store prompts for saving
+    # Hidden state to store prompts and mode for saving
     prompts_state = gr.State([])
+    mode_state = gr.State("photo")
     
     # Wire up interactions
     all_checkboxes = primary_checks + [secondary_check]
     generate_btn.click(
         fn=generate_and_display,
-        inputs=all_checkboxes,
-        outputs=[output_text, prompts_state]
+        inputs=[mode_radio, shot_light_check] + all_checkboxes,
+        outputs=[output_text, prompts_state, mode_state]
     )
     
     save_btn.click(
         fn=save_prompts,
-        inputs=[prompts_state],
+        inputs=[prompts_state, mode_state],
         outputs=[save_status]
     )
 
