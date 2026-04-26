@@ -7,7 +7,7 @@ import numpy as np
 import os
 from pathlib import Path
 import cv2
-import mediapipe as mp
+#import mediapipe as mp
 
 # Face detection setup
 try:
