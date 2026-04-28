@@ -3,4 +3,4 @@
 
 source /home/rich/MyVenvs/myVenv312/bin/activate
 hash -r
-python interleave_text_files.py
+python interleave_2text_files.py

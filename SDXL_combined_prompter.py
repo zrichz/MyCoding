@@ -40,20 +40,9 @@ SUBJECT_IDENTITY = {
 
 PRIMARY_STAGES = {
     "Pose and action": [
-        "three-quarter turn",
-        "standing",
-        "lying down",
-        "walking toward camera",
-        "sitting, legs crossed",
-        "leaning",
-        "stretching"
-        "posing"
-        "leaning, relaxed",
-        "sitting",
-        "on all fours"
-        "looking",
-        "reaching, casual stance",
-        "leaning over",
+        "three-quarter turn","standing","lying down","walking toward camera","sitting, legs crossed",
+        "submissive pose","leaning","stretching","posing","leaning, relaxed","sitting","on all fours",
+        "looking","reaching towards viewer","casual stance","leaning over",
         
     ],
     "Framing and crop": [
@@ -128,9 +117,9 @@ PRIMARY_STAGES = {
 }
 
 # MODE-SPECIFIC: Shot and light variations
-SHOT_LIGHT_PHOTO = ["intimate",    "casual",    "golden hour lighting mood",    "soft diffused lighting",
-    "dynamic perspective",    "view from above",    "view from below",    "lighting from left",
-    "lighting from right",    "soft diffused light source",    "dramatic half-lighting",
+SHOT_LIGHT_PHOTO = ["intimate","casual","golden hour lighting mood","soft diffused lighting",
+    "dynamic perspective","shot from above","shot from below","lighting from left",
+    "lighting from right","soft diffused light source","dramatic half-lighting",
 ]
 
 SHOT_LIGHT_ILLUSTRATION = [
