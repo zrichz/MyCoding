@@ -78,9 +78,19 @@ PRIMARY_STAGES = {
         "lace-trimmed micro dress",
         "gold body chains lingerie",
         "red latex catsuit unzipped to navel",
-        "black latex catsuit unzipped to navel"
+        "black latex catsuit unzipped to navel",
         "sheer lace robe over matching thong and bra",
         "choker with matching thong bodysuit",
+        "backless halter dress with plunging neckline to waist",
+        "sheer fishnet bodysuit with strategic tape placement",
+        "white wet t-shirt over skimpy bikini bottoms",
+        "burgundy velvet bralette with suspender straps and matching thong",
+        "transparent vinyl raincoat with bikini underneath",
+        "silk kimono falling off one shoulder with minimal undergarments",
+        "metallic chain mail bikini with side ties",
+        "barely-there sling bikini in shimmering fabric",
+        "open-front mesh cardigan over lace bralette and panties",
+        "shredded band t-shirt exposing sides with denim cut-offs",
         
     ],
     "Expression and gaze": [
