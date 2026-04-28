@@ -32,28 +32,18 @@ import random
 from datetime import datetime
 
 # PRIMARY STAGES (8)
-# Subject identity is now mode-specific (not in PRIMARY_STAGES dict)
+# Subject identity is now mode-specific and supports single/dual subjects
 SUBJECT_IDENTITY = {
-    "photo": "amateur photo, full-body shot, boobs, a photo of a blonde woman, average build, hair up, (faint smile:0.2), (teeth:0.3)",
-    "illustration": "illustration, artwork, a full-length illustration of a blonde woman, hair up, smile, teeth, boobs"
+    "photo_single": "amateur photo, full-body shot, boobs, a photo of a blonde woman, average build, hair up, (faint smile:0.2), (teeth:0.6)",
+    "photo_dual": "amateur photo, full-body shot, boobs, a photo of two blonde women, average build, hair up, (faint smile:0.2), (teeth:0.6)",
+    "illustration_single": "illustrative realism, comic-book realism, painterly realism, art, a full-length illustration of a blonde woman, hair up, smile, teeth, boobs",
+    "illustration_dual": "illustrative realism, comic-book realism, painterly realism, art, a full-length illustration of two blonde women, hair up, smile, teeth, boobs"
 }
 
 PRIMARY_STAGES = {
     "Pose and action": [
-        "three-quarter turn",
-        "standing",
-        "lying down",
-        "walking toward camera",
-        "sitting, legs crossed",
-        "leaning",
-        "stretching"
-        "posing"
-        "leaning, relaxed",
-        "sitting",
-        "on all fours"
-        "looking",
-        "reaching, casual stance",
-        "leaning over",
+        "three-quarter turn","standing","lying on back","walking towards viewer","sitting, legs crossed",
+        "stretching","posing","leaning, relaxed","on all fours","looking","reaching, casual stance","leaning over",
         
     ],
     "Framing and crop": [
@@ -69,33 +59,28 @@ PRIMARY_STAGES = {
         "navy blue lace bralette with strappy back detail",
         "crimson silk slip with deep V-neckline",
         "black string bikini with minimal coverage",
-        "coral high-cut one-piece with cutout sides",
-        "orange halter bikini with cheeky bottoms",
+        "white office open blouse with cheeky bottoms",
         "sheer white mesh beach cover-up with nothing underneath",
         "ripped denim micro shorts with matching bandeau top",
-        "chrome bodysuit with strategic cutouts",
-        "holographic skirt with cyber bikini top",
-        "blue latex crop top with matching hot pants",
+        "cotton crop top with matching hot pants",
         "white futuristic bodysuit with transparent panels",
-        "iridescent purple micro dress with tech accessories",
+        "iridescent silver micro dress with tech accessories",
         "black tactical harness with minimal coverage",
         "cyan circuit-pattern bodysuit",
         "translucent prismatic bodysuit",
-        "copper chainmail bikini with armored accents",
         "golden scale-pattern micro dress",
         "white elvish-style lingerie with delicate chains",
         "purple sorceress outfit with bare midriff and leg slits",
-        "leather fantasy harness with minimal fabric coverage",
-        "celestial blue sheer dress with star patterns",
+        "black leather fantasy harness with minimal fabric coverage",
+        "light blue sheer dress with star patterns",
         "tribal beaded bikini",
         "dark enchantress outfit with strategic fabric cuts",
-        "platinum blonde fur-trim micro dress",
-        "sheer crimson veil with jeweled bikini beneath",
+        "lace-trimmed micro dress",
         "gold body chains lingerie",
         "red latex catsuit unzipped to navel",
         "black latex catsuit unzipped to navel"
         "sheer lace robe over matching thong and bra",
-        "velvet choker with matching velvet thong bodysuit",
+        "choker with matching thong bodysuit",
         
     ],
     "Expression and gaze": [
@@ -109,7 +94,7 @@ PRIMARY_STAGES = {
         "calm, steady gaze at viewer",
     ],
     "Body descriptors": [
-        "visible freckles on arms",
+        "visible (freckles:0.5) on arms",
         "light sun tan",
         "strong posture",
         "relaxed shoulders",
@@ -117,14 +102,7 @@ PRIMARY_STAGES = {
         "natural posture, relaxed",
         "asymmetric stance",
     ],
-    "location": [
-        "interior",
-        "selfie",
-        "garden",
-        "bedroom",
-        "exterior",
-        
-    ],
+    "location": [ "interior", "selfie", "garden", "bedroom", "exterior", ],
 }
 
 # MODE-SPECIFIC: Shot and light variations
@@ -137,7 +115,6 @@ SHOT_LIGHT_ILLUSTRATION = [
     "intimate","casual","golden hour lighting mood","soft diffused lighting","dynamic perspective",
     "view from above","view from below","lighting from left","lighting from right","soft diffused light source",
     "dramatic half-lighting",
-    
 ]
 
 # SECONDARY CATEGORIES - Split by mode
@@ -191,12 +168,13 @@ SECONDARY_ILLUSTRATION = [
     "subtle storytelling atmosphere",
 ]
 
-def generate_prompts(mode, primary_enabled, shot_light_enabled, use_secondary):
-    """Generate 400 combined prompts based on mode and enabled stages."""
+def generate_prompts(mode, subject_count, primary_enabled, shot_light_enabled, use_secondary):
+    """Generate 400 combined prompts based on mode, subject count, and enabled stages."""
     prompts = []
     
     # Select mode-specific options
-    subject_identity = SUBJECT_IDENTITY[mode]
+    subject_key = f"{mode}_{subject_count}"
+    subject_identity = SUBJECT_IDENTITY[subject_key]
     shot_light_options = SHOT_LIGHT_PHOTO if mode == "photo" else SHOT_LIGHT_ILLUSTRATION
     secondary_options = SECONDARY_PHOTO if mode == "photo" else SECONDARY_ILLUSTRATION
     
@@ -230,7 +208,7 @@ def generate_prompts(mode, primary_enabled, shot_light_enabled, use_secondary):
     return prompts
 
 
-def generate_and_display(mode, shot_light_check, *checkboxes):
+def generate_and_display(mode, subject_count, shot_light_check, *checkboxes):
     """Generate prompts and return formatted text with save option."""
     # Parse checkboxes (7 primary stages + 1 secondary = 8 total)
     primary_enabled = {}
@@ -244,7 +222,7 @@ def generate_and_display(mode, shot_light_check, *checkboxes):
     use_secondary = checkboxes[len(primary_names)]
     
     # Generate prompts
-    prompts = generate_prompts(mode, primary_enabled, shot_light_check, use_secondary)
+    prompts = generate_prompts(mode, subject_count, primary_enabled, shot_light_check, use_secondary)
     
     # Mode-specific negative prompts
     negative_prompt = "asian, makeup" if mode == "photo" else "(photo:1.25),(asian:1.2), makeup, loli"
@@ -281,13 +259,19 @@ with gr.Blocks() as demo:
     gr.Markdown("Generate 400 randomized prompts in format: `<primary> | <secondary>`")
     gr.Markdown("Choose mode (Photo or Illustration) and enable/disable stages to customize output.")
     
-    # Mode selection
+    # Mode and subject count selection
     with gr.Row():
         mode_radio = gr.Radio(
             choices=["photo", "illustration"],
             value="photo",
             label="Output Mode",
             info="Choose between realistic photo prompts or illustration prompts"
+        )
+        subject_count_radio = gr.Radio(
+            choices=["single", "dual"],
+            value="single",
+            label="Subject Count",
+            info="Choose single female subject or two female subjects"
         )
     
     with gr.Row():
@@ -336,7 +320,7 @@ with gr.Blocks() as demo:
     all_checkboxes = primary_checks + [secondary_check]
     generate_btn.click(
         fn=generate_and_display,
-        inputs=[mode_radio, shot_light_check] + all_checkboxes,
+        inputs=[mode_radio, subject_count_radio, shot_light_check] + all_checkboxes,
         outputs=[output_text, prompts_state, mode_state]
     )
     
