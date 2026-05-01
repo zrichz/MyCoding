@@ -253,8 +253,8 @@ def save_prompts(prompts_data, mode):
     # Mode-specific negative prompts
     negative_prompt = "asian, makeup" if mode == "photo" else "(photo:1.25),(asian:1.2), makeup, loli"
     
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"sdxl_combined_prompts_{mode}_{timestamp}.txt"
+    timestamp = datetime.now().strftime("%b%d_%H%M")
+    filename = f"AI_PROMPTING/400_SDXLprompts_{mode}_{timestamp}.txt"
     
     with open(filename, 'w', encoding='utf-8') as f:
         for prompt in prompts_data:
