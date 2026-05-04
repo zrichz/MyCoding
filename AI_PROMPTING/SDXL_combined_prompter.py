@@ -31,6 +31,16 @@ import gradio as gr
 import random
 from datetime import datetime
 
+# CHARACTER STUDY LISTS (for illustration mode)
+CHARACTER_STUDY_LISTS = {
+    "pose": ["T‑pose","standing in a T‑pose","arms extended horizontally","arms straight out to the sides","neutral expression, rigid stance","reference pose","model sheet pose"],
+    "framing": ["full‑body shot","full‑body view","entire character visible","from head to toe","standing, centered in frame","no cropping"],
+    "shot": ["wide shot","wide‑angle view","orthographic style","front‑facing","neutral studio lighting","plain background"],
+    "style": ["character turnaround style","reference sheet style","clean silhouette","unobstructed limbs","standing on flat ground"]
+}
+
+CHARACTER_STUDY_NEGATIVE = ["no dynamic pose","no action pose","no bent arms","no foreshortening","no close‑up","no portrait crop"]
+
 # PRIMARY STAGES (8)
 # Subject identity is now mode-specific and supports single/dual subjects
 SUBJECT_IDENTITY = {
@@ -57,50 +67,40 @@ PRIMARY_STAGES = {
         "pink silk chemise with thin straps",
         "champagne silk camisole with French lace trim",
         "navy blue lace bralette with strappy back detail",
-        "crimson silk slip with deep V-neckline",
         "black string bikini with minimal coverage",
         "white office open blouse with cheeky bottoms",
         "sheer white mesh beach cover-up with nothing underneath",
         "ripped denim micro shorts with matching bandeau top",
         "cotton crop top with matching hot pants",
-        "white futuristic bodysuit with transparent panels",
-        "iridescent silver micro dress with tech accessories",
+        "iridescent silver micro dress",
         "black tactical harness with minimal coverage",
-        "cyan circuit-pattern bodysuit",
-        "translucent prismatic bodysuit",
+        "cream pattern bodysuit",
         "golden scale-pattern micro dress",
         "white elvish-style lingerie with delicate chains",
-        "purple sorceress outfit with bare midriff and leg slits",
         "black leather fantasy harness with minimal fabric coverage",
-        "light blue sheer dress with star patterns",
-        "tribal beaded bikini",
-        "dark enchantress outfit with strategic fabric cuts",
+        "light blue sheer micro dress",
         "lace-trimmed micro dress",
         "gold body chains lingerie",
         "red latex catsuit unzipped to navel",
         "black latex catsuit unzipped to navel",
         "sheer lace robe over matching thong and bra",
         "choker with matching thong bodysuit",
-        "backless halter dress with plunging neckline to waist",
-        "sheer fishnet bodysuit with strategic tape placement",
         "white wet t-shirt over skimpy bikini bottoms",
-        "burgundy velvet bralette with suspender straps and matching thong",
-        "transparent vinyl raincoat with bikini underneath",
         "silk kimono falling off one shoulder with minimal undergarments",
-        "metallic chain mail bikini with side ties",
+        "bikini with side ties",
         "barely-there sling bikini in shimmering fabric",
-        "open-front mesh cardigan over lace bralette and panties",
+        "open-front cardigan over lace bralette and panties",
         "shredded band t-shirt exposing sides with denim cut-offs",
         
     ],
     "Expression and gaze": [
         "neutral expression, direct gaze to viewer",
-        "candid smile, eyes to camera",
-        "gentle laugh, eyes to camera",
+        "candid, eyes to viewer",
+        "gentle, eyes to viewer",
         "contemplative, looking at viewer",
-        "warm smile, eyes crinkled at camera",
+        "warm, eyes to viewer",
         "softly serious, direct gaze at viewer",
-        "subtle smile, direct eye contact",
+        "subtle, direct eye contact",
         "calm, steady gaze at viewer",
     ],
     "Body descriptors": [
@@ -135,13 +135,6 @@ SECONDARY_PHOTO = [
     "slightly cool tones, natural look",
     "faded film look, low contrast",
     "cinematic teal-orange, very subtle",
-    # Depth of field / Bokeh
-    "shallow depth of field, soft bokeh",
-    "moderate depth, background readable",
-    "deep focus, environmental detail",
-    "soft background blur, natural",
-    "slight background separation",
-    "soft foreground blur, subject sharp",
     # Texture / Finish
     "subtle film grain",
     "soft clarity, minimal sharpening",
@@ -178,7 +171,7 @@ SECONDARY_ILLUSTRATION = [
     "subtle storytelling atmosphere",
 ]
 
-def generate_prompts(mode, subject_count, primary_enabled, shot_light_enabled, use_secondary):
+def generate_prompts(mode, subject_count, primary_enabled, shot_light_enabled, use_secondary, character_study=False):
     """Generate 400 combined prompts based on mode, subject count, and enabled stages."""
     prompts = []
     
@@ -190,7 +183,15 @@ def generate_prompts(mode, subject_count, primary_enabled, shot_light_enabled, u
     
     for _ in range(400):
         # Generate primary prompt
-        primary_parts = [subject_identity]  # Always include subject identity
+        primary_parts = []
+        
+        # Add character study prompts if enabled
+        if character_study:
+            for list_name in ["pose", "framing", "shot", "style"]:
+                selected = random.sample(CHARACTER_STUDY_LISTS[list_name], 2)
+                primary_parts.extend(selected)
+        
+        primary_parts.append(subject_identity)  # Always include subject identity
         
         for stage_name, options in PRIMARY_STAGES.items():
             if primary_enabled.get(stage_name, True):
@@ -218,7 +219,7 @@ def generate_prompts(mode, subject_count, primary_enabled, shot_light_enabled, u
     return prompts
 
 
-def generate_and_display(mode, subject_count, shot_light_check, *checkboxes):
+def generate_and_display(mode, subject_count, shot_light_check, character_study_check, *checkboxes):
     """Generate prompts and return formatted text with save option."""
     # Parse checkboxes (7 primary stages + 1 secondary = 8 total)
     primary_enabled = {}
@@ -232,29 +233,37 @@ def generate_and_display(mode, subject_count, shot_light_check, *checkboxes):
     use_secondary = checkboxes[len(primary_names)]
     
     # Generate prompts
-    prompts = generate_prompts(mode, subject_count, primary_enabled, shot_light_check, use_secondary)
+    prompts = generate_prompts(mode, subject_count, primary_enabled, shot_light_check, use_secondary, character_study_check)
     
     # Mode-specific negative prompts
-    negative_prompt = "asian, makeup" if mode == "photo" else "(photo:1.25),(asian:1.2), makeup, loli"
+    base_negative = "asian, makeup" if mode == "photo" else "(photo:1.25),(asian:1.2), makeup, loli"
+    
+    # Add character study negative prompts if enabled
+    if character_study_check:
+        char_study_neg = random.sample(CHARACTER_STUDY_NEGATIVE, 2)
+        negative_prompt = ", ".join(char_study_neg) + ", " + base_negative
+    else:
+        negative_prompt = base_negative
     
     # Format output - show only last 8 prompts with prefix and suffix
     last_8 = prompts[-8:]
     output_lines = [f'--prompt "{prompt}" --negative_prompt "{negative_prompt}"' for prompt in last_8]
     output = "\n\n".join(output_lines)
 
-    return output, prompts, mode
+    return output, prompts, mode, negative_prompt, character_study_check
 
 
-def save_prompts(prompts_data, mode):
+def save_prompts(prompts_data, mode, negative_prompt_used, character_study_enabled):
     """Save prompts to file."""
     if not prompts_data:
         return "No prompts to save. Generate prompts first."
     
-    # Mode-specific negative prompts
-    negative_prompt = "asian, makeup" if mode == "photo" else "(photo:1.25),(asian:1.2), makeup, loli"
+    # Use the negative prompt that was generated during prompt creation
+    negative_prompt = negative_prompt_used
     
     timestamp = datetime.now().strftime("%b%d_%H%M")
-    filename = f"AI_PROMPTING/400_SDXLprompts_{mode}_{timestamp}.txt"
+    suffix = "_character.txt" if character_study_enabled else ".txt"
+    filename = f"AI_PROMPTING/400_SDXLprompts_{mode}_{timestamp}{suffix}"
     
     with open(filename, 'w', encoding='utf-8') as f:
         for prompt in prompts_data:
@@ -283,6 +292,13 @@ with gr.Blocks() as demo:
             label="Subject Count",
             info="Choose single female subject or two female subjects"
         )
+    
+    # Character Study checkbox (only for illustration mode)
+    character_study_check = gr.Checkbox(
+        label="Make this a Character Study",
+        value=False,
+        info="Adds T-pose and reference-style prompts for character reference sheets"
+    )
     
     with gr.Row():
         with gr.Column(scale=1):
@@ -322,21 +338,23 @@ with gr.Blocks() as demo:
         interactive=False
     )
     
-    # Hidden state to store prompts and mode for saving
+    # Hidden state to store prompts, mode, negative prompt, and character study flag for saving
     prompts_state = gr.State([])
     mode_state = gr.State("photo")
+    negative_prompt_state = gr.State("")
+    character_study_state = gr.State(False)
     
     # Wire up interactions
     all_checkboxes = primary_checks + [secondary_check]
     generate_btn.click(
         fn=generate_and_display,
-        inputs=[mode_radio, subject_count_radio, shot_light_check] + all_checkboxes,
-        outputs=[output_text, prompts_state, mode_state]
+        inputs=[mode_radio, subject_count_radio, shot_light_check, character_study_check] + all_checkboxes,
+        outputs=[output_text, prompts_state, mode_state, negative_prompt_state, character_study_state]
     )
     
     save_btn.click(
         fn=save_prompts,
-        inputs=[prompts_state, mode_state],
+        inputs=[prompts_state, mode_state, negative_prompt_state, character_study_state],
         outputs=[save_status]
     )
 
