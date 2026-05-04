@@ -1,5 +1,5 @@
 {
-    "python.defaultInterpreterPath": "/home/rich/MyVenvs/myVenv312/bin/python",
+    "python.defaultInterpreterPath": "/home/rich/MyCoding/venvmycoding313/bin/python",
     "python.terminal.activateEnvironment": true,
     "python.terminal.activateEnvInCurrentTerminal": true
 }

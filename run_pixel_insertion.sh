@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Activate the Python 3.12 virtual environment
-source /home/rich/MyVenvs/myVenv312/bin/activate
+# Activate the Python 3.13 virtual environment
+source /home/rich/MyCoding/venvmycoding313/bin/activate
 
 # Clear the hash table to ensure correct Python version
 hash -r

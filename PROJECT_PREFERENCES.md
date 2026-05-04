@@ -1,9 +1,9 @@
 # Project Preferences & Configuration
 
 ## Python Environment
-- **Virtual Environment**: `/home/rich/MyVenvs/myVenv312` (Python 3.12.3)
-- **Activation**: `source /home/rich/MyVenvs/myVenv312/bin/activate`
-- **Python Executable**: `/home/rich/MyVenvs/myVenv312/bin/python`
+- **Virtual Environment**: `/home/rich/MyCoding/venvmycoding313` (Python 3.13.12)
+- **Activation**: `source /home/rich/MyCoding/venvmycoding313/bin/activate`
+- **Python Executable**: `/home/rich/MyCoding/venvmycoding313/bin/python`
 - **Installed Packages**: gradio, numpy, plotly, opencv-python, pillow, etc.
 
 ## Default Settings for Gradio Apps
@@ -14,7 +14,7 @@
 ```bash
 #!/bin/bash
 echo "Starting [App Name]..."
-source /home/rich/MyVenvs/myVenv312/bin/activate
+source /home/rich/MyCoding/venvmycoding313/bin/activate
 python [script_name].py
 ```
 
