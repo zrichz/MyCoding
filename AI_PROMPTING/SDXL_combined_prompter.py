@@ -36,7 +36,7 @@ CHARACTER_STUDY_LISTS = {
     "pose": ["T‑pose","standing in a T‑pose","arms extended horizontally","arms straight out to the sides","neutral expression, rigid stance","reference pose","model sheet pose"],
     "framing": ["full‑body shot","full‑body view","entire character visible","from head to toe","standing, centered in frame","no cropping"],
     "shot": ["wide shot","wide‑angle view","orthographic style","front‑facing","neutral studio lighting","plain background"],
-    "style": ["character turnaround style","reference sheet style","clean silhouette","unobstructed limbs","standing on flat ground"]
+    "style": ["clean silhouette","unobstructed limbs","standing on flat ground"]
 }
 
 CHARACTER_STUDY_NEGATIVE = ["no dynamic pose","no action pose","no bent arms","no foreshortening","no close‑up","no portrait crop"]
