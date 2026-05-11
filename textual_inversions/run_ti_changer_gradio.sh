@@ -4,7 +4,7 @@
 cd "$(dirname "$0")"
 
 # Activate virtual environment
-source /home/rich/MyVenvs/myVenv312/bin/activate
+source /home/rich/MyCoding/venvmycoding313/bin/activate
 
 # Refresh hash table for python command
 hash -r

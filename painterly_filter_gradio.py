@@ -51,13 +51,21 @@ def fast_kuwahara_filter(image, kernel_size=5):
     Fast approximation of Kuwahara filter using OpenCV's edge-preserving filter.
     Much faster than traditional implementation while maintaining quality.
     """
-    # Use edge-preserving filter for oil painting effect
+    # Apply edge-preserving filter multiple times for stronger oil painting effect
     # flags=1: normalized convolution (better for oil painting)
-    # sigma_s: spatial smoothing (kernel_size * 6-8 works well)
-    # sigma_r: color range threshold (0.05-0.15 for visible oil effect)
-    sigma_s = kernel_size * 6
-    sigma_r = 0.08  # Lower values preserve edges better and create stronger oil effect
+    # sigma_s: spatial smoothing (kernel_size * 8 for broader strokes)
+    # sigma_r: color range threshold (higher = stronger color grouping)
+    sigma_s = kernel_size * 8
+    sigma_r = 0.2  # Higher values merge colors more aggressively
+    
+    # Apply the filter twice for a cumulative, stronger oil effect
     result = cv2.edgePreservingFilter(image, flags=1, sigma_s=sigma_s, sigma_r=sigma_r)
+    result = cv2.edgePreservingFilter(result, flags=1, sigma_s=sigma_s, sigma_r=sigma_r)
+    
+    # Additional color quantization for even more painterly effect
+    # Group similar colors together
+    result = (result // 8) * 8  # Light quantization to enhance oil painting look
+    
     return result
 
 
@@ -336,9 +344,9 @@ with gr.Blocks(title="Painterly Filter App", css="""
             color_simplification = gr.Slider(0, 32, value=0, step=2,
                                             label="Color Simplification",
                                             info="Reduce palette")
-            detail_level = gr.Slider(0.0, 1.0, value=1.0, step=0.05,
-                                    label="Detail Preservation",
-                                    info="Smooth to detailed")
+            detail_level = gr.Slider(0.0, 1.0, value=0.0, step=0.05,
+                                    label="Original Image Mix",
+                                    info="0=Full oil effect, 1=Original image")
             edge_enhancement = gr.Slider(0.0, 1.0, value=0.0, step=0.05,
                                         label="Edge Enhancement",
                                         info="Edge darkness")
@@ -352,15 +360,15 @@ with gr.Blocks(title="Painterly Filter App", css="""
             use_kuwahara = gr.Checkbox(value=True, 
                                       label="Oil Painting Filter",
                                       info="Enable oil painting effect")
-            kuwahara_size = gr.Slider(3, 21, value=7, step=2,
+            kuwahara_size = gr.Slider(3, 21, value=11, step=2,
                                      label="Oil Effect Strength",
                                      info="Higher values = stronger oil effect")
-            bilateral_color = gr.Slider(10, 200, value=50, step=5,
-                                       label="Color Smoothing",
-                                       info="Lower = preserve more color variation")
-            bilateral_space = gr.Slider(10, 200, value=50, step=5,
-                                       label="Spatial Smoothing",
-                                       info="Lower = preserve more spatial detail")
+            bilateral_color = gr.Slider(10, 200, value=75, step=5,
+                                       label="Pre-smoothing Color",
+                                       info="Color smoothing before oil effect")
+            bilateral_space = gr.Slider(10, 200, value=75, step=5,
+                                       label="Pre-smoothing Spatial",
+                                       info="Spatial smoothing before oil effect")
         
         # Column 4: Output Image
         with gr.Column(scale=1):
