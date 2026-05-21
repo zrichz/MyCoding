@@ -9,6 +9,7 @@
 ## Default Settings for Gradio Apps
 - Always set `inbrowser=True` in `demo.launch()` to auto-open browser
 - Use `theme=gr.themes.Soft()` for consistent UI
+- if you decide to test a gradio app by running it, use a timeout of 10seconds, not 5. Only test a gradio app after significant changes. Small changes do not require a full test - the user will do that himself.
 
 ## Shell Script Template
 ```bash

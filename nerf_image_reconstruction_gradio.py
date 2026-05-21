@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 NeRF-style Image Reconstruction from Sparse Pixels
-Compare 4 different model sizes: Small, Medium, Large, XLarge
+Compare 3 different model sizes: Small, Medium, Large
+Training is time-based (seconds) - all models train for equal duration
 """
 
 import gradio as gr
@@ -110,16 +111,20 @@ class ImageReconstructionModel:
         
         return num_keep, h, w
     
-    def train_steps(self, num_steps, batch_size=8192):
-        """Train for specified number of steps"""
+    def train_for_duration(self, training_seconds, batch_size=8192):
+        """Train the model for a specified duration in seconds"""
         self.mlp.train()
         
         num_samples = len(self.sparse_coords)
         losses = []
         
-        print(f"\nStarting NeRF training for {num_steps} steps...")
+        print(f"\nStarting NeRF training for {training_seconds} seconds...")
         
-        for step in range(num_steps):
+        start_time = time.time()
+        step = 0
+        last_report_time = start_time
+        
+        while time.time() - start_time < training_seconds:
             # Random batch sampling
             indices = np.random.choice(num_samples, min(batch_size, num_samples), replace=False)
             
@@ -140,16 +145,21 @@ class ImageReconstructionModel:
             
             losses.append(loss.item())
             self.total_steps += 1
+            step += 1
             
-            # Print progress every 10 iterations
-            if (step + 1) % 10 == 0:
+            # Print progress every 2 seconds
+            current_time = time.time()
+            if current_time - last_report_time >= 2.0:
+                elapsed = current_time - start_time
                 current_loss = loss.item()
-                print(f"  Step {self.total_steps} (batch {step + 1}/{num_steps}): Loss = {current_loss:.6f}")
+                print(f"  {elapsed:.1f}s elapsed - Step {self.total_steps}: Loss = {current_loss:.6f}")
+                last_report_time = current_time
         
+        elapsed_time = time.time() - start_time
         avg_loss = np.mean(losses)
-        print(f"Training complete. Average loss: {avg_loss:.6f}\n")
+        print(f"Training complete. Ran {step} steps in {elapsed_time:.1f}s. Average loss: {avg_loss:.6f}\n")
         
-        return avg_loss
+        return avg_loss, step
     
     def reconstruct_image(self):
         """Reconstruct full image"""
@@ -195,16 +205,14 @@ class ImageReconstructionModel:
 MODEL_CONFIGS = {
     'Small': {'hidden_dim': 128, 'num_layers': 3, 'params': '~50k'},
     'Medium': {'hidden_dim': 256, 'num_layers': 4, 'params': '~200k'},
-    'Large': {'hidden_dim': 512, 'num_layers': 6, 'params': '~1.5M'},
-    'XLarge': {'hidden_dim': 1024, 'num_layers': 8, 'params': '~8M'}
+    'Large': {'hidden_dim': 512, 'num_layers': 6, 'params': '~1.5M'}
 }
 
 # Global model instances
 models = {
     'Small': None,
     'Medium': None,
-    'Large': None,
-    'XLarge': None
+    'Large': None
 }
 
 # Shared sparse data
@@ -223,6 +231,26 @@ def load_and_create_sparse(image, sparsity_percent):
     
     if image is None:
         return None, None, None, None, None, "Please load an image first"
+    
+    # Rescale image if any dimension exceeds 512 pixels
+    h_orig, w_orig = image.shape[:2]
+    max_dim = 512
+    
+    if h_orig > max_dim or w_orig > max_dim:
+        # Calculate scaling factor to fit within max_dim while maintaining aspect ratio
+        scale = max_dim / max(h_orig, w_orig)
+        new_h = int(h_orig * scale)
+        new_w = int(w_orig * scale)
+        
+        # Resize using PIL for better quality
+        pil_img = Image.fromarray(image)
+        try:
+            pil_img = pil_img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+        except AttributeError:
+            pil_img = pil_img.resize((new_w, new_h), Image.LANCZOS)
+        image = np.array(pil_img)
+        
+        print(f"Image rescaled from {w_orig}x{h_orig} to {new_w}x{new_h} (max dimension: {max_dim}px)")
     
     # Create sparse sampling (shared across all models)
     image_data = image.astype(np.float32) / 255.0
@@ -275,52 +303,52 @@ def load_and_create_sparse(image, sparsity_percent):
     info = (f"Image loaded: {w} x {h} pixels\n"
             f"Kept {num_keep:,} pixels ({sparsity_percent:.1f}%)\n"
             f"Removed {h*w - num_keep:,} pixels\n\n"
-            f"Initialized 4 NeRF models:\n"
+            f"Initialized 3 NeRF models:\n"
             f"- Small: {MODEL_CONFIGS['Small']['params']} parameters\n"
             f"- Medium: {MODEL_CONFIGS['Medium']['params']} parameters\n"
-            f"- Large: {MODEL_CONFIGS['Large']['params']} parameters\n"
-            f"- XLarge: {MODEL_CONFIGS['XLarge']['params']} parameters\n\n"
+            f"- Large: {MODEL_CONFIGS['Large']['params']} parameters\n\n"
             f"Ready to train all models")
     
-    return sparse_vis, None, None, None, None, info
+    return sparse_vis, None, None, None, info
 
 
-def train_all_models(num_steps):
-    """Train all 4 models sequentially"""
+def train_all_models(training_seconds):
+    """Train all 3 models sequentially for specified duration"""
     global models
     
     if models['Small'] is None:
-        return None, None, None, None, "Please load and create sparse sample first"
+        return None, None, None, "Please load and create sparse sample first"
     
-    if num_steps <= 0:
-        return None, None, None, None, "Number of steps must be positive"
+    if training_seconds <= 0:
+        return None, None, None, "Training duration must be positive"
     
     results = {}
     info_lines = []
     
     print("\n" + "="*70)
-    print("Training all 4 NeRF models sequentially")
+    print("Training all 3 NeRF models sequentially")
     print("="*70)
     
-    for size_name in ['Small', 'Medium', 'Large', 'XLarge']:
+    for size_name in ['Small', 'Medium', 'Large']:
         model = models[size_name]
         config = MODEL_CONFIGS[size_name]
         
         print(f"\n{'='*70}")
         print(f"Training {size_name} model ({config['params']} params)")
         print(f"  Architecture: {config['num_layers']} layers, {config['hidden_dim']} hidden units")
+        print(f"  Training duration: {training_seconds}s")
         print(f"{'='*70}")
         
         start_time = time.time()
-        avg_loss = model.train_steps(num_steps)
+        avg_loss, num_steps = model.train_for_duration(training_seconds)
         train_time = time.time() - start_time
         
         reconstruction = model.reconstruct_image()
         results[size_name] = reconstruction
         
         info_lines.append(
-            f"{size_name}: {model.total_steps} total steps, "
-            f"Loss={avg_loss:.6f}, Time={train_time:.1f}s"
+            f"{size_name}: {num_steps} steps in {train_time:.1f}s, "
+            f"Loss={avg_loss:.6f}"
         )
         
         print(f"  Completed in {train_time:.1f}s")
@@ -332,7 +360,7 @@ def train_all_models(num_steps):
     info = "Training Complete\n\n" + "\n".join(info_lines)
     
     return (results['Small'], results['Medium'], 
-            results['Large'], results['XLarge'], info)
+            results['Large'], info)
 
 
 def save_reconstruction(img, size_name):
@@ -364,20 +392,18 @@ def reset_all():
     for key in sparse_data:
         sparse_data[key] = None
     
-    return None, None, None, None, None, "All models reset. Load a new image to start."
+    return None, None, None, None, "All models reset. Load a new image to start."
 
 
 # Create Gradio interface
 with gr.Blocks(title="NeRF Multi-Model Comparison") as demo:
-    gr.Markdown("# NeRF Image Reconstruction: Multi-Model Size Comparison")
     gr.Markdown("""
-    Train 4 different NeRF model sizes **sequentially** and compare results side-by-side:
-    - **Small**: 3 layers, 128 units (~50k params) - Fastest
-    - **Medium**: 4 layers, 256 units (~200k params) - Balanced
-    - **Large**: 6 layers, 512 units (~1.5M params) - High quality
-    - **XLarge**: 8 layers, 1024 units (~8M params) - Maximum quality
+    # NeRF Image Reconstruction: Multi-Model Comparison
     
-    All models train on the same sparse data. Compare quality vs. training time tradeoffs.
+    Trains 3 NeRF models sequentially and compares results:
+    - **Small**: 3 layers, 128 units (~50k params)
+    - **Medium**: 4 layers, 256 units (~200k params)
+    - **Large**: 6 layers, 512 units (~1.5M params)
     """)
     
     with gr.Row():
@@ -393,34 +419,30 @@ with gr.Blocks(title="NeRF Multi-Model Comparison") as demo:
             create_btn = gr.Button("Create Sparse Sample", variant="primary", size="lg")
             
             gr.Markdown("### Training")
-            num_steps = gr.Slider(
-                minimum=10, maximum=2000, value=100, step=10,
-                label="Training Steps (per model)"
+            training_seconds = gr.Slider(
+                minimum=10, maximum=180, value=30, step=5,
+                label="Training Duration (seconds per model)"
             )
-            train_btn = gr.Button("Train All 4 Models", variant="primary", size="lg")
+            train_btn = gr.Button("Train All 3 Models", variant="primary", size="lg")
             reset_btn = gr.Button("Reset All", variant="secondary")
             
             gr.Markdown("### Sparse Visualization")
             sparse_output = gr.Image(label="Sparse Pixels (input)", height=300)
         
-        # Right column - 4 model outputs
+        # Right column - 3 model outputs
         with gr.Column(scale=3):
-            gr.Markdown("### Reconstructions (Side-by-Side)")
+            gr.Markdown("### Reconstructions")
             
             with gr.Row():
                 small_output = gr.Image(label="Small (~50k params)", height=300)
                 medium_output = gr.Image(label="Medium (~200k params)", height=300)
-            
-            with gr.Row():
                 large_output = gr.Image(label="Large (~1.5M params)", height=300)
-                xlarge_output = gr.Image(label="XLarge (~8M params)", height=300)
             
             gr.Markdown("### Save Options")
             with gr.Row():
                 save_small_btn = gr.Button("Save Small")
                 save_medium_btn = gr.Button("Save Medium")
                 save_large_btn = gr.Button("Save Large")
-                save_xlarge_btn = gr.Button("Save XLarge")
     
     info_text = gr.Textbox(label="Status & Training Info", lines=10, max_lines=15)
     save_status = gr.Textbox(label="Save Status", lines=2)
@@ -429,13 +451,13 @@ with gr.Blocks(title="NeRF Multi-Model Comparison") as demo:
     create_btn.click(
         fn=load_and_create_sparse,
         inputs=[input_image, sparsity_slider],
-        outputs=[sparse_output, small_output, medium_output, large_output, xlarge_output, info_text]
+        outputs=[sparse_output, small_output, medium_output, large_output, info_text]
     )
     
     train_btn.click(
         fn=train_all_models,
-        inputs=[num_steps],
-        outputs=[small_output, medium_output, large_output, xlarge_output, info_text]
+        inputs=[training_seconds],
+        outputs=[small_output, medium_output, large_output, info_text]
     )
     
     save_small_btn.click(
@@ -456,16 +478,10 @@ with gr.Blocks(title="NeRF Multi-Model Comparison") as demo:
         outputs=[save_status]
     )
     
-    save_xlarge_btn.click(
-        fn=lambda img: save_reconstruction(img, 'XLarge'),
-        inputs=[xlarge_output],
-        outputs=[save_status]
-    )
-    
     reset_btn.click(
         fn=reset_all,
         inputs=[],
-        outputs=[sparse_output, small_output, medium_output, large_output, xlarge_output, info_text]
+        outputs=[sparse_output, small_output, medium_output, large_output, info_text]
     )
 
 
