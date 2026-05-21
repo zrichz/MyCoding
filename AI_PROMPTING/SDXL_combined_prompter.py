@@ -44,8 +44,8 @@ CHARACTER_STUDY_NEGATIVE = ["no dynamic pose","no action pose","no bent arms","n
 # PRIMARY STAGES (8)
 # Subject identity is now mode-specific and supports single/dual subjects
 SUBJECT_IDENTITY = {
-    "photo_single": "amateur photo, full-body shot, boobs, a photo of a blonde woman, average build, hair up, (faint smile:0.2), (teeth:0.6)",
-    "photo_dual": "amateur photo, full-body shot, boobs, a photo of two blonde women, average build, hair up, (faint smile:0.2), (teeth:0.6)",
+    "photo_single": "amateur photo, full-body shot, boobs, a photo of a blonde woman, average build, hair up, (faint smile:0.2), (teeth:0.4)",
+    "photo_dual": "amateur photo, full-body shot, boobs, a photo of two blonde women, average build, hair up, (faint smile:0.2), (teeth:0.4)",
     "illustration_single": "illustrative realism, comic-book realism, painterly realism, art, a full-length illustration of a blonde woman, hair up, smile, teeth, boobs",
     "illustration_dual": "illustrative realism, comic-book realism, painterly realism, art, a full-length illustration of two blonde women, hair up, smile, teeth, boobs"
 }
@@ -65,22 +65,20 @@ PRIMARY_STAGES = {
         "white satin babydoll with sheer overlay",
         "red lace teddy with cutout details",
         "pink silk chemise with thin straps",
-        "champagne silk camisole with French lace trim",
         "navy blue lace bralette with strappy back detail",
         "black string bikini with minimal coverage",
-        "white office open blouse with cheeky bottoms",
+        "white open blouse with cheeky bottoms",
         "sheer white mesh beach cover-up with nothing underneath",
         "ripped denim micro shorts with matching bandeau top",
         "cotton crop top with matching hot pants",
         "iridescent silver micro dress",
         "black tactical harness with minimal coverage",
         "cream pattern bodysuit",
-        "golden scale-pattern micro dress",
-        "white elvish-style lingerie with delicate chains",
+        "white micro dress",
+        "white lingerie",
         "black leather fantasy harness with minimal fabric coverage",
         "light blue sheer micro dress",
         "lace-trimmed micro dress",
-        "gold body chains lingerie",
         "red latex catsuit unzipped to navel",
         "black latex catsuit unzipped to navel",
         "sheer lace robe over matching thong and bra",
@@ -94,54 +92,36 @@ PRIMARY_STAGES = {
         
     ],
     "Expression and gaze": [
-        "neutral expression, direct gaze to viewer",
-        "candid, eyes to viewer",
-        "gentle, eyes to viewer",
-        "contemplative, looking at viewer",
-        "warm, eyes to viewer",
-        "softly serious, direct gaze at viewer",
-        "subtle, direct eye contact",
-        "calm, steady gaze at viewer",
+        "neutral expression, direct gaze to viewer", "candid, eyes to viewer", "direct eye contact",
+        
     ],
     "Body descriptors": [
-        "visible (freckles:0.5) on arms",
-        "light sun tan",
-        "strong posture",
-        "relaxed shoulders",
-        "toned calves",
-        "natural posture, relaxed",
-        "asymmetric stance",
+        "visible (freckles:0.5) on arms", "light sun tan", "toned calves", "natural posture, relaxed",
+        
     ],
     "location": [ "interior", "selfie", "garden", "bedroom", "exterior", ],
 }
 
 # MODE-SPECIFIC: Shot and light variations
 SHOT_LIGHT_PHOTO = ["intimate","casual","golden hour lighting mood","soft diffused lighting",
-    "dynamic perspective","shot from above","shot from below","lighting from left",
-    "lighting from right","soft diffused light source","dramatic half-lighting",
+    "dynamic perspective","shot from above","shot from below","dramatic half-lighting",
 ]
 
 SHOT_LIGHT_ILLUSTRATION = [
     "intimate","casual","golden hour lighting mood","soft diffused lighting","dynamic perspective",
-    "view from above","view from below","lighting from left","lighting from right","soft diffused light source",
-    "dramatic half-lighting",
+    "view from above","view from below","soft diffused light source", "dramatic half-lighting",
 ]
 
 # SECONDARY CATEGORIES - Split by mode
 SECONDARY_PHOTO = [
-    # Color grading / Film style
     "clean digital look, minimal processing",
     "slightly warm, low saturation",
     "slightly cool tones, natural look",
     "faded film look, low contrast",
     "cinematic teal-orange, very subtle",
-    # Texture / Finish
     "subtle film grain",
-    "soft clarity, minimal sharpening",
-    # Mood / Subtle effects
     "natural, documentary tone",
     "quiet, candid mood",
-    "subtle warmth, homely",
     "cheerful, candid",
     "subtle story-telling, natural",
 ]
