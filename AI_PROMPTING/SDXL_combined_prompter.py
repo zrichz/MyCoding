@@ -30,6 +30,62 @@ SECONDARY OPTIONS:
 import gradio as gr
 import random
 from datetime import datetime
+import os
+
+# WILDCARD CLOTHING LOADER
+def load_wildcard_file(filename):
+    """Load and parse a wildcard file, returning list of options."""
+    filepath = os.path.join("AI_PROMPTING", "prompt_clothing_wildcards", filename)
+    if not os.path.exists(filepath):
+        print(f"Warning: {filepath} not found")
+        return []
+    
+    with open(filepath, 'r', encoding='utf-8') as f:
+        content = f.read()
+    
+    # Split by comma and strip whitespace
+    items = [item.strip() for item in content.split(',') if item.strip()]
+    return items
+
+# Load wildcard clothing options
+WILDCARD_CLOTHING = {
+    "dress_color": load_wildcard_file("dress_color.txt"),
+    "patterns": load_wildcard_file("patterns.txt"),
+    "dress_material": load_wildcard_file("dress_material.txt"),
+    "dress_type": load_wildcard_file("dress_type.txt"),
+    "footwear_color": load_wildcard_file("footwear_color.txt"),
+    "footwear_material": load_wildcard_file("footwear_material.txt"),
+    "footwear_type": load_wildcard_file("footwear_type.txt")
+}
+
+def generate_wildcard_clothing():
+    """Generate a clothing description from wildcard files."""
+    # For dress: choose between color or pattern
+    use_pattern = random.choice([True, False])
+    if use_pattern and WILDCARD_CLOTHING["patterns"]:
+        dress_color_or_pattern = random.choice(WILDCARD_CLOTHING["patterns"])
+    else:
+        dress_color_or_pattern = random.choice(WILDCARD_CLOTHING["dress_color"]) if WILDCARD_CLOTHING["dress_color"] else ""
+    
+    dress_material = random.choice(WILDCARD_CLOTHING["dress_material"]) if WILDCARD_CLOTHING["dress_material"] else ""
+    dress_type = random.choice(WILDCARD_CLOTHING["dress_type"]) if WILDCARD_CLOTHING["dress_type"] else ""
+    
+    # For footwear
+    footwear_color = random.choice(WILDCARD_CLOTHING["footwear_color"]) if WILDCARD_CLOTHING["footwear_color"] else ""
+    footwear_material = random.choice(WILDCARD_CLOTHING["footwear_material"]) if WILDCARD_CLOTHING["footwear_material"] else ""
+    footwear_type = random.choice(WILDCARD_CLOTHING["footwear_type"]) if WILDCARD_CLOTHING["footwear_type"] else ""
+    
+    # Construct clothing prompt
+    dress_parts = [p for p in [dress_color_or_pattern, dress_material, dress_type] if p]
+    footwear_parts = [p for p in [footwear_color, footwear_material, footwear_type] if p]
+    
+    clothing_items = []
+    if dress_parts:
+        clothing_items.append(" ".join(dress_parts))
+    if footwear_parts:
+        clothing_items.append(" ".join(footwear_parts))
+    
+    return ", ".join(clothing_items) if clothing_items else "casual outfit"
 
 # CHARACTER STUDY LISTS (for illustration mode)
 CHARACTER_STUDY_LISTS = {
@@ -151,7 +207,7 @@ SECONDARY_ILLUSTRATION = [
     "subtle storytelling atmosphere",
 ]
 
-def generate_prompts(mode, subject_count, primary_enabled, shot_light_enabled, use_secondary, character_study=False):
+def generate_prompts(mode, subject_count, primary_enabled, shot_light_enabled, use_secondary, character_study=False, use_wildcard_clothing=False):
     """Generate 400 combined prompts based on mode, subject count, and enabled stages."""
     prompts = []
     
@@ -175,7 +231,11 @@ def generate_prompts(mode, subject_count, primary_enabled, shot_light_enabled, u
         
         for stage_name, options in PRIMARY_STAGES.items():
             if primary_enabled.get(stage_name, True):
-                primary_parts.append(random.choice(options))
+                # Special handling for clothing stage
+                if stage_name == "Clothing and key props" and use_wildcard_clothing:
+                    primary_parts.append(generate_wildcard_clothing())
+                else:
+                    primary_parts.append(random.choice(options))
         
         # Add shot and light if enabled
         if shot_light_enabled:
@@ -199,7 +259,7 @@ def generate_prompts(mode, subject_count, primary_enabled, shot_light_enabled, u
     return prompts
 
 
-def generate_and_display(mode, subject_count, shot_light_check, character_study_check, *checkboxes):
+def generate_and_display(mode, subject_count, shot_light_check, character_study_check, wildcard_clothing_check, *checkboxes):
     """Generate prompts and return formatted text with save option."""
     # Parse checkboxes (7 primary stages + 1 secondary = 8 total)
     primary_enabled = {}
@@ -213,7 +273,7 @@ def generate_and_display(mode, subject_count, shot_light_check, character_study_
     use_secondary = checkboxes[len(primary_names)]
     
     # Generate prompts
-    prompts = generate_prompts(mode, subject_count, primary_enabled, shot_light_check, use_secondary, character_study_check)
+    prompts = generate_prompts(mode, subject_count, primary_enabled, shot_light_check, use_secondary, character_study_check, wildcard_clothing_check)
     
     # Mode-specific negative prompts
     base_negative = "asian, makeup" if mode == "photo" else "(photo:1.25),(asian:1.2), makeup, loli"
@@ -280,6 +340,13 @@ with gr.Blocks() as demo:
         info="Adds T-pose and reference-style prompts for character reference sheets"
     )
     
+    # Wildcard Clothing checkbox
+    wildcard_clothing_check = gr.Checkbox(
+        label="Use Wildcard Clothing (Section 4)",
+        value=False,
+        info="Generate clothing from wildcard files instead of built-in list"
+    )
+    
     with gr.Row():
         with gr.Column(scale=1):
             gr.Markdown("### PRIMARY STAGES")
@@ -328,7 +395,7 @@ with gr.Blocks() as demo:
     all_checkboxes = primary_checks + [secondary_check]
     generate_btn.click(
         fn=generate_and_display,
-        inputs=[mode_radio, subject_count_radio, shot_light_check, character_study_check] + all_checkboxes,
+        inputs=[mode_radio, subject_count_radio, shot_light_check, character_study_check, wildcard_clothing_check] + all_checkboxes,
         outputs=[output_text, prompts_state, mode_state, negative_prompt_state, character_study_state]
     )
     
