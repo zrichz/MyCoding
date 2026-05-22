@@ -12,6 +12,7 @@ import torch.nn as nn
 import torch.optim as optim
 from PIL import Image
 import time
+from scipy.interpolate import griddata
 
 
 class PositionalEncoder(nn.Module):
@@ -221,8 +222,44 @@ sparse_data = {
     'sparse_coords': None,
     'sparse_colors': None,
     'sparse_mask': None,
-    'sparse_vis': None
+    'sparse_vis': None,
+    'linear_interp': None
 }
+
+
+def reconstruct_linear_interpolation(sparse_coords, sparse_colors, sparse_mask, image_shape):
+    """Use scipy's griddata to perform linear interpolation reconstruction"""
+    h, w = image_shape[:2]
+    
+    # Get the sparse pixel locations in pixel coordinates
+    coords_y, coords_x = np.where(sparse_mask)
+    points = np.stack([coords_x, coords_y], axis=1)
+    values = sparse_colors
+    
+    # Create grid of all pixel coordinates
+    grid_x, grid_y = np.meshgrid(np.arange(w), np.arange(h))
+    grid_points = np.stack([grid_x.flatten(), grid_y.flatten()], axis=1)
+    
+    # Perform linear interpolation for each color channel
+    reconstructed = np.zeros((h * w, 3), dtype=np.float32)
+    
+    print("\nPerforming linear interpolation reconstruction...")
+    start_time = time.time()
+    
+    for channel in range(3):
+        reconstructed[:, channel] = griddata(
+            points, values[:, channel], grid_points,
+            method='linear', fill_value=0.0
+        )
+    
+    elapsed = time.time() - start_time
+    print(f"Linear interpolation completed in {elapsed:.3f}s\n")
+    
+    # Reshape and convert to uint8
+    reconstructed_image = reconstructed.reshape(h, w, 3)
+    reconstructed_image = (reconstructed_image * 255).clip(0, 255).astype(np.uint8)
+    
+    return reconstructed_image
 
 
 def load_and_create_sparse(image, sparsity_percent):
@@ -286,7 +323,13 @@ def load_and_create_sparse(image, sparsity_percent):
     sparse_data['sparse_mask'] = sparse_mask
     sparse_data['sparse_vis'] = sparse_vis
     
-    # Initialize all 4 models with shared sparse data
+    # Compute linear interpolation baseline (one-time, instant)
+    linear_interp_result = reconstruct_linear_interpolation(
+        sparse_coords, sparse_colors, sparse_mask, image_data.shape
+    )
+    sparse_data['linear_interp'] = linear_interp_result
+    
+    # Initialize all 3 models with shared sparse data
     for size_name, config in MODEL_CONFIGS.items():
         model = ImageReconstructionModel(
             num_frequencies=10,
@@ -303,13 +346,14 @@ def load_and_create_sparse(image, sparsity_percent):
     info = (f"Image loaded: {w} x {h} pixels\n"
             f"Kept {num_keep:,} pixels ({sparsity_percent:.1f}%)\n"
             f"Removed {h*w - num_keep:,} pixels\n\n"
+            f"Linear Interpolation: Complete (instant baseline)\n\n"
             f"Initialized 3 NeRF models:\n"
             f"- Small: {MODEL_CONFIGS['Small']['params']} parameters\n"
             f"- Medium: {MODEL_CONFIGS['Medium']['params']} parameters\n"
             f"- Large: {MODEL_CONFIGS['Large']['params']} parameters\n\n"
             f"Ready to train all models")
     
-    return sparse_vis, None, None, None, info
+    return sparse_vis, linear_interp_result, None, None, None, info
 
 
 def train_all_models(training_seconds):
@@ -377,7 +421,7 @@ def save_reconstruction(img, size_name):
     filename = f"nerf_{size_name.lower()}_{timestamp}_steps{model.total_steps}.png"
     filepath = f"/home/rich/MyCoding/fractal_outputs/{filename}"
     
-    pil_img.save(filepath)
+    pil_img.save(filepath, format='PNG')
     
     return f"Saved {size_name} to {filename}"
 
@@ -392,7 +436,7 @@ def reset_all():
     for key in sparse_data:
         sparse_data[key] = None
     
-    return None, None, None, None, "All models reset. Load a new image to start."
+    return None, None, None, None, None, "All models reset. Load a new image to start."
 
 
 # Create Gradio interface
@@ -400,7 +444,8 @@ with gr.Blocks(title="NeRF Multi-Model Comparison") as demo:
     gr.Markdown("""
     # NeRF Image Reconstruction: Multi-Model Comparison
     
-    Trains 3 NeRF models sequentially and compares results:
+    Compares Linear Interpolation (instant baseline) vs. 3 trained NeRF models:
+    - **Linear Interpolation**: scipy.griddata (instant, no training)
     - **Small**: 3 layers, 128 units (~50k params)
     - **Medium**: 4 layers, 256 units (~200k params)
     - **Large**: 6 layers, 512 units (~1.5M params)
@@ -427,16 +472,19 @@ with gr.Blocks(title="NeRF Multi-Model Comparison") as demo:
             reset_btn = gr.Button("Reset All", variant="secondary")
             
             gr.Markdown("### Sparse Visualization")
-            sparse_output = gr.Image(label="Sparse Pixels (input)", height=300)
+            sparse_output = gr.Image(label="Sparse Pixels (input)", height=300, format="png")
         
-        # Right column - 3 model outputs
+        # Right column - 4 reconstruction outputs
         with gr.Column(scale=3):
             gr.Markdown("### Reconstructions")
             
             with gr.Row():
-                small_output = gr.Image(label="Small (~50k params)", height=300)
-                medium_output = gr.Image(label="Medium (~200k params)", height=300)
-                large_output = gr.Image(label="Large (~1.5M params)", height=300)
+                linear_output = gr.Image(label="Linear Interpolation (instant)", height=300, format="png")
+                small_output = gr.Image(label="Small (~50k params)", height=300, format="png")
+            
+            with gr.Row():
+                medium_output = gr.Image(label="Medium (~200k params)", height=300, format="png")
+                large_output = gr.Image(label="Large (~1.5M params)", height=300, format="png")
             
             gr.Markdown("### Save Options")
             with gr.Row():
@@ -451,7 +499,7 @@ with gr.Blocks(title="NeRF Multi-Model Comparison") as demo:
     create_btn.click(
         fn=load_and_create_sparse,
         inputs=[input_image, sparsity_slider],
-        outputs=[sparse_output, small_output, medium_output, large_output, info_text]
+        outputs=[sparse_output, linear_output, small_output, medium_output, large_output, info_text]
     )
     
     train_btn.click(
@@ -481,7 +529,7 @@ with gr.Blocks(title="NeRF Multi-Model Comparison") as demo:
     reset_btn.click(
         fn=reset_all,
         inputs=[],
-        outputs=[sparse_output, small_output, medium_output, large_output, info_text]
+        outputs=[sparse_output, linear_output, small_output, medium_output, large_output, info_text]
     )
 
 
