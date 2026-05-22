@@ -1,18 +1,16 @@
 """
-a GUI for batch processing images to either 720x1600 or 2560x1440 pixels
-with percentage-based cropping, or scale to max 1440px height preserving aspect ratio.
+Gradio GUI for batch image processing: converts to 720x1600, 2560x1440, or scales to 1440px height.
 
-Key Features:
-- directory SELECTION
-- Choose output res: 720x1600 (portrait), 2560x1440 (landscape), or 1440px Height
-- Accepts ANY initial image size
-- Configurable crop percentage (0-25% in 1% steps): crops from each side / dimension before expansion
-- choose between high-quality JPEG (Q=90) or PNG format
-- 720x1600: center crops width by percentage, expands height to (20/9) aspect ratio with 1:2 top:bottom split
-- 2560x1440: center crops height by percentage, expands width to (16/9) aspect ratio with 50/50 left:right split
-- 1440px Height: scales image to max 1440px height while preserving aspect ratio (no cropping/blurring)
-- blur applied to expanded regions, with luminance reduction for fade effect
-- Generates unique timestamped filenames with conflict resolution
+Features:
+- Batch processing from selected directory
+- Three output modes: 720x1600 (portrait), 2560x1440 (landscape), 1440px height (aspect preserved)
+- Percentage-based center cropping (0-25% per side, 1% steps) applied before expansion
+- Output format: JPEG (Q=90) or PNG
+- 720x1600: crops width, expands height to 20:9 aspect ratio (1:2 top:bottom padding)
+- 2560x1440: crops height, expands width to 16:9 aspect ratio (50:50 left:right padding)
+- 1440px Height: scales to 1440px height preserving aspect ratio (no crop/blur)
+- Expanded regions blurred with luminance reduction for fade effect
+- Timestamped output filenames with conflict resolution
 """
 
 from PIL import Image
@@ -75,7 +73,14 @@ class ImageExpanderProcessor:
         print(f"Kernel cache initialized with {len(self.kernel_cache)} pre-computed kernels")
     
     def browse_folder(self):
-        """Open a folder selection dialog."""
+        """
+        Open a folder selection dialog. - note tkinter code is intentional, as Gradio doesn't
+        have a native folder browser component - it only has single file upload functionality.
+        Uses tkinter's filedialog.askdirectory() to open a folder selection dialog. 
+        When the user clicks the Gradio button, it triggers the tkinter dialog,
+        and the selected path is returned to populate the Gradio textbox.
+        This is standard for Gradio apps that need folder selection, rather than file uploads.
+        """
         root = Tk()
         root.withdraw()
         root.attributes('-topmost', True)
