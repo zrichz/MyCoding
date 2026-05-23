@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/home/rich/MyCoding/venvmycoding313/bin/python
 """
 NeRF-style Image Reconstruction from Sparse Pixels
 Compare 3 different model sizes: Small, Medium, Large
@@ -13,6 +13,7 @@ import torch.optim as optim
 from PIL import Image
 import time
 from scipy.interpolate import griddata
+import cv2
 
 
 class PositionalEncoder(nn.Module):
@@ -223,7 +224,8 @@ sparse_data = {
     'sparse_colors': None,
     'sparse_mask': None,
     'sparse_vis': None,
-    'linear_interp': None
+    'linear_interp': None,
+    'telea_inpaint': None
 }
 
 
@@ -260,6 +262,31 @@ def reconstruct_linear_interpolation(sparse_coords, sparse_colors, sparse_mask, 
     reconstructed_image = (reconstructed_image * 255).clip(0, 255).astype(np.uint8)
     
     return reconstructed_image
+
+
+def reconstruct_telea_inpainting(sparse_mask, image_data):
+    """Use OpenCV's TELEA inpainting algorithm for reconstruction"""
+    h, w = image_data.shape[:2]
+    
+    print("\nPerforming TELEA inpainting reconstruction...")
+    start_time = time.time()
+    
+    # Create the source image with sparse pixels only
+    sparse_image = np.zeros((h, w, 3), dtype=np.uint8)
+    sparse_image[sparse_mask] = (image_data[sparse_mask] * 255).astype(np.uint8)
+    
+    # Create inpainting mask: 255 where we need to inpaint (missing pixels)
+    inpaint_mask = (~sparse_mask).astype(np.uint8) * 255
+    
+    # Perform TELEA inpainting
+    # TELEA (Fast Marching Method) is good for smooth reconstructions
+    inpaint_radius = 3
+    reconstructed = cv2.inpaint(sparse_image, inpaint_mask, inpaint_radius, cv2.INPAINT_TELEA)
+    
+    elapsed = time.time() - start_time
+    print(f"TELEA inpainting completed in {elapsed:.3f}s\n")
+    
+    return reconstructed
 
 
 def load_and_create_sparse(image, sparsity_percent):
@@ -329,6 +356,12 @@ def load_and_create_sparse(image, sparsity_percent):
     )
     sparse_data['linear_interp'] = linear_interp_result
     
+    # Compute TELEA inpainting baseline (one-time, instant)
+    telea_inpaint_result = reconstruct_telea_inpainting(
+        sparse_mask, image_data
+    )
+    sparse_data['telea_inpaint'] = telea_inpaint_result
+    
     # Initialize all 3 models with shared sparse data
     for size_name, config in MODEL_CONFIGS.items():
         model = ImageReconstructionModel(
@@ -346,14 +379,16 @@ def load_and_create_sparse(image, sparsity_percent):
     info = (f"Image loaded: {w} x {h} pixels\n"
             f"Kept {num_keep:,} pixels ({sparsity_percent:.1f}%)\n"
             f"Removed {h*w - num_keep:,} pixels\n\n"
-            f"Linear Interpolation: Complete (instant baseline)\n\n"
+            f"Baselines Complete (instant):\n"
+            f"- Linear Interpolation\n"
+            f"- TELEA Inpainting\n\n"
             f"Initialized 3 NeRF models:\n"
             f"- Small: {MODEL_CONFIGS['Small']['params']} parameters\n"
             f"- Medium: {MODEL_CONFIGS['Medium']['params']} parameters\n"
             f"- Large: {MODEL_CONFIGS['Large']['params']} parameters\n\n"
             f"Ready to train all models")
     
-    return sparse_vis, linear_interp_result, None, None, None, info
+    return sparse_vis, linear_interp_result, telea_inpaint_result, None, None, None, info
 
 
 def train_all_models(training_seconds):
@@ -436,7 +471,7 @@ def reset_all():
     for key in sparse_data:
         sparse_data[key] = None
     
-    return None, None, None, None, None, "All models reset. Load a new image to start."
+    return None, None, None, None, None, None, "All models reset. Load a new image to start."
 
 
 # Create Gradio interface
@@ -444,11 +479,12 @@ with gr.Blocks(title="NeRF Multi-Model Comparison") as demo:
     gr.Markdown("""
     # NeRF Image Reconstruction: Multi-Model Comparison
     
-    Compares Linear Interpolation (instant baseline) vs. 3 trained NeRF models:
+    Compares 2 instant baselines vs. 3 trained NeRF models:
     - **Linear Interpolation**: scipy.griddata (instant, no training)
-    - **Small**: 3 layers, 128 units (~50k params)
-    - **Medium**: 4 layers, 256 units (~200k params)
-    - **Large**: 6 layers, 512 units (~1.5M params)
+    - **TELEA Inpainting**: OpenCV Fast Marching Method (instant, no training)
+    - **Small NeRF**: 3 layers, 128 units (~50k params)
+    - **Medium NeRF**: 4 layers, 256 units (~200k params)
+    - **Large NeRF**: 6 layers, 512 units (~1.5M params)
     """)
     
     with gr.Row():
@@ -474,17 +510,22 @@ with gr.Blocks(title="NeRF Multi-Model Comparison") as demo:
             gr.Markdown("### Sparse Visualization")
             sparse_output = gr.Image(label="Sparse Pixels (input)", height=300, format="png")
         
-        # Right column - 4 reconstruction outputs
+        # Right column - 5 reconstruction outputs
         with gr.Column(scale=3):
             gr.Markdown("### Reconstructions")
             
+            gr.Markdown("#### Instant Baselines (No Training)")
             with gr.Row():
-                linear_output = gr.Image(label="Linear Interpolation (instant)", height=300, format="png")
-                small_output = gr.Image(label="Small (~50k params)", height=300, format="png")
+                linear_output = gr.Image(label="Linear Interpolation", height=280, format="png")
+                telea_output = gr.Image(label="TELEA Inpainting", height=280, format="png")
+            
+            gr.Markdown("#### Trained NeRF Models")
+            with gr.Row():
+                small_output = gr.Image(label="Small (~50k params)", height=280, format="png")
+                medium_output = gr.Image(label="Medium (~200k params)", height=280, format="png")
             
             with gr.Row():
-                medium_output = gr.Image(label="Medium (~200k params)", height=300, format="png")
-                large_output = gr.Image(label="Large (~1.5M params)", height=300, format="png")
+                large_output = gr.Image(label="Large (~1.5M params)", height=280, format="png")
             
             gr.Markdown("### Save Options")
             with gr.Row():
@@ -499,7 +540,7 @@ with gr.Blocks(title="NeRF Multi-Model Comparison") as demo:
     create_btn.click(
         fn=load_and_create_sparse,
         inputs=[input_image, sparsity_slider],
-        outputs=[sparse_output, linear_output, small_output, medium_output, large_output, info_text]
+        outputs=[sparse_output, linear_output, telea_output, small_output, medium_output, large_output, info_text]
     )
     
     train_btn.click(
@@ -529,7 +570,7 @@ with gr.Blocks(title="NeRF Multi-Model Comparison") as demo:
     reset_btn.click(
         fn=reset_all,
         inputs=[],
-        outputs=[sparse_output, linear_output, small_output, medium_output, large_output, info_text]
+        outputs=[sparse_output, linear_output, telea_output, small_output, medium_output, large_output, info_text]
     )
 
 

@@ -1,3 +1,4 @@
+#!/home/rich/MyCoding/venvmycoding313/bin/python
 # Filmic Effects Processor - Gradio Version 1
 # Applies film grain, vignette, and photographic effects to images
 

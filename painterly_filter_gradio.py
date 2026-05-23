@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/home/rich/MyCoding/venvmycoding313/bin/python
 """
 Painterly Filter Gradio App
 Applies artistic painterly effects using structure tensor analysis for brush stroke direction detection.

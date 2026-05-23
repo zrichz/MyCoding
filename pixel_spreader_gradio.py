@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/home/rich/MyCoding/venvmycoding313/bin/python
 """
 Pixel Spreader - Gradio App
 Spreads pixels from image 1 evenly throughout image 2

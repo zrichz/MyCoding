@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/home/rich/MyCoding/venvmycoding313/bin/python
 """
 Spiral Pixel Remapper Gradio App
 Extracts pixels from center spiraling outward, then places them from top-left spiraling inward.

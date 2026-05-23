@@ -1,3 +1,4 @@
+#!/home/rich/MyCoding/venvmycoding313/bin/python
 import numpy as np
 import gradio as gr
 import time

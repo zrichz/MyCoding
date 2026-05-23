@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/home/rich/MyCoding/venvmycoding313/bin/python
 """
 Quadtree Image Shuffler
 Recursively divides an image into 4x4 grids and shuffles the pieces at each level.

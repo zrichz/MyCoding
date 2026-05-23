@@ -1,3 +1,4 @@
+#!/home/rich/MyCoding/venvmycoding313/bin/python
 """
 Text File Interleaver - Gradio GUI
 Interleaves lines from two text files alternately.

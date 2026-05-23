@@ -1,3 +1,4 @@
+#!/home/rich/MyCoding/venvmycoding313/bin/python
 """
 TI Changer SDXL - Convert and manipulate SDXL textual inversion files
 Gradio version - Simple web interface

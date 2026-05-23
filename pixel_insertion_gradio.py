@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/home/rich/MyCoding/venvmycoding313/bin/python
 """
 Pixel Insertion Gradio App - LSB Steganography Edition
 Embeds pixels from Image A into Image B using LSB encoding and random distribution.
