@@ -1,8 +1,7 @@
 """
-Overlapping Circles with Quantized Edge Detection
-Draws colored circles with striped circumferences where only overlapping areas are colored.
-Uses NumPy vectorization for high performance with quantized edge detection.
-Only pixels at distances divisible by 2 from the circumference edge are colored.
+Overlapping Circles
+Draws circles with thin circumferences where only overlapping areas are colored.
+Uses NumPy vectorization for high performance.
 """
 
 import numpy as np
@@ -24,7 +23,7 @@ class CircleOverlapVisualizer:
         self.max_radius = 200
         
         # Edge thickness for circumferences
-        self.edge_thickness = 30
+        self.edge_thickness = 1
         
         # Generate random circles
         self.circles = self.generate_circles()
@@ -36,20 +35,20 @@ class CircleOverlapVisualizer:
         """Generate random circles with positions, sizes, and colors"""
         circles = []
         
-        # Random bright colors
+        # Black and white colors - only white for overlaps
         bright_colors = [
-            (1.0, 0.0, 0.0),  # Bright red
-            (0.0, 1.0, 0.0),  # Bright green
-            (0.0, 0.0, 1.0),  # Bright blue
-            (1.0, 1.0, 0.0),  # Bright yellow
-            (1.0, 0.0, 1.0),  # Bright magenta
-            (0.0, 1.0, 1.0),  # Bright cyan
-            (1.0, 0.5, 0.0),  # Bright orange
-            (0.5, 0.0, 1.0),  # Bright purple
-            (1.0, 0.8, 0.0),  # Bright gold
-            (0.0, 1.0, 0.5),  # Bright lime green
-            (1.0, 0.0, 0.5),  # Bright pink
-            (0.5, 1.0, 0.0),  # Bright chartreuse
+            (1.0, 1.0, 1.0),  # White
+            (1.0, 1.0, 1.0),  # White
+            (1.0, 1.0, 1.0),  # White
+            (1.0, 1.0, 1.0),  # White
+            (1.0, 1.0, 1.0),  # White
+            (1.0, 1.0, 1.0),  # White
+            (1.0, 1.0, 1.0),  # White
+            (1.0, 1.0, 1.0),  # White
+            (1.0, 1.0, 1.0),  # White
+            (1.0, 1.0, 1.0),  # White
+            (1.0, 1.0, 1.0),  # White
+            (1.0, 1.0, 1.0),  # White
         ]
         
         for i in range(self.num_circles):
@@ -107,19 +106,9 @@ class CircleOverlapVisualizer:
             # Create mask for pixels on the circumference
             on_edge = (distances >= radius - self.edge_thickness) & (distances <= radius)
             
-            # Add quantization: only color pixels if distance from edge is divisible by 2
-            # Distance from outer edge of circumference
-            distance_from_edge = radius - distances
-            # Quantize to integers and check if divisible by 3
-            quantized_edge_distance = np.floor(distance_from_edge).astype(int)
-            divisible_by_2 = (quantized_edge_distance % 3) == 0
-            
-            # Combine edge mask with divisibility requirement
-            on_edge_quantized = on_edge & divisible_by_2
-            
-            # Count overlaps using quantized edge mask
-            new_overlaps = on_edge_quantized & (circumference_count > 0)
-            circumference_count += on_edge_quantized.astype(int)
+            # Count overlaps
+            new_overlaps = on_edge & (circumference_count > 0)
+            circumference_count += on_edge.astype(int)
             
             # Update colors where we have new overlaps (2+ circumferences)
             if np.any(new_overlaps):

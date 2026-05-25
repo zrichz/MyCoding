@@ -19,7 +19,6 @@ import numpy as np
 from scipy import ndimage
 import os
 from datetime import datetime
-from tkinter import Tk, filedialog
 
 # Ensure numpy is imported
 try:
@@ -71,22 +70,6 @@ class ImageExpanderProcessor:
                 }
         
         print(f"Kernel cache initialized with {len(self.kernel_cache)} pre-computed kernels")
-    
-    def browse_folder(self):
-        """
-        Open a folder selection dialog. - note tkinter code is intentional, as Gradio doesn't
-        have a native folder browser component - it only has single file upload functionality.
-        Uses tkinter's filedialog.askdirectory() to open a folder selection dialog. 
-        When the user clicks the Gradio button, it triggers the tkinter dialog,
-        and the selected path is returned to populate the Gradio textbox.
-        This is standard for Gradio apps that need folder selection, rather than file uploads.
-        """
-        root = Tk()
-        root.withdraw()
-        root.attributes('-topmost', True)
-        folder_path = filedialog.askdirectory(title="Select Image Directory")
-        root.destroy()
-        return folder_path if folder_path else ""
     
     def get_image_files(self, directory):
         """Get list of supported image files in directory"""
@@ -196,11 +179,13 @@ class ImageExpanderProcessor:
         reduced = line_array.astype(np.float32) * reduction_multiplier
         return np.clip(reduced, 0, 255).astype(np.uint8)
     
-    def process_single_image(self, input_path, output_path, crop_percent_per_side, resolution_mode):
+    def process_single_image(self, input_path, output_path, crop_percent_per_side, resolution_mode, 
+                           enable_internal_blur, internal_blur_width, enable_fade_to_black, fade_border_width):
         """Process a single image file with percentage-based cropping"""
         try:
             # Load image
             original_image = Image.open(input_path)
+            processed_image = None  # Initialize to avoid unbound variable warning
             
             if resolution_mode == "720x1600 (with blurring)":
                 # Portrait mode: crop width, expand height
@@ -260,6 +245,15 @@ class ImageExpanderProcessor:
                     self._process_bottom_expansion_vectorized(expanded_array, img_array, 
                                                             bottom_pad, y_end, 0, orig_width,
                                                             max_blur, max_luminance_drop)
+                
+                # Optionally blur inside original image boundaries with gradient
+                if enable_internal_blur and internal_blur_width > 0:
+                    blur_width = min(internal_blur_width, orig_height // 2)
+                    self._blur_original_boundary_horizontal(expanded_array, y_start, y_start + blur_width, 
+                                                           0, orig_width, max_blur)
+                    if orig_height >= internal_blur_width * 2:
+                        self._blur_original_boundary_horizontal(expanded_array, y_end - blur_width, y_end, 
+                                                               0, orig_width, max_blur)
                 
                 # Convert back to PIL Image
                 processed_image = Image.fromarray(expanded_array.astype('uint8'))
@@ -324,6 +318,15 @@ class ImageExpanderProcessor:
                     self._process_right_expansion_vectorized(expanded_array, right_pad, x_end,
                                                             max_blur, max_luminance_drop)
                 
+                # Optionally blur inside original image boundaries with gradient
+                if enable_internal_blur and internal_blur_width > 0:
+                    blur_width = min(internal_blur_width, orig_width // 2)
+                    self._blur_original_boundary_vertical(expanded_array, 0, orig_height, x_start, 
+                                                         x_start + blur_width, max_blur)
+                    if orig_width >= internal_blur_width * 2:
+                        self._blur_original_boundary_vertical(expanded_array, 0, orig_height, 
+                                                             x_end - blur_width, x_end, max_blur)
+                
                 # Convert back to PIL Image
                 processed_image = Image.fromarray(expanded_array.astype('uint8'))
                 
@@ -346,6 +349,15 @@ class ImageExpanderProcessor:
                 # Resize using highest quality LANCZOS resampling
                 processed_image = original_image.resize((new_width, new_height), 
                                                        Image.Resampling.LANCZOS)
+            
+            # Ensure processed_image was created
+            if processed_image is None:
+                print(f"Error: No valid resolution mode matched for {input_path}")
+                return False
+            
+            # Apply fade to black on all edges of final image
+            if enable_fade_to_black and fade_border_width > 0:
+                processed_image = self._apply_final_fade_to_black(processed_image, fade_border_width)
             
             # Save the processed image
             if output_path.lower().endswith('.jpg') or output_path.lower().endswith('.jpeg'):
@@ -455,13 +467,93 @@ class ImageExpanderProcessor:
                     final_column = self.apply_luminance_reduction(blurred_column, luminance_reductions[idx])
                     expanded_array[:, x_end + idx] = final_column
     
-    def process_batch(self, input_folder, crop_percent_per_side, save_as_jpg, resolution_mode, progress=gr.Progress()):
+    def _blur_original_boundary_horizontal(self, expanded_array, y_start, y_end, x_start, x_end, max_blur):
+        """Apply progressive gradient blur to horizontal boundary region inside original image"""
+        boundary_height = y_end - y_start
+        if boundary_height <= 0:
+            return
+        
+        for i in range(boundary_height):
+            # Gradient from 0 blur (inside) to max_blur (at edge)
+            progress = i / boundary_height
+            blur_amount = progress * max_blur
+            
+            blur_key = round(blur_amount * 2) / 2.0
+            if blur_key not in self.kernel_cache:
+                available_keys = list(self.kernel_cache.keys())
+                blur_key = min(available_keys, key=lambda x: abs(x - blur_amount))
+            
+            if blur_amount > 0:
+                line = expanded_array[y_start + i, x_start:x_end].copy()
+                blurred_line = self.apply_horizontal_blur(line, blur_amount)
+                expanded_array[y_start + i, x_start:x_end] = blurred_line
+    
+    def _blur_original_boundary_vertical(self, expanded_array, y_start, y_end, x_start, x_end, max_blur):
+        """Apply progressive gradient blur to vertical boundary region inside original image"""
+        boundary_width = x_end - x_start
+        if boundary_width <= 0:
+            return
+        
+        for i in range(boundary_width):
+            # Gradient from 0 blur (inside) to max_blur (at edge)
+            progress = i / boundary_width
+            blur_amount = progress * max_blur
+            
+            blur_key = round(blur_amount * 2) / 2.0
+            if blur_key not in self.kernel_cache:
+                available_keys = list(self.kernel_cache.keys())
+                blur_key = min(available_keys, key=lambda x: abs(x - blur_amount))
+            
+            if blur_amount > 0:
+                column = expanded_array[y_start:y_end, x_start + i].copy()
+                blurred_column = self.apply_vertical_blur(column, blur_amount)
+                expanded_array[y_start:y_end, x_start + i] = blurred_column
+    
+    def _apply_final_fade_to_black(self, pil_image, border_width):
+        """Apply fade to black on all edges of final processed image"""
+        img_array = np.array(pil_image)
+        height, width = img_array.shape[:2]
+        
+        border = min(border_width, min(height, width) // 2)
+        if border <= 0:
+            return pil_image
+        
+        # Create a mask for the fade effect
+        if len(img_array.shape) == 3:
+            mask = np.ones((height, width, 1), dtype=np.float32)
+        else:
+            mask = np.ones((height, width), dtype=np.float32)
+        
+        # Apply fade on all four edges
+        for i in range(border):
+            fade_factor = i / border
+            
+            # Top edge
+            mask[i, :] = np.minimum(mask[i, :], fade_factor)
+            # Bottom edge
+            mask[height - 1 - i, :] = np.minimum(mask[height - 1 - i, :], fade_factor)
+            # Left edge
+            mask[:, i] = np.minimum(mask[:, i], fade_factor)
+            # Right edge
+            mask[:, width - 1 - i] = np.minimum(mask[:, width - 1 - i], fade_factor)
+        
+        # Apply mask to image
+        faded_array = (img_array.astype(np.float32) * mask).astype(np.uint8)
+        return Image.fromarray(faded_array)
+    
+    def process_batch(self, input_folder, crop_percent_per_side, save_as_jpg, resolution_mode, 
+                     enable_internal_blur, internal_blur_width, enable_fade_to_black, fade_border_width,
+                     progress=gr.Progress()):
         """Process all images in the selected directory"""
         if not input_folder or not os.path.exists(input_folder):
             return "Please select a valid input folder."
         
         # Convert string to float
         crop_percent_per_side = float(crop_percent_per_side)
+        
+        # Convert radio button values to boolean
+        enable_internal_blur = (enable_internal_blur == "On")
+        enable_fade_to_black = (enable_fade_to_black == "On")
         
         # Get image files
         image_files = self.get_image_files(input_folder)
@@ -471,11 +563,10 @@ class ImageExpanderProcessor:
             return "No image files found in the selected folder."
         
         # Create output directory based on resolution mode
-        resolution_str = resolution_mode.replace("x", "x")
         if crop_percent_per_side > 0:
-            dir_name = f"processed_{resolution_str}_crop{int(crop_percent_per_side)}pct"
+            dir_name = f"processed_{resolution_mode}_crop{int(crop_percent_per_side)}pct"
         else:
-            dir_name = f"processed_{resolution_str}"
+            dir_name = f"processed_{resolution_mode}"
         output_dir = os.path.join(input_folder, dir_name)
         os.makedirs(output_dir, exist_ok=True)
         
@@ -500,19 +591,20 @@ class ImageExpanderProcessor:
                 
                 # Determine output format
                 ext = ".jpg" if save_as_jpg else ".png"
-                resolution_str = resolution_mode.replace("x", "x")
-                output_filename, output_path = self.generate_timestamp_filename(output_dir, ext, resolution_str)
+                output_filename, output_path = self.generate_timestamp_filename(output_dir, ext, resolution_mode)
                 
-                if self.process_single_image(input_path, output_path, crop_percent_per_side, resolution_mode):
+                if self.process_single_image(input_path, output_path, crop_percent_per_side, resolution_mode,
+                                            enable_internal_blur, internal_blur_width, 
+                                            enable_fade_to_black, fade_border_width):
                     successful += 1
-                    log_lines.append(f"✓ {filename} → {output_filename}")
+                    log_lines.append(f"OK {filename} -> {output_filename}")
                 else:
                     failed += 1
-                    log_lines.append(f"✗ Failed: {filename}")
+                    log_lines.append(f"FAILED: {filename}")
                     
             except Exception as e:
                 failed += 1
-                log_lines.append(f"✗ Error: {filename} - {str(e)}")
+                log_lines.append(f"ERROR: {filename} - {str(e)}")
         
         # Summary
         log_lines.append(f"\n{'='*60}")
@@ -549,7 +641,7 @@ css = """
     }
 """
 
-with gr.Blocks(title="Image Auto-Expander (Percentage)", css=css) as demo:
+with gr.Blocks(title="Image Auto-Expander (Percentage)") as demo:
     gr.Markdown("# Image Auto-Expander - Percentage-Based Cropping")
     gr.Markdown("Accepts any image size • Choose resolution • Crops by percentage • Expands and scales")
     
@@ -560,11 +652,9 @@ with gr.Blocks(title="Image Auto-Expander (Percentage)", css=css) as demo:
         info="720x1600 = Portrait (crops width, expands height 1:2 top:bottom) | 2560x1440 = Landscape (crops height, expands width 50:50 left:right) | 1440px Height = Scale to max 1440px height, preserving aspect ratio"
     )
     
-    browse_btn = gr.Button("📁 Browse Folder", size="lg", scale=1)
-    
     input_folder = gr.Textbox(
-        label="Input Folder",
-        placeholder="Click 'Browse Folder' to select...",
+        label="Input Folder Path",
+        placeholder="Enter full path to folder containing images (e.g., /home/user/images)",
         interactive=True
     )
     
@@ -576,6 +666,40 @@ with gr.Blocks(title="Image Auto-Expander (Percentage)", css=css) as demo:
         label="Crop Percentage (per side)",
         info="0% = no crop, 8% = crops 8% from each side (16% total). For 720x1600: crops width. For 2560x1440: crops height. Crop is applied before expansion."
     )
+    
+    with gr.Row():
+        enable_internal_blur = gr.Radio(
+            choices=["On", "Off"],
+            value="On",
+            label="Internal Boundary Blurring",
+            info="Gradually blur pixels inside the original image edges for smooth transition"
+        )
+        
+        enable_fade_to_black = gr.Radio(
+            choices=["On", "Off"],
+            value="On",
+            label="Edge Fade to Black",
+            info="Fade all edges of final output image to black"
+        )
+    
+    with gr.Row():
+        internal_blur_width = gr.Slider(
+            minimum=0,
+            maximum=36,
+            step=1,
+            value=12,
+            label="Internal Blur Border Width (pixels)",
+            info="Width of gradient blur inside original image boundaries"
+        )
+        
+        fade_border_width = gr.Slider(
+            minimum=0,
+            maximum=36,
+            step=1,
+            value=12,
+            label="Fade to Black Border Width (pixels)",
+            info="Width of fade to black on all edges of final image"
+        )
     
     save_as_jpg = gr.Checkbox(
         label="Save as JPEG (Q=90)",
@@ -592,17 +716,12 @@ with gr.Blocks(title="Image Auto-Expander (Percentage)", css=css) as demo:
     )
     
     # Wire up interactions
-    browse_btn.click(
-        fn=processor.browse_folder,
-        inputs=None,
-        outputs=input_folder
-    )
-    
     process_btn.click(
         fn=processor.process_batch,
-        inputs=[input_folder, crop_percent_per_side, save_as_jpg, resolution_mode],
+        inputs=[input_folder, crop_percent_per_side, save_as_jpg, resolution_mode,
+                enable_internal_blur, internal_blur_width, enable_fade_to_black, fade_border_width],
         outputs=output_log
     )
 
 if __name__ == "__main__":
-    demo.launch(inbrowser=True)
+    demo.launch(inbrowser=True, css=css)
