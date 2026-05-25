@@ -1,1 +1,0 @@
-# Deblurring algorithms package

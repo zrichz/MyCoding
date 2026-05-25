@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/home/rich/MyCoding/venvmycoding313/bin/python
 """
 Image Hasher (gradio) - Converted from Processing
 pixel scatter using deterministic random seed.
