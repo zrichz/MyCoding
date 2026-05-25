@@ -3,6 +3,12 @@ Background Remover - High Quality AI Background Removal
 
 Uses rembg with U^2-Net model for accurate background removal with alpha transparency.
 Supports various models and post-processing options for optimal results.
+
+models are Downloaded automatically on first use when you select a model, Cached locally in ~/.u2net/ for reuse
+Model sizes: Range from ~4.7MB (u2netp) to ~176MB (u2net, isnet models)
+When you use other models from the script (like u2netp, isnet-general-use, isnet-anime, etc.),
+they will be downloaded and saved to this same directory on their first use.
+
 """
 
 import os
