@@ -309,7 +309,7 @@ def process_video_to_voxel_cube(video_file, frame_step, output_frames, output_fp
         yield None, f"Processing failed: {str(e)}", None
 
 
-def process_video(video_file, sampling_method, n_frames):
+def process_video(video_file, sampling_method, n_frames, column_position=0.5):
     """
     Process the uploaded video and create slitscanned image
     
@@ -317,6 +317,7 @@ def process_video(video_file, sampling_method, n_frames):
         video_file: Uploaded video file
         sampling_method: Frame sampling method (every_frame, every_2, every_n)
         n_frames: Number for every_n sampling (3-1000)
+        column_position: Horizontal position for pixel extraction (0.0=left, 1.0=right, 0.5=center)
     
     Returns:
         tuple: (processed_image, status_message, None)
@@ -342,8 +343,8 @@ def process_video(video_file, sampling_method, n_frames):
         frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         
-        # Calculate center column
-        center_x = frame_width // 2
+        # Calculate column position based on parameter (0.0=left, 1.0=right)
+        center_x = int(column_position * (frame_width - 1))
         
         # Determine frame step based on sampling method
         if sampling_method == "Every Frame":
@@ -364,7 +365,7 @@ def process_video(video_file, sampling_method, n_frames):
         
         # Calculate how many frames we'll actually process
         frames_to_process = total_frames // frame_step
-        max_width = 3000  # Limit output width to prevent memory issues
+        max_width = 10000  # Limit output width to prevent memory issues
         
         if frames_to_process > max_width:
             frames_to_process = max_width
@@ -422,10 +423,10 @@ def process_video(video_file, sampling_method, n_frames):
         yield None, f"Processing failed: {str(e)}", None
 
 
-def process_dispatcher(video_file, output_mode, sampling_method, n_frames, frame_step_cube, output_frames, output_fps, downsample_factor, rotate_x, rotate_y, time_travel_mode):
+def process_dispatcher(video_file, output_mode, sampling_method, n_frames, column_position, frame_step_cube, output_frames, output_fps, downsample_factor, rotate_x, rotate_y, time_travel_mode):
     """Dispatch to appropriate processing function based on output mode"""
     if output_mode == "image":
-        yield from process_video(video_file, sampling_method, n_frames)
+        yield from process_video(video_file, sampling_method, n_frames, column_position)
     else:  # Video output - this is now a generator
         yield from process_video_to_voxel_cube(video_file, frame_step_cube, output_frames, output_fps, downsample_factor, rotate_x, rotate_y, time_travel_mode)
 
@@ -535,6 +536,16 @@ def create_interface():
                     visible=False
                 )
                 
+                column_position_slider = gr.Slider(
+                    minimum=0.0,
+                    maximum=1.0,
+                    value=0.5,
+                    step=0.01,
+                    label="Column Position",
+                    info="Horizontal pixel column to extract (0.0=left, 1.0=right)",
+                    visible=False
+                )
+                
                 # Video output options
                 frame_step_cube = gr.Slider(
                     minimum=1,
@@ -548,7 +559,7 @@ def create_interface():
                 
                 output_frames = gr.Slider(
                     minimum=30,
-                    maximum=1200,
+                    maximum=5000,
                     value=120,
                     step=10,
                     label="Output Video Frames",
@@ -610,6 +621,7 @@ def create_interface():
                     return (
                         gr.update(visible=is_image),  # sampling_method
                         gr.update(visible=False),  # n_frames_input (hide by default)
+                        gr.update(visible=is_image),  # column_position_slider
                         gr.update(visible=is_video),  # frame_step_cube
                         gr.update(visible=is_video),  # output_frames
                         gr.update(visible=is_video),  # output_fps
@@ -622,7 +634,7 @@ def create_interface():
                 output_mode.change(
                     fn=toggle_options,
                     inputs=[output_mode],
-                    outputs=[sampling_method, n_frames_input, frame_step_cube, output_frames, output_fps, downsample_factor, rotate_x_check, rotate_y_check, time_travel_radio]
+                    outputs=[sampling_method, n_frames_input, column_position_slider, frame_step_cube, output_frames, output_fps, downsample_factor, rotate_x_check, rotate_y_check, time_travel_radio]
                 )
                 
                 sampling_method.change(
@@ -681,7 +693,7 @@ def create_interface():
                 )
         
         # Helper function to manage outputs
-        def process_and_route(video_file, output_mode, sampling_method, n_frames, frame_step_cube, output_frames, output_fps, downsample_str, rotate_x, rotate_y, time_travel_mode):
+        def process_and_route(video_file, output_mode, sampling_method, n_frames, column_position, frame_step_cube, output_frames, output_fps, downsample_str, rotate_x, rotate_y, time_travel_mode):
             # Initial status yield
             yield None, None, "⏳ Starting processing...", None, gr.update(), gr.update()
             
@@ -696,7 +708,7 @@ def create_interface():
                 downsample_factor = 2  # default
             
             # Process as generator to get incremental updates
-            for result, status, preview in process_dispatcher(video_file, output_mode, sampling_method, n_frames, frame_step_cube, output_frames, output_fps, downsample_factor, rotate_x, rotate_y, time_travel_mode):
+            for result, status, preview in process_dispatcher(video_file, output_mode, sampling_method, n_frames, column_position, frame_step_cube, output_frames, output_fps, downsample_factor, rotate_x, rotate_y, time_travel_mode):
                 if output_mode == "image":
                     yield result, None, status, preview, gr.update(visible=True), gr.update(visible=False)
                 else:
@@ -709,7 +721,7 @@ def create_interface():
         # Process button click handler
         process_btn.click(
             fn=process_and_route,
-            inputs=[video_input, output_mode, sampling_method, n_frames_input, frame_step_cube, output_frames, output_fps, downsample_factor, rotate_x_check, rotate_y_check, time_travel_radio],
+            inputs=[video_input, output_mode, sampling_method, n_frames_input, column_position_slider, frame_step_cube, output_frames, output_fps, downsample_factor, rotate_x_check, rotate_y_check, time_travel_radio],
             outputs=[image_output, video_output, status_output, frame_preview, image_output, video_output]
         )
     

@@ -1,3 +1,4 @@
+#!/home/rich/MyCoding/venvmycoding313/bin/python
 """
 Background Remover - High Quality AI Background Removal
 
