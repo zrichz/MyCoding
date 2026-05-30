@@ -20,7 +20,7 @@ def load_image(image, max_size=512):
     transform = transforms.Compose([
         transforms.Resize(size),
         transforms.ToTensor(),
-        transforms.Lambda(lambda x: x.mul(255))
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
     return transform(img).unsqueeze(0)
 
@@ -95,8 +95,8 @@ def style_transfer(content_img, style_img, iterations=300, style_weight=1e6, con
     # Initialize output image
     output = content.clone().requires_grad_(True)
     
-    # Optimization - use Adam for faster iterations with smaller learning rate
-    optimizer = optim.Adam([output], lr=0.003)
+    # Optimization - use Adam with higher learning rate for normalized space
+    optimizer = optim.Adam([output], lr=0.01)
     
     # Run optimization
     print(f"Starting optimization for {iterations} iterations...")
@@ -123,9 +123,9 @@ def style_transfer(content_img, style_img, iterations=300, style_weight=1e6, con
         total_loss.backward()
         optimizer.step()
         
-        # Clamp pixel values
+        # Clamp pixel values to valid range (normalized space)
         with torch.no_grad():
-            output.clamp_(0, 255)
+            output.clamp_(-2.5, 2.5)  # Reasonable bounds for normalized images
         
         # Update progress bar EVERY iteration
         progress_value = 0.2 + ((i + 1) / iterations) * 0.75
@@ -140,9 +140,16 @@ def style_transfer(content_img, style_img, iterations=300, style_weight=1e6, con
     print("Optimization complete. Converting to PIL Image...")
     progress(0.95, desc="Converting to image...")
     
-    # Convert output to PIL Image
-    out_img = output.detach().cpu().squeeze().clamp(0, 255) / 255
-    result = transforms.ToPILImage()(out_img)
+    # Convert output to PIL Image - denormalize first
+    out_tensor = output.detach().cpu().squeeze()
+    
+    # Denormalize using ImageNet mean and std
+    mean = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1)
+    std = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
+    out_tensor = out_tensor * std + mean
+    out_tensor = out_tensor.clamp(0, 1)
+    
+    result = transforms.ToPILImage()(out_tensor)
     print(f"Generated image size: {result.size}, mode: {result.mode}")
     
     progress(1.0, desc="Complete!")

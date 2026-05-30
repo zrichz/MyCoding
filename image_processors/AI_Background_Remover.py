@@ -137,6 +137,28 @@ def remove_background(image, model_name="u2net", alpha_matting=True,
         else:
             alpha_mask = np.ones((output_np.shape[0], output_np.shape[1]), dtype=np.uint8) * 255
         
+        # Handle dimension mismatches (some models like cloth_seg may return different sizes)
+        if alpha_mask.shape != (original_np.shape[0], original_np.shape[1]):
+            mask_h, mask_w = alpha_mask.shape
+            orig_h, orig_w = original_np.shape[0], original_np.shape[1]
+            
+            if mask_h > orig_h or mask_w > orig_w:
+                # Output is larger - crop to original size (don't squash)
+                # Center crop to preserve alignment
+                start_y = (mask_h - orig_h) // 2 if mask_h > orig_h else 0
+                start_x = (mask_w - orig_w) // 2 if mask_w > orig_w else 0
+                end_y = start_y + orig_h
+                end_x = start_x + orig_w
+                alpha_mask = alpha_mask[start_y:end_y, start_x:end_x]
+            else:
+                # Output is smaller - resize up
+                alpha_mask_pil = Image.fromarray(alpha_mask)
+                alpha_mask_pil = alpha_mask_pil.resize(
+                    (orig_w, orig_h), 
+                    Image.Resampling.LANCZOS
+                )
+                alpha_mask = np.array(alpha_mask_pil)
+        
         # Create RGBA with EXACT original RGB + rembg mask
         # This ensures foreground + background layers will reconstruct perfectly
         output_rgba = np.zeros((original_np.shape[0], original_np.shape[1], 4), dtype=np.uint8)
@@ -281,11 +303,34 @@ def save_background_only(image, model_name, alpha_matting, fg_threshold,
         else:
             foreground_mask = np.ones((output_np.shape[0], output_np.shape[1]), dtype=np.uint8) * 255
         
+        # Handle dimension mismatches (some models like cloth_seg may return different sizes)
+        original_np = np.array(pil_image_rgb)
+        if foreground_mask.shape != (original_np.shape[0], original_np.shape[1]):
+            mask_h, mask_w = foreground_mask.shape
+            orig_h, orig_w = original_np.shape[0], original_np.shape[1]
+            
+            if mask_h > orig_h or mask_w > orig_w:
+                # Output is larger - crop to original size (don't squash)
+                # Center crop to preserve alignment
+                start_y = (mask_h - orig_h) // 2 if mask_h > orig_h else 0
+                start_x = (mask_w - orig_w) // 2 if mask_w > orig_w else 0
+                end_y = start_y + orig_h
+                end_x = start_x + orig_w
+                foreground_mask = foreground_mask[start_y:end_y, start_x:end_x]
+            else:
+                # Output is smaller - resize up
+                foreground_mask_pil = Image.fromarray(foreground_mask)
+                foreground_mask_pil = foreground_mask_pil.resize(
+                    (orig_w, orig_h),
+                    Image.Resampling.LANCZOS
+                )
+                foreground_mask = np.array(foreground_mask_pil)
+        
         # Invert mask to get background mask (0=foreground/transparent, 255=background/opaque)
         background_mask = 255 - foreground_mask
         
         # Get EXACT original image pixels (no conversion artifacts)
-        original_np = np.array(pil_image_rgb)
+        # (already have original_np from above)
         
         # Create RGBA image with background only
         # RGB channels: EXACT original pixels (no modification whatsoever)
@@ -311,7 +356,7 @@ def save_background_only(image, model_name, alpha_matting, fg_threshold,
         status += f"Image size: {background_rgba.shape[1]}x{background_rgba.shape[0]}\n"
         status += f"Background: {bg_percent:.1f}% ({background_pixels:,} pixels)\n"
         status += f"Foreground: {100-bg_percent:.1f}% (transparent)\n"
-        status += f"Note: Original RGB values preserved exactly\n"
+        
         status += f"Saved to: {temp_path}"
         
         return background_rgba, temp_path, status
@@ -359,8 +404,8 @@ def save_both_layers(image, model_name, alpha_matting, fg_threshold,
 def create_interface():
     """Create Gradio interface"""
     with gr.Blocks(title="AI Background Remover") as app:
-        gr.Markdown("# 🎨 AI Background Remover")
-        gr.Markdown("High-quality background removal using state-of-the-art AI models (rembg/U^2-Net)")
+        
+        gr.Markdown("image background removal using AI (rembg/U^2-Net)")
         
         with gr.Row():
             with gr.Column(scale=1):
@@ -408,13 +453,13 @@ def create_interface():
                 gr.Markdown("### Instructions")
                 
                 gr.Markdown("""
-        1. **Upload an image** - Any format works (JPG, PNG, etc.)
+        1. **Upload an image**
         2. **Choose a model** - Select based on your subject:
-           - **u2net**: Best for general use (people, objects, animals) - Default choice
-           - **u2netp**: Faster, lighter version (good for portraits, batch processing)
+           - **u2net**: Best for general use - Default choice
+           - **u2netp**: lighter version
            - **u2net_human_seg**: Optimized for people (fashion, fitness, full-body)
-           - **u2net_cloth_seg**: Isolates clothing only (e-commerce garments)
-           - **silueta**: Alternative general model (try if u2net fails)
+           - **u2net_cloth_seg**: Isolates clothing only
+           - **silueta**: Alternative general model
            - **isnet-general-use**: Highest quality (best for professional work, slower)
            - **isnet-anime**: Anime/cartoon specialist (manga, illustrated characters)
         3. **Enable Alpha Matting** - For better edge quality (hair, fur, fine details)
@@ -431,13 +476,10 @@ def create_interface():
         - **Background Only**: Background with transparent subject area (for compositing)
         - **Both Layers**: Two separate files - foreground + background (for maximum flexibility)
         - All outputs include alpha channels for proper transparency
-        - **IMPORTANT**: Foreground + Background layers use EXACT original RGB values
-        - When composited together in Photoshop (Normal blend mode), they reproduce the original image EXACTLY
-        - No quality loss or color shift - perfect pixel-perfect reconstruction guaranteed
         
         ### Models Download
-        Models are downloaded automatically on first use (~4.7MB to 176MB per model).
-        Subsequent uses are fast as models are cached in: `~/.u2net/`
+        Models are downloaded automatically on first use (4.7MB to 176MB per model).
+        Subsequent uses are faster as models are cached in: `.../.u2net/`
         """)
                 
                 model_info = gr.Markdown(f"**Current Model: {MODELS['u2net']}**")
@@ -448,10 +490,10 @@ def create_interface():
                 alpha_matting_check = gr.Checkbox(
                     label="Enable Alpha Matting",
                     value=True,
-                    info="Better edge quality, especially for hair/fur (slower)"
+                    info="Better edge quality (hair/fur) (slower)"
                 )
                 
-                with gr.Accordion("Advanced Alpha Matting Settings", open=False):
+                with gr.Accordion("Advanced Alpha Matte Settings", open=False):
                     fg_threshold = gr.Slider(
                         minimum=0,
                         maximum=255,
@@ -489,7 +531,7 @@ def create_interface():
                 gr.Markdown("### Output")
                 
                 output_preview = gr.Image(
-                    label="Result (PNG with Alpha)",
+                    label="Result (PNGA)",
                     type="numpy",
                     height=400
                 )
@@ -579,7 +621,7 @@ if __name__ == "__main__":
     print("AI Background Remover")
     print("=" * 60)
     print("Models available:", ", ".join(MODELS.keys()))
-    print("\nNote: Models will be downloaded on first use (~170MB)")
+    print("\n Models will be downloaded on first use (~170MB)")
     print("=" * 60)
     
     app = create_interface()
