@@ -17,14 +17,6 @@ PRIMARY STAGES (7 + Subject Identity):
   6. Body descriptors
   7. Context or location
   8. Shot and light variations (mode-specific)
-
-SECONDARY OPTIONS:
-  Mode-specific list of 18 options covering:
-  - Color grading / Color treatment
-  - Depth of field (photo) / Detail rendering (illustration)
-  - Texture / Finish
-  - Mood / Subtle effects
-  (3 random options selected per prompt when enabled)
 """
 
 import gradio as gr
@@ -121,30 +113,22 @@ PRIMARY_STAGES = {
         "white satin babydoll with sheer overlay",
         "red lace teddy with cutout details",
         "pink silk chemise with thin straps",
-        "navy blue lace bralette with strappy back detail",
         "black string bikini with minimal coverage",
         "white open blouse with cheeky bottoms",
-        "sheer white mesh beach cover-up with nothing underneath",
-        "ripped denim micro shorts with matching bandeau top",
+        "ripped denim micro shorts with matching bandeau cotton top",
         "cotton crop top with matching hot pants",
         "iridescent silver micro dress",
-        "black tactical harness with minimal coverage",
-        "cream pattern bodysuit",
-        "white micro dress",
+        "cream patterned lace bodysuit",
+        "white micro bodycon dress",
         "white lingerie",
-        "black leather fantasy harness with minimal fabric coverage",
-        "light blue sheer micro dress",
         "lace-trimmed micro dress",
-        "red latex catsuit unzipped to navel",
-        "black latex catsuit unzipped to navel",
-        "sheer lace robe over matching thong and bra",
+        "pink latex catsuit unzipped to navel",
         "choker with matching thong bodysuit",
         "white wet t-shirt over skimpy bikini bottoms",
-        "silk kimono falling off one shoulder with minimal undergarments",
         "bikini with side ties",
         "barely-there sling bikini in shimmering fabric",
         "open-front cardigan over lace bralette and panties",
-        "shredded band t-shirt exposing sides with denim cut-offs",
+        "shredded t-shirt exposing sides with denim cut-offs",
         
     ],
     "Expression and gaze": [
@@ -155,7 +139,7 @@ PRIMARY_STAGES = {
         "visible (freckles:0.5) on arms", "light sun tan", "toned calves", "natural posture, relaxed",
         
     ],
-    "location": [ "interior", "selfie", "garden", "bedroom", "exterior", ],
+    "location": [ "interior", "selfie", "garden", "bedroom", "shower","exterior", ],
 }
 
 # MODE-SPECIFIC: Shot and light variations
@@ -168,46 +152,7 @@ SHOT_LIGHT_ILLUSTRATION = [
     "view from above","view from below","soft diffused light source", "dramatic half-lighting",
 ]
 
-# SECONDARY CATEGORIES - Split by mode
-SECONDARY_PHOTO = [
-    "clean digital look, minimal processing",
-    "slightly warm, low saturation",
-    "slightly cool tones, natural look",
-    "faded film look, low contrast",
-    "cinematic teal-orange, very subtle",
-    "subtle film grain",
-    "natural, documentary tone",
-    "quiet, candid mood",
-    "cheerful, candid",
-    "subtle story-telling, natural",
-]
-
-SECONDARY_ILLUSTRATION = [
-    # Color treatment
-    "clean digital colors, minimal noise",
-    "slightly warm color palette",
-    "slightly cool color palette",
-    "subtle color harmony, low contrast",
-    "cinematic color balance, teal-orange hints",
-    # Depth and detail
-    "detailed foreground, soft background",
-    "moderate detail throughout",
-    "sharp detail, environmental context",
-    "soft background rendering",
-    "gentle background separation",
-    "soft surrounding elements, sharp subject",
-    # Texture / Finish
-    "subtle canvas texture",
-    "smooth digital finish",
-    # Mood / Style effects
-    "natural, narrative style",
-    "quiet, intimate mood",
-    "subtle warmth, inviting",
-    "cheerful, engaging",
-    "subtle storytelling atmosphere",
-]
-
-def generate_prompts(mode, subject_count, primary_enabled, shot_light_enabled, use_secondary, character_study=False, use_wildcard_clothing=False):
+def generate_prompts(mode, subject_count, primary_enabled, shot_light_enabled, character_study=False, use_wildcard_clothing=False):
     """Generate 400 combined prompts based on mode, subject count, and enabled stages."""
     prompts = []
     
@@ -215,7 +160,6 @@ def generate_prompts(mode, subject_count, primary_enabled, shot_light_enabled, u
     subject_key = f"{mode}_{subject_count}"
     subject_identity = SUBJECT_IDENTITY[subject_key]
     shot_light_options = SHOT_LIGHT_PHOTO if mode == "photo" else SHOT_LIGHT_ILLUSTRATION
-    secondary_options = SECONDARY_PHOTO if mode == "photo" else SECONDARY_ILLUSTRATION
     
     for _ in range(400):
         # Generate primary prompt
@@ -241,19 +185,7 @@ def generate_prompts(mode, subject_count, primary_enabled, shot_light_enabled, u
         if shot_light_enabled:
             primary_parts.append(random.choice(shot_light_options))
         
-        primary = "; ".join(primary_parts)
-        
-        # Generate secondary prompt (pick random items from mode-specific list)
-        if use_secondary:
-            # Pick 3 random secondary options
-            num_secondary = min(3, len(secondary_options))
-            secondary_parts = random.sample(secondary_options, num_secondary)
-            secondary = ", ".join(secondary_parts)
-            # Combine in format: <primary> | <secondary>
-            combined = f"{primary} | {secondary}"
-        else:
-            combined = primary
-        
+        combined = "; ".join(primary_parts)
         prompts.append(combined)
     
     return prompts
@@ -261,7 +193,7 @@ def generate_prompts(mode, subject_count, primary_enabled, shot_light_enabled, u
 
 def generate_and_display(mode, subject_count, shot_light_check, character_study_check, wildcard_clothing_check, *checkboxes):
     """Generate prompts and return formatted text with save option."""
-    # Parse checkboxes (7 primary stages + 1 secondary = 8 total)
+    # Parse checkboxes (7 primary stages)
     primary_enabled = {}
     
     primary_names = list(PRIMARY_STAGES.keys())
@@ -269,11 +201,8 @@ def generate_and_display(mode, subject_count, shot_light_check, character_study_
     for i, name in enumerate(primary_names):
         primary_enabled[name] = checkboxes[i]
     
-    # Last checkbox is for secondary
-    use_secondary = checkboxes[len(primary_names)]
-    
     # Generate prompts
-    prompts = generate_prompts(mode, subject_count, primary_enabled, shot_light_check, use_secondary, character_study_check, wildcard_clothing_check)
+    prompts = generate_prompts(mode, subject_count, primary_enabled, shot_light_check, character_study_check, wildcard_clothing_check)
     
     # Mode-specific negative prompts
     base_negative = "asian, makeup" if mode == "photo" else "(photo:1.25),(asian:1.2), makeup, loli"
@@ -315,7 +244,7 @@ def save_prompts(prompts_data, mode, negative_prompt_used, character_study_enabl
 # Build Gradio interface
 with gr.Blocks() as demo:
     gr.Markdown("# SDXL Combined Prompt Generator")
-    gr.Markdown("Generate 400 randomized prompts in format: `<primary> | <secondary>`")
+    gr.Markdown("Generate 400 randomized prompts with customizable primary stages")
     gr.Markdown("Choose mode (Photo or Illustration) and enable/disable stages to customize output.")
     
     # Mode and subject count selection
@@ -363,14 +292,6 @@ with gr.Blocks() as demo:
                 value=False,
                 info="Mode-appropriate lighting and framing options"
             )
-        
-        with gr.Column(scale=1):
-            gr.Markdown("### SECONDARY OPTIONS")
-            secondary_check = gr.Checkbox(
-                label="Use Secondary (3 random from mode-specific list)", 
-                value=True,
-                info="Includes color, depth, texture, and mood options appropriate to the selected mode"
-            )
     
     generate_btn = gr.Button("Generate 400 Prompts", variant="primary", size="lg")
     
@@ -392,7 +313,7 @@ with gr.Blocks() as demo:
     character_study_state = gr.State(False)
     
     # Wire up interactions
-    all_checkboxes = primary_checks + [secondary_check]
+    all_checkboxes = primary_checks
     generate_btn.click(
         fn=generate_and_display,
         inputs=[mode_radio, subject_count_radio, shot_light_check, character_study_check, wildcard_clothing_check] + all_checkboxes,

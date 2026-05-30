@@ -2,7 +2,8 @@
 """
 Image Section Matcher - Gradio version
 Creates new images by matching sections between two source images.
-Loads two 512x512 images, divides into sections, and finds best-fit matches using similarity matrices.
+Loads two 512x512 images, divides into sections, and finds best-fit matches using 
+similarity matrices in perceptually uniform LAB color space.
 """
 
 import gradio as gr
@@ -12,6 +13,8 @@ import random
 from datetime import datetime
 import os
 import threading
+import cv2
+import time
 
 # Global flag for stopping optimization
 stop_optimization = threading.Event()
@@ -65,8 +68,11 @@ def extract_sections(image, section_size):
 
 
 def calculate_mse(section1, section2):
-    """Calculate Mean Squared Error between two sections (lower is better)."""
-    return np.mean((section1.astype(np.float32) - section2.astype(np.float32)) ** 2)
+    """Calculate Mean Squared Error between two sections in LAB color space (lower is better)."""
+    # Convert RGB to LAB for perceptually uniform comparison
+    section1_lab = cv2.cvtColor(section1.astype(np.uint8), cv2.COLOR_RGB2LAB)
+    section2_lab = cv2.cvtColor(section2.astype(np.uint8), cv2.COLOR_RGB2LAB)
+    return np.mean((section1_lab.astype(np.float32) - section2_lab.astype(np.float32)) ** 2)
 
 
 def calculate_section_similarity_score(result_section, source_section, similarity_func):
@@ -79,6 +85,7 @@ def infinite_swap_optimization(result_array, source_sections, sections_per_side,
     total_sections = len(source_sections)
     improvements_made = 0
     swaps_checked = 0
+    last_update_time = time.time()
     
     while not stop_optimization.is_set():
         idx1 = random.randint(0, total_sections - 1)
@@ -123,9 +130,11 @@ def infinite_swap_optimization(result_array, source_sections, sections_per_side,
             result_array[y2_start:y2_end, x2_start:x2_end] = temp_section
             improvements_made += 1
             
-        # Yield progress every 500 swap attempts
-        if swaps_checked % 500 == 0:
+        # Yield progress every 2 seconds
+        current_time = time.time()
+        if current_time - last_update_time >= 2.0:
             yield improvements_made, swaps_checked, result_array.copy()
+            last_update_time = current_time
     
     # Final yield when stopped
     yield improvements_made, swaps_checked, result_array.copy()
@@ -205,15 +214,15 @@ def create_interface():
         with gr.Row():
             with gr.Column():
                 source_image = gr.Image(
-                    label="Source Image (sections to match)",
+                    label="TARGET",
                     type="pil",
-                    height=300
+                    height=400
                 )
                 
                 target_image = gr.Image(
-                    label="Target Image (sections to choose from)",
+                    label="SOURCE",
                     type="pil",
-                    height=300
+                    height=400
                 )
                 
                 with gr.Row():
@@ -252,8 +261,9 @@ def create_interface():
         - Divides both images into sections of the selected size
         - Randomly assigns target sections to source positions
         - Continuously performs random swaps to improve match quality
-        - Each swap is kept only if it improves the overall similarity (using MSE)
-        - Progress updates shown every 500 swap attempts
+        - Each swap is kept only if it improves the overall similarity (using MSE in LAB color space)
+        - LAB color space ensures perceptually uniform color matching
+        - Progress updates shown every 2 seconds
         - Click "Stop" in Gradio to end the optimization
         """)
         

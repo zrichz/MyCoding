@@ -11,7 +11,7 @@ from PIL import Image
 def process_single_image(input_image, low_threshold, high_threshold):
     """Process a single image with Canny edge detection"""
     if input_image is None:
-        return None, "❌ Please upload an image first"
+        return None, "Please upload an image first"
     
     try:
         # Convert PIL image to OpenCV format
@@ -78,7 +78,7 @@ with gr.Blocks(
     
     gr.HTML("""
     <div style="text-align: center; margin-bottom: 20px;">
-        <h1>🖼️ Canny Edge Detection Processor</h1>
+        <h1>Canny Edge Detection Processor</h1>
         <p style="font-size: 16px; color: #000;">
             <em>Results show black lines on white background - right-click to save</em>
         </p>
@@ -89,21 +89,20 @@ with gr.Blocks(
         with gr.Column(scale=1):
             # Image upload
             in_image = gr.Image(
-                label="📁 Upload Image",
-                type="pil",
-                height=400
+                label="Upload Image",
+                type="pil"
             )
             
             # Parameter controls
             with gr.Group():
-                gr.Markdown("### ⚙️ Canny Parameters")
+                gr.Markdown("### Canny Parameters")
                 
                 thr_low = gr.Slider(
                     minimum=1,
                     maximum=255,
                     value=50,
                     step=1,
-                    label="🔽 Low Threshold",
+                    label="Low Threshold",
                     info="detect more edges"
                 )
                 
@@ -112,7 +111,7 @@ with gr.Blocks(
                     maximum=255,
                     value=150,
                     step=1,
-                    label="🔼 High Threshold",
+                    label="High Threshold",
                     info="detect less edges"
                 )
             
@@ -126,9 +125,7 @@ with gr.Blocks(
         with gr.Column(scale=1):
             # Result image
             out_image = gr.Image(
-                label="Detection Result",
-                height=400,
-                show_download_button=True
+                label="Detection Result"
             )
     
     # Wire up the processing
