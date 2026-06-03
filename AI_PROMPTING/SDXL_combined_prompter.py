@@ -1,22 +1,20 @@
 """
-SDXL Prompt Generator - Dual Mode (Photo & Illustration)
+SDXL Prompt Generator - Photo Mode
 generates 400no. SDXL prompts, with 'Primary' and 'Secondary' stages.
 (although auto1111 doesn't split them like comfyui)
-Date: 2026-Feb, Updated: 2026-Apr
-
-MODES:
-  - Photo: Realistic photo prompts with camera-specific terms
-  - Illustration: Artwork prompts without photo-specific terms
+Date: 2026-Feb, Updated: 2026-Jun
 
 PRIMARY STAGES (7 + Subject Identity):
-  1. Subject identity (mode-specific, always included)
+  1. Subject identity (always included)
   2. Pose and action
   3. Framing and crop
   4. Clothing and key props
   5. Expression and gaze
   6. Body descriptors
   7. Context or location
-  8. Shot and light variations (mode-specific)
+  8. Shot and light variations
+  9. Film grade
+  10. Flava (stylistic atmosphere with adjustable emphasis weight)
 """
 
 import gradio as gr
@@ -79,24 +77,9 @@ def generate_wildcard_clothing():
     
     return ", ".join(clothing_items) if clothing_items else "casual outfit"
 
-# CHARACTER STUDY LISTS (for illustration mode)
-CHARACTER_STUDY_LISTS = {
-    "pose": ["T‑pose","standing in a T‑pose","arms extended horizontally","arms straight out to the sides","neutral expression, rigid stance","reference pose","model sheet pose"],
-    "framing": ["full‑body shot","full‑body view","entire character visible","from head to toe","standing, centered in frame","no cropping"],
-    "shot": ["wide shot","wide‑angle view","orthographic style","front‑facing","neutral studio lighting","plain background"],
-    "style": ["clean silhouette","unobstructed limbs","standing on flat ground"]
-}
-
-CHARACTER_STUDY_NEGATIVE = ["no dynamic pose","no action pose","no bent arms","no foreshortening","no close‑up","no portrait crop"]
-
 # PRIMARY STAGES (8)
-# Subject identity is now mode-specific and supports single/dual subjects
-SUBJECT_IDENTITY = {
-    "photo_single": "amateur photo, full-body shot, boobs, a photo of a blonde woman, average build, hair up, (faint smile:0.2), (teeth:0.4)",
-    "photo_dual": "amateur photo, full-body shot, boobs, a photo of two blonde women, average build, hair up, (faint smile:0.2), (teeth:0.4)",
-    "illustration_single": "illustrative realism, comic-book realism, painterly realism, art, a full-length illustration of a blonde woman, hair up, smile, teeth, boobs",
-    "illustration_dual": "illustrative realism, comic-book realism, painterly realism, art, a full-length illustration of two blonde women, hair up, smile, teeth, boobs"
-}
+# Subject identity
+SUBJECT_IDENTITY = "amateur photo, full-body shot, boobs, a photo of a blonde woman, average build, hair up, (faint smile:0.2), (teeth:0.4)"
 
 PRIMARY_STAGES = {
     "Pose and action": [
@@ -142,36 +125,158 @@ PRIMARY_STAGES = {
     "location": [ "interior", "selfie", "garden", "bedroom", "shower","exterior", ],
 }
 
-# MODE-SPECIFIC: Shot and light variations
-SHOT_LIGHT_PHOTO = ["intimate","casual","golden hour lighting mood","soft diffused lighting",
-    "dynamic perspective","shot from above","shot from below","dramatic half-lighting",
+# Shot and light variations
+SHOT_LIGHT = [
+"intimate",
+"casual",
+"golden hour lighting mood",
+"soft diffused lighting",
+"dynamic perspective",
+"shot from above",
+"shot from below",
+"dramatic half-lighting",
+"soft diffused window light",
+"hard direct sunlight",
+"golden hour backlighting",
+"overcast natural light",
+"studio softbox lighting",
+"studio beauty dish lighting",
+"studio clamshell lighting",
+"Rembrandt lighting",
+"split lighting",
+"loop lighting",
+"broad lighting",
+"short lighting",
+"neon ambient lighting",
+"practical tungsten lighting",
+"fluorescent ambient lighting",
+"mixed‑temperature lighting",
+"cinematic rim lighting",
+"cinematic top‑down lighting",
+"moody low‑key lighting",
+"bright high‑key lighting",
+"bounce‑flash photography",
+"off‑camera flash photography",
+"ring‑light portrait lighting",
 ]
 
-SHOT_LIGHT_ILLUSTRATION = [
-    "intimate","casual","golden hour lighting mood","soft diffused lighting","dynamic perspective",
-    "view from above","view from below","soft diffused light source", "dramatic half-lighting",
+# FILM GRADE OPTIONS
+FILM_GRADE = [
+    "Kodak Portra 160 look",
+    "Kodak Portra 400 look",
+    "Kodak Portra 800 look",
+    "Kodak Gold 200 look",
+    "Kodak Ektar 100 look",
+    "Fuji Pro 400H look",
+    "Fuji Superia 400 look",
+    "Ilford HP5 black-and-white look",
+    "Ilford Delta 3200 black-and-white look",
+    "cinematic teal-and-orange grade",
+    "cinematic neutral-grade",
+    "cinematic desaturated grade",
+    "warm editorial colour grade",
+    "cool fashion colour grade",
+    "natural colour-accurate grade",
+    "high-contrast monochrome",
+    "soft low-contrast monochrome"
 ]
 
-def generate_prompts(mode, subject_count, primary_enabled, shot_light_enabled, character_study=False, use_wildcard_clothing=False):
-    """Generate 400 combined prompts based on mode, subject count, and enabled stages."""
+# FLAVA OPTIONS
+FLAVA = [
+    "arctic",
+    "tropical",
+    "monsoon",
+    "desert",
+    "nocturnal",
+    "urban",
+    "suburban",
+    "industrial",
+    "futuristic",
+    "retro",
+    "vintage",
+    "neon",
+    "infrared",
+    "thermal",
+    "surreal",
+    "glacial",
+    "volcanic",
+    "coastal",
+    "rain-soaked",
+    "fogbound",
+    "windblown",
+    "stormlit",
+    "moonlit",
+    "sun-drenched",
+    "overcast",
+    "misty",
+    "dusty",
+    "gritty",
+    "opulent",
+    "minimalist",
+    "baroque",
+    "aristocratic",
+    "bohemian",
+    "arctic-blue",
+    "tundra",
+    "equatorial",
+    "high-altitude",
+    "underlit",
+    "overexposed",
+    "grain-heavy",
+    "cinematic",
+    "documentary",
+    "editorial",
+    "fashion-forward",
+    "hyperreal",
+    "monochrome",
+    "chromatic",
+    "saturated",
+    "desaturated",
+    "bleached",
+    "sepia",
+    "analog",
+    "filmic",
+    "glamour",
+    "raw",
+    "moody",
+    "ethereal",
+    "harsh",
+    "ambient",
+    "backlit",
+    "rimlit",
+    "sunset-grade",
+    "twilight",
+    "nebulous",
+    "cosmic",
+    "Martian",
+    "lunar",
+    "polar",
+    "tropical-rainforest",
+    "mosaic",
+    "geometric",
+    "architectural",
+    "botanical",
+    "oceanic",
+    "arid",
+    "lush",
+    "windswept",
+    "smoky",
+    "holographic",
+    "chromatic-aberration",
+    "bokeh-rich",
+    "macro-styled",
+    "telephoto-styled"
+]
+
+def generate_prompts(primary_enabled, shot_light_enabled, film_grade_enabled, flava_enabled, flava_weight, use_wildcard_clothing=False):
+    """Generate 400 combined prompts based on enabled stages."""
     prompts = []
-    
-    # Select mode-specific options
-    subject_key = f"{mode}_{subject_count}"
-    subject_identity = SUBJECT_IDENTITY[subject_key]
-    shot_light_options = SHOT_LIGHT_PHOTO if mode == "photo" else SHOT_LIGHT_ILLUSTRATION
     
     for _ in range(400):
         # Generate primary prompt
         primary_parts = []
         
-        # Add character study prompts if enabled
-        if character_study:
-            for list_name in ["pose", "framing", "shot", "style"]:
-                selected = random.sample(CHARACTER_STUDY_LISTS[list_name], 2)
-                primary_parts.extend(selected)
-        
-        primary_parts.append(subject_identity)  # Always include subject identity
+        primary_parts.append(SUBJECT_IDENTITY)  # Always include subject identity
         
         for stage_name, options in PRIMARY_STAGES.items():
             if primary_enabled.get(stage_name, True):
@@ -183,7 +288,16 @@ def generate_prompts(mode, subject_count, primary_enabled, shot_light_enabled, c
         
         # Add shot and light if enabled
         if shot_light_enabled:
-            primary_parts.append(random.choice(shot_light_options))
+            primary_parts.append(random.choice(SHOT_LIGHT))
+        
+        # Add film grade if enabled
+        if film_grade_enabled:
+            primary_parts.append(random.choice(FILM_GRADE))
+        
+        # Add flava if enabled
+        if flava_enabled:
+            keyword = random.choice(FLAVA)
+            primary_parts.append(f"({keyword}:{flava_weight})")
         
         combined = "; ".join(primary_parts)
         prompts.append(combined)
@@ -191,7 +305,7 @@ def generate_prompts(mode, subject_count, primary_enabled, shot_light_enabled, c
     return prompts
 
 
-def generate_and_display(mode, subject_count, shot_light_check, character_study_check, wildcard_clothing_check, *checkboxes):
+def generate_and_display(shot_light_check, film_grade_check, flava_check, flava_weight, wildcard_clothing_check, *checkboxes):
     """Generate prompts and return formatted text with save option."""
     # Parse checkboxes (7 primary stages)
     primary_enabled = {}
@@ -202,27 +316,20 @@ def generate_and_display(mode, subject_count, shot_light_check, character_study_
         primary_enabled[name] = checkboxes[i]
     
     # Generate prompts
-    prompts = generate_prompts(mode, subject_count, primary_enabled, shot_light_check, character_study_check, wildcard_clothing_check)
+    prompts = generate_prompts(primary_enabled, shot_light_check, film_grade_check, flava_check, flava_weight, wildcard_clothing_check)
     
-    # Mode-specific negative prompts
-    base_negative = "asian, makeup" if mode == "photo" else "(photo:1.25),(asian:1.2), makeup, loli"
-    
-    # Add character study negative prompts if enabled
-    if character_study_check:
-        char_study_neg = random.sample(CHARACTER_STUDY_NEGATIVE, 2)
-        negative_prompt = ", ".join(char_study_neg) + ", " + base_negative
-    else:
-        negative_prompt = base_negative
+    # Negative prompt
+    negative_prompt = "asian, makeup"
     
     # Format output - show only last 8 prompts with prefix and suffix
     last_8 = prompts[-8:]
     output_lines = [f'--prompt "{prompt}" --negative_prompt "{negative_prompt}"' for prompt in last_8]
     output = "\n\n".join(output_lines)
 
-    return output, prompts, mode, negative_prompt, character_study_check
+    return output, prompts, negative_prompt
 
 
-def save_prompts(prompts_data, mode, negative_prompt_used, character_study_enabled):
+def save_prompts(prompts_data, negative_prompt_used):
     """Save prompts to file."""
     if not prompts_data:
         return "No prompts to save. Generate prompts first."
@@ -231,8 +338,7 @@ def save_prompts(prompts_data, mode, negative_prompt_used, character_study_enabl
     negative_prompt = negative_prompt_used
     
     timestamp = datetime.now().strftime("%b%d_%H%M")
-    suffix = "_character.txt" if character_study_enabled else ".txt"
-    filename = f"AI_PROMPTING/400_SDXLprompts_{mode}_{timestamp}{suffix}"
+    filename = f"AI_PROMPTING/400_SDXLprompts_photo_{timestamp}.txt"
     
     with open(filename, 'w', encoding='utf-8') as f:
         for prompt in prompts_data:
@@ -243,31 +349,9 @@ def save_prompts(prompts_data, mode, negative_prompt_used, character_study_enabl
 
 # Build Gradio interface
 with gr.Blocks() as demo:
-    gr.Markdown("# SDXL Combined Prompt Generator")
-    gr.Markdown("Generate 400 randomized prompts with customizable primary stages")
-    gr.Markdown("Choose mode (Photo or Illustration) and enable/disable stages to customize output.")
-    
-    # Mode and subject count selection
-    with gr.Row():
-        mode_radio = gr.Radio(
-            choices=["photo", "illustration"],
-            value="photo",
-            label="Output Mode",
-            info="Choose between realistic photo prompts or illustration prompts"
-        )
-        subject_count_radio = gr.Radio(
-            choices=["single", "dual"],
-            value="single",
-            label="Subject Count",
-            info="Choose single female subject or two female subjects"
-        )
-    
-    # Character Study checkbox (only for illustration mode)
-    character_study_check = gr.Checkbox(
-        label="Make this a Character Study",
-        value=False,
-        info="Adds T-pose and reference-style prompts for character reference sheets"
-    )
+    gr.Markdown("# SDXL Photo Prompt Generator")
+    gr.Markdown("Generate 400 randomized photo prompts with customizable primary stages")
+    gr.Markdown("Enable or disable stages to customize output.")
     
     # Wildcard Clothing checkbox
     wildcard_clothing_check = gr.Checkbox(
@@ -279,7 +363,7 @@ with gr.Blocks() as demo:
     with gr.Row():
         with gr.Column(scale=1):
             gr.Markdown("### PRIMARY STAGES")
-            gr.Markdown("*Subject identity is automatically included based on mode*")
+            gr.Markdown("*Subject identity is automatically included*")
             primary_checks = []
             # Updated defaults for 7 stages (removed Subject identity)
             primary_defaults = [True, False, False, True, False, False]  # pose, framing, clothing, expression, body, location
@@ -290,7 +374,30 @@ with gr.Blocks() as demo:
             shot_light_check = gr.Checkbox(
                 label="Shot and light variations",
                 value=False,
-                info="Mode-appropriate lighting and framing options"
+                info="Lighting and framing options"
+            )
+            
+            # Add film grade as separate checkbox
+            film_grade_check = gr.Checkbox(
+                label="Film grade",
+                value=False,
+                info="Film stock and colour grading options"
+            )
+            
+            # Add flava as separate checkbox with weight slider
+            flava_check = gr.Checkbox(
+                label="Flava",
+                value=False,
+                info="Stylistic atmosphere keywords with adjustable emphasis"
+            )
+            
+            flava_weight_slider = gr.Slider(
+                minimum=0.5,
+                maximum=2.5,
+                value=1.0,
+                step=0.1,
+                label="Flava emphasis weight",
+                info="Adjust the emphasis weight for the Flava keyword (e.g., 1.2 produces '(keyword:1.2)')"
             )
     
     generate_btn = gr.Button("Generate 400 Prompts", variant="primary", size="lg")
@@ -306,23 +413,21 @@ with gr.Blocks() as demo:
         interactive=False
     )
     
-    # Hidden state to store prompts, mode, negative prompt, and character study flag for saving
+    # Hidden state to store prompts and negative prompt for saving
     prompts_state = gr.State([])
-    mode_state = gr.State("photo")
     negative_prompt_state = gr.State("")
-    character_study_state = gr.State(False)
     
     # Wire up interactions
     all_checkboxes = primary_checks
     generate_btn.click(
         fn=generate_and_display,
-        inputs=[mode_radio, subject_count_radio, shot_light_check, character_study_check, wildcard_clothing_check] + all_checkboxes,
-        outputs=[output_text, prompts_state, mode_state, negative_prompt_state, character_study_state]
+        inputs=[shot_light_check, film_grade_check, flava_check, flava_weight_slider, wildcard_clothing_check] + all_checkboxes,
+        outputs=[output_text, prompts_state, negative_prompt_state]
     )
     
     save_btn.click(
         fn=save_prompts,
-        inputs=[prompts_state, mode_state, negative_prompt_state, character_study_state],
+        inputs=[prompts_state, negative_prompt_state],
         outputs=[save_status]
     )
 
