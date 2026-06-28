@@ -1,0 +1,27 @@
+{
+  "version": "v1.0",
+  "subject_prefix": "A young woman with blonde hair and hazel eyes, hair styled in a casual updo, wearing a sexy outfit,",
+  "tone_options": [
+    "warm_candid",
+    "playful_irreverent",
+    "subtle_flirty"
+  ],
+  "template": "{subject} {action} on {scene}, wearing {wardrobe_upper} with {wardrobe_lower}, {outerwear_or_prop}, {hair_detail}. {lighting}, {background}, {camera_style}, {detail}, {atmosphere}.",
+  "wildcards": {
+    "scene": "scenes.txt",
+    "wardrobe_upper": "wardrobe_upper.txt",
+    "wardrobe_lower": "wardrobe_lower.txt",
+    "outerwear_or_prop": "outerwear_or_prop.txt",
+    "hair_detail": "hair_detail.txt",
+    "lighting": "lighting.txt",
+    "background": "background.txt",
+    "camera_style": "camera_style.txt",
+    "atmosphere": "atmosphere.txt",
+    "detail": "detail.txt"
+  },
+  "tone_action_files": {
+    "warm_candid": "actions_warm.txt",
+    "playful_irreverent": "actions_irreverent.txt",
+    "subtle_flirty": "actions_flirty.txt"
+  }
+}

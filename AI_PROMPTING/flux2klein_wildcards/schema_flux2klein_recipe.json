@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local/flux2klein/recipe.schema.json",
+  "title": "Flux2Klein Wildcard Recipe",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "subject_prefix",
+    "tone_options",
+    "template",
+    "wildcards",
+    "tone_action_files"
+  ],
+  "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^v[0-9]+\\.[0-9]+$"
+    },
+    "subject_prefix": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tone_options": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "warm_candid",
+          "playful_irreverent",
+          "subtle_flirty"
+        ]
+      }
+    },
+    "template": {
+      "type": "string",
+      "description": "Python format template using named tokens."
+    },
+    "wildcards": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scene",
+        "wardrobe_upper",
+        "wardrobe_lower",
+        "outerwear_or_prop",
+        "hair_detail",
+        "lighting",
+        "background",
+        "camera_style",
+        "atmosphere",
+        "detail"
+      ],
+      "properties": {
+        "scene": { "type": "string" },
+        "wardrobe_upper": { "type": "string" },
+        "wardrobe_lower": { "type": "string" },
+        "outerwear_or_prop": { "type": "string" },
+        "hair_detail": { "type": "string" },
+        "lighting": { "type": "string" },
+        "background": { "type": "string" },
+        "camera_style": { "type": "string" },
+        "atmosphere": { "type": "string" },
+        "detail": { "type": "string" }
+      }
+    },
+    "tone_action_files": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "warm_candid",
+        "playful_irreverent",
+        "subtle_flirty"
+      ],
+      "properties": {
+        "warm_candid": { "type": "string" },
+        "playful_irreverent": { "type": "string" },
+        "subtle_flirty": { "type": "string" }
+      }
+    }
+  }
+}
