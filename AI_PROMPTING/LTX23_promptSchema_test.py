@@ -172,7 +172,7 @@ def save_prompts(prompts):
 
 
 # Gradio Interface
-with gr.Blocks(theme=gr.themes.Soft()) as demo:
+with gr.Blocks() as demo:
     gr.Markdown("# LTX23 Video Prompt Generator")
     gr.Markdown("Generate cinematic prompts using the LTX2 schema with wildcard-based randomization.")
     
@@ -215,4 +215,4 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
 
 
 if __name__ == "__main__":
-    demo.launch(inbrowser=True)
+    demo.launch(inbrowser=True, theme=gr.themes.Soft())

@@ -1,5 +1,8 @@
 {
     "python.defaultInterpreterPath": "/home/rich/MyCoding/venvMyCoding/bin/python",
     "python.terminal.activateEnvironment": true,
-    "python.terminal.activateEnvInCurrentTerminal": true
+    "python.terminal.activateEnvInCurrentTerminal": true,
+    "code-runner.executorMap": {
+        "python": "/home/rich/MyCoding/venvMyCoding/bin/python -u"
+    }
 }
