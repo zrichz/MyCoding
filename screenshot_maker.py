@@ -1,4 +1,4 @@
-#!/home/rich/MyCoding/venvmycoding313/bin/python
+#!/home/rich/MyCoding/venvMyCoding/bin/python
 """
 Screenshot Maker - Dot Field Generator and Analyzer
 Creates Poisson-distributed dot patterns for camera testing and analyzes photographed results

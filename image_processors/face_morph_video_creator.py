@@ -1,4 +1,4 @@
-#!/home/rich/MyCoding/venvmycoding313/bin/python
+#!/home/rich/MyCoding/venvMyCoding/bin/python
 """
 Face Morphing Video Creator
 

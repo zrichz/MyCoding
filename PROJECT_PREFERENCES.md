@@ -1,10 +1,10 @@
 # Project Preferences & Configuration
 
 ## Python Environment
-- **Virtual Environment**: `/home/rich/MyCoding/venvmycoding313` (Python 3.13.12)
-- **Activation**: `source /home/rich/MyCoding/venvmycoding313/bin/activate`
-- **Python Executable**: `/home/rich/MyCoding/venvmycoding313/bin/python`
-- **Installed Packages**: gradio, numpy, plotly, opencv-python, pillow, etc.
+- **Virtual Environment**: `/home/rich/MyCoding/venvMyCoding` (Python 3.10.12)
+- **Activation**: `source /home/rich/MyCoding/venvMyCoding/bin/activate`
+- **Python Executable**: `/home/rich/MyCoding/venvMyCoding/bin/python`
+- **Installed Packages**: install project-specific packages into this environment as needed.
 
 ## Default Settings for Gradio Apps
 - Always set `inbrowser=True` in `demo.launch()` to auto-open browser
@@ -15,7 +15,7 @@
 ```bash
 #!/bin/bash
 echo "Starting [App Name]..."
-source /home/rich/MyCoding/venvmycoding313/bin/activate
+source /home/rich/MyCoding/venvMyCoding/bin/activate
 python [script_name].py
 ```
 

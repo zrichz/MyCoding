@@ -1,4 +1,4 @@
-#!/home/rich/MyCoding/venvmycoding313/bin/python
+#!/home/rich/MyCoding/venvMyCoding/bin/python
 import torch
 import torch.nn as nn
 import torch.optim as optim

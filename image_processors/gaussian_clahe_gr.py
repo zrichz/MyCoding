@@ -1,4 +1,4 @@
-#!/home/rich/MyCoding/venvmycoding313/bin/python
+#!/home/rich/MyCoding/venvMyCoding/bin/python
 """
 Gaussian-weighted CLAHE-style local contrast enhancement with Gradio interface
 

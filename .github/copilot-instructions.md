@@ -2,16 +2,16 @@
 
 ## Python Environment
 
-**Always use the venvmycoding313 virtual environment for this workspace.**
+**Always use the venvMyCoding virtual environment for this workspace.**
 
-- Virtual environment path: `/home/rich/MyCoding/venvmycoding313`
-- Python executable: `/home/rich/MyCoding/venvmycoding313/bin/python`
-- Activate command: `source /home/rich/MyCoding/activate_venv.sh` or `source /home/rich/MyCoding/venvmycoding313/bin/activate`
+- Virtual environment path: `/home/rich/MyCoding/venvMyCoding`
+- Python executable: `/home/rich/MyCoding/venvMyCoding/bin/python`
+- Activate command: `source /home/rich/MyCoding/activate_venv.sh` or `source /home/rich/MyCoding/venvMyCoding/bin/activate`
 - If `which python` shows wrong version after activation, run: `hash -r`
 
 When running Python scripts or installing packages in this workspace, always use this virtual environment.
 
-**Note:** The venv uses Python 3.13. Installed packages: numpy, scipy, gradio.
+**Note:** The venv currently uses Python 3.10.12. Install workspace packages into this environment as needed.
 
 ## Gradio Applications
 

@@ -1,4 +1,4 @@
-#!/home/rich/MyCoding/venvmycoding313/bin/python
+#!/home/rich/MyCoding/venvMyCoding/bin/python
 """
 NeRF-style Image Reconstruction from Sparse Pixels
 Compare 3 different model sizes: Small, Medium, Large
