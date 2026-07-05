@@ -2,6 +2,7 @@
 # Virtual Environments  
 focus_env/  
 .venv/
+.venv-1/
 newvenv2026/
 depthflow_env/
 venv/
