@@ -29,37 +29,60 @@ except ImportError:
     print("Warning: cv2 not available. Cardinal snapping will not be available.")
 
 
-def multiply_blend(base, top):
+def multiply_blend(base, top, inverse_lines=False):
     """
-    Blend two images using multiply mode
+    Blend two images using multiply mode or inverse line mode
     
     Args:
         base: PIL Image (bottom layer, RGB)
         top: PIL Image (top layer, grayscale)
+        inverse_lines: If True, dark lines become inverse color of base, light areas keep base color
         
     Returns:
-        PIL Image with multiply blend applied
+        PIL Image with blend applied
     """
     # Convert base to RGB if needed
     if base.mode != 'RGB':
         base = base.convert('RGB')
     
-    # Convert top to RGB (replicate grayscale across all channels)
-    if top.mode == 'L':
-        top_rgb = top.convert('RGB')
-    else:
-        top_rgb = top
-    
     # Ensure same size
-    if base.size != top_rgb.size:
-        top_rgb = top_rgb.resize(base.size, Image.Resampling.LANCZOS)
+    if base.size != top.size:
+        top = top.resize(base.size, Image.Resampling.LANCZOS)
     
     base_array = np.array(base).astype(float) / 255.0
-    top_array = np.array(top_rgb).astype(float) / 255.0
     
-    blended = base_array * top_array
+    if inverse_lines:
+        # Inverse color blending mode
+        # Dark lines (low values in top) get inverse color of base
+        # Light areas (high values in top) keep base color
+        
+        # Get top as grayscale array
+        if top.mode == 'L':
+            top_gray = np.array(top).astype(float) / 255.0
+        else:
+            top_gray = np.array(top.convert('L')).astype(float) / 255.0
+        
+        # Calculate inverse of base
+        inverse_base = 1.0 - base_array
+        
+        # Use top_gray as weight: 0 (dark/lines) = use inverse, 1 (light/background) = use base
+        # Expand top_gray to 3 channels
+        weight = np.stack([top_gray] * 3, axis=-1)
+        
+        # Blend: base * weight + inverse_base * (1 - weight)
+        blended = base_array * weight + inverse_base * (1.0 - weight)
+    else:
+        # Standard multiply blend
+        # Convert top to RGB (replicate grayscale across all channels)
+        if top.mode == 'L':
+            top_rgb = top.convert('RGB')
+        else:
+            top_rgb = top
+        
+        top_array = np.array(top_rgb).astype(float) / 255.0
+        blended = base_array * top_array
+    
     blended = (blended * 255).astype(np.uint8)
-    
     return Image.fromarray(blended)
 
 
@@ -120,11 +143,37 @@ def snap_to_cardinal_directions(image):
         # Create white output image
         out = np.ones_like(img_array) * 255
         
-        # Process each contour
+        # Collect all contours with their perimeters for thickness scaling
+        contour_data = []
         for c in contours:
-            # Skip very small contours
             if len(c) < 2:
                 continue
+            perimeter = cv2.arcLength(c, closed=True)
+            contour_data.append((c, perimeter))
+        
+        # Define thickness range (min 1 pixel, max 8 pixels)
+        min_thickness = 1
+        max_thickness = 8
+        
+        # Find min and max perimeters for scaling
+        if contour_data:
+            perimeters = [p for _, p in contour_data]
+            min_perim = min(perimeters)
+            max_perim = max(perimeters)
+        else:
+            min_perim = 0
+            max_perim = 0
+        
+        # Process each contour
+        for c, perimeter in contour_data:
+            # Calculate thickness proportional to perimeter
+            if max_perim > min_perim:
+                # Scale thickness from min to max based on perimeter
+                thickness_ratio = (perimeter - min_perim) / (max_perim - min_perim)
+                thickness = int(min_thickness + thickness_ratio * (max_thickness - min_thickness))
+                thickness = max(1, thickness)  # Ensure at least 1 pixel
+            else:
+                thickness = min_thickness
             
             # Approximate polygon with larger epsilon for smoother results
             epsilon = 3.0
@@ -165,10 +214,10 @@ def snap_to_cardinal_directions(image):
                 current_pos = new_endpoint
                 snapped_path.append(new_endpoint.astype(int))
             
-            # Draw the snapped contour as a polyline
+            # Draw the snapped contour as a polyline with proportional thickness
             if len(snapped_path) > 1:
                 pts_array = np.array(snapped_path, dtype=np.int32)
-                cv2.polylines(out, [pts_array], isClosed=True, color=0, thickness=2)
+                cv2.polylines(out, [pts_array], isClosed=True, color=0, thickness=thickness)
         
         # Convert back to PIL Image
         return Image.fromarray(out)
@@ -190,7 +239,7 @@ def blur_image(image):
     return image.filter(ImageFilter.GaussianBlur(radius=1))
 
 
-def gray_scott_filter(image, iterations, use_half_res=False, snap_cardinal=False, multiply_overlay=False, pixellate_amount=1):
+def gray_scott_filter(image, iterations, use_half_res=False, snap_cardinal=False, multiply_overlay=False, pixellate_amount=1, inverse_line_colors=False):
     """
     Apply Gray-Scott reaction-diffusion filter
     
@@ -201,6 +250,7 @@ def gray_scott_filter(image, iterations, use_half_res=False, snap_cardinal=False
         snap_cardinal: Snap lines to cardinal directions (0/90/180/270 degrees)
         multiply_overlay: Blend result onto original using multiply mode
         pixellate_amount: Pixellation size for multiply blend base layer (1 = no pixellation)
+        inverse_line_colors: Make overlaid lines inverse color of base (only with multiply_overlay)
     
     Returns:
         Processed PIL Image and status message
@@ -251,7 +301,7 @@ def gray_scott_filter(image, iterations, use_half_res=False, snap_cardinal=False
                 base_img = pixellate_image(original_img, int(pixellate_amount))
             else:
                 base_img = original_img
-            processed = multiply_blend(base_img, processed)
+            processed = multiply_blend(base_img, processed, inverse_lines=inverse_line_colors)
         
         status = f"Processing complete - Applied {iterations} iterations of Gray-Scott filter\n"
         status += f"Image size: {processed.width}x{processed.height} pixels"
@@ -260,10 +310,11 @@ def gray_scott_filter(image, iterations, use_half_res=False, snap_cardinal=False
         if snap_cardinal:
             status += "\nLines snapped to cardinal/diagonal directions (45-degree increments)"
         if multiply_overlay:
+            blend_mode = "inverse color" if inverse_line_colors else "multiply"
             if pixellate_amount > 1:
-                status += f"\nMultiply blend applied with pixellated base ({int(pixellate_amount)}px blocks)"
+                status += f"\n{blend_mode.capitalize()} blend applied with pixellated base ({int(pixellate_amount)}px blocks)"
             else:
-                status += "\nMultiply blend applied with original"
+                status += f"\n{blend_mode.capitalize()} blend applied with original"
         
         return processed, status
         
@@ -461,6 +512,12 @@ def create_interface():
                     info="Pixellation size for multiply blend base (1 = no pixellation, only applies when multiply blend is enabled)"
                 )
                 
+                inverse_line_colors = gr.Checkbox(
+                    label="Inverse Line Colors",
+                    value=False,
+                    info="Make overlaid lines the inverse color of the underlying base (only with multiply blend)"
+                )
+                
                 with gr.Row():
                     process_btn = gr.Button("Process Gray-Scott Filter", variant="primary", size="lg")
                     reset_btn = gr.Button("Reset", variant="secondary", size="lg")
@@ -485,9 +542,9 @@ def create_interface():
         # Store original image in state
         original_img = gr.State(None)
         
-        def process_and_store(img, iters, half_res, snap_card, mult_overlay, pixellate_amt):
+        def process_and_store(img, iters, half_res, snap_card, mult_overlay, pixellate_amt, inverse_colors):
             """Process and store original"""
-            result, status = gray_scott_filter(img, iters, half_res, snap_card, mult_overlay, pixellate_amt)
+            result, status = gray_scott_filter(img, iters, half_res, snap_card, mult_overlay, pixellate_amt, inverse_colors)
             return result, status, img  # Store original in state
         
         def reset_to_original(orig_img):
@@ -499,7 +556,7 @@ def create_interface():
         # Main process button
         process_btn.click(
             fn=process_and_store,
-            inputs=[input_image, iterations_slider, use_half_res, snap_cardinal, multiply_overlay, pixellate_amount],
+            inputs=[input_image, iterations_slider, use_half_res, snap_cardinal, multiply_overlay, pixellate_amount, inverse_line_colors],
             outputs=[output_image, status_text, original_img]
         )
         

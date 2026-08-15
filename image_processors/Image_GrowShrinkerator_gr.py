@@ -655,6 +655,7 @@ with gr.Blocks(title="Image Auto-Expander (Percentage)") as demo:
     input_folder = gr.Textbox(
         label="Input Folder Path",
         placeholder="Enter full path to folder containing images (e.g., /home/user/images)",
+        value="/home/rich/Pictures",
         interactive=True
     )
     
