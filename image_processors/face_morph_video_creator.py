@@ -26,23 +26,31 @@ import numpy as np
 from PIL import Image
 import gradio as gr
 from scipy.spatial import Delaunay
-import tkinter as tk
-from tkinter import filedialog
 import mediapipe as mp
+from mediapipe.tasks import python
+from mediapipe.tasks.python import vision
 
 
 class FaceMorphVideoCreator:
     def __init__(self):
-        # Initialize MediaPipe Face Mesh for accurate landmark detection (468 points)
-        self.mp_face_mesh = mp.solutions.face_mesh
-        self.face_mesh = self.mp_face_mesh.FaceMesh(
-            static_image_mode=True,
-            max_num_faces=1,
-            refine_landmarks=True,
-            min_detection_confidence=0.3,  # Lower threshold for small faces
+        # Initialize MediaPipe Face Landmarker for accurate landmark detection (478 points)
+        # Model file path (relative to script location)
+        model_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'face_landmarker.task')
+        
+        # Create FaceLandmarker options
+        base_options = python.BaseOptions(model_asset_path=model_path)
+        options = vision.FaceLandmarkerOptions(
+            base_options=base_options,
+            running_mode=vision.RunningMode.IMAGE,
+            num_faces=1,
+            min_face_detection_confidence=0.3,
+            min_face_presence_confidence=0.3,
             min_tracking_confidence=0.3
         )
-        print("✓ Using MediaPipe Face Mesh with 468-point landmark model")
+        
+        # Create FaceLandmarker
+        self.face_landmarker = vision.FaceLandmarker.create_from_options(options)
+        print("✓ Using MediaPipe Face Landmarker with 478-point landmark model")
         
         # Video settings
         self.fps = 24
@@ -179,18 +187,21 @@ class FaceMorphVideoCreator:
         
         h, w = image_rgb.shape[:2]
         
-        # Process with MediaPipe Face Mesh
-        results = self.face_mesh.process(image_rgb)
+        # Create MediaPipe Image object
+        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=image_rgb)
         
-        if not results.multi_face_landmarks:
+        # Detect face landmarks using new API
+        detection_result = self.face_landmarker.detect(mp_image)
+        
+        if not detection_result.face_landmarks:
             return None, None
         
         # Get the first face's landmarks
-        face_landmarks = results.multi_face_landmarks[0]
+        face_landmarks = detection_result.face_landmarks[0]
         
         # Convert normalized landmarks to pixel coordinates
         points = []
-        for landmark in face_landmarks.landmark:
+        for landmark in face_landmarks:
             x = landmark.x * w
             y = landmark.y * h
             points.append([x, y])
@@ -674,14 +685,7 @@ def clear_hint():
     return ""
 
 
-def browse_folder():
-    """Open folder selection dialog"""
-    root = tk.Tk()
-    root.withdraw()
-    root.attributes('-topmost', True)
-    folder = filedialog.askdirectory(title="Select Output Folder")
-    root.destroy()
-    return folder if folder else ""
+# Removed browse_folder function - users can now type or paste folder paths directly
 
 
 # Gradio Interface
@@ -759,11 +763,10 @@ def launch_gradio():
                 output_folder = gr.Textbox(
                     label="Output Folder",
                     value=default_output_folder,
-                    placeholder="Click below to browse",
-                    info="Where to save the output video"
+                    placeholder="Type or paste folder path here",
+                    info="Where to save the output video (e.g., /home/rich/Videos)",
+                    interactive=True
                 )
-                
-                browse_btn = gr.Button("Browse for Folder", size="sm")
                 
                 create_btn = gr.Button("Create Morph Video", variant="primary", size="lg")
             
@@ -848,12 +851,6 @@ def launch_gradio():
             fn=detect_faces_preview,
             inputs=[image1_input, image2_input, hint1_coords, hint2_coords],
             outputs=[preview1_output, preview2_output, detection_status]
-        )
-        
-        browse_btn.click(
-            fn=browse_folder,
-            inputs=[],
-            outputs=[output_folder]
         )
         
         create_btn.click(
