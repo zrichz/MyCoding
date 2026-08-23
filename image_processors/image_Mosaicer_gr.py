@@ -1,9 +1,9 @@
-#!/usr/bin/env python3
+#!/home/rich/MyCoding/venvMyCoding/bin/python
 """
 Image Section Matcher - Gradio version
 Creates new images by matching sections between two source images.
-Loads two 512x512 images, divides into sections, and finds best-fit matches using 
-similarity matrices in perceptually uniform LAB color space.
+Center-crops input images to exactly 512x512 pixels, divides into sections, and finds 
+best-fit matches using similarity matrices in perceptually uniform LAB color space.
 """
 
 import gradio as gr
@@ -20,28 +20,34 @@ import time
 stop_optimization = threading.Event()
 
 
-def pad_to_square(img, target_size=1024):
-    """Pad image with white to 1:1 ratio, then resize to target size."""
-    width, height = img.size
-    
-    # Determine the larger dimension
-    max_dim = max(width, height)
-    
-    # Create a new white square image
-    square_img = Image.new('RGB', (max_dim, max_dim), (255, 255, 255))
-    
-    # Calculate position to paste original image (centered)
-    left = (max_dim - width) // 2
-    top = (max_dim - height) // 2
-    
-    # Convert original to RGB if needed before pasting
+def crop_to_square(img, target_size=512):
+    """Center-crop image to exactly target_size x target_size."""
+    # Convert to RGB if needed
     if img.mode != 'RGB':
         img = img.convert('RGB')
     
-    # Paste original image onto white square
-    square_img.paste(img, (left, top))
+    width, height = img.size
     
-    # Resize to target size
+    # Calculate crop dimensions for center crop
+    if width > height:
+        # Landscape - crop width
+        new_width = height
+        left = (width - new_width) // 2
+        top = 0
+        right = left + new_width
+        bottom = height
+    else:
+        # Portrait or square - crop height
+        new_height = width
+        left = 0
+        top = (height - new_height) // 2
+        right = width
+        bottom = top + new_height
+    
+    # Crop to square
+    square_img = img.crop((left, top, right, bottom))
+    
+    # Resize to exact target size
     if square_img.size != (target_size, target_size):
         square_img = square_img.resize((target_size, target_size), Image.Resampling.LANCZOS)
     
@@ -150,16 +156,16 @@ def generate_matched_image(source_image, target_image, section_size):
         return
     
     try:
-        # Prepare images (pad to square with white)
-        source_img = pad_to_square(source_image, 1024)
-        target_img = pad_to_square(target_image, 1024)
+        # Prepare images (center crop to exactly 512x512)
+        source_img = crop_to_square(source_image, 512)
+        target_img = crop_to_square(target_image, 512)
         
         # Extract sections
         source_sections, sections_per_side = extract_sections(source_img, section_size)
         target_sections, _ = extract_sections(target_img, section_size)
         
         # Create result image with RANDOM assignment
-        result_array = np.zeros((1024, 1024, 3), dtype=np.uint8)
+        result_array = np.zeros((512, 512, 3), dtype=np.uint8)
         
         total_sections = len(source_sections)
         
@@ -207,65 +213,52 @@ def stop_optimization_handler():
 def create_interface():
     """Create and configure the Gradio interface."""
     
-    with gr.Blocks(title="Image Section Matcher") as demo:
-        gr.Markdown("# Image Section Matcher")
-        gr.Markdown("Creates new images by matching sections between two source images.")
+    with gr.Blocks(title="Img mosaicer") as demo:
         
         with gr.Row():
             with gr.Column():
                 source_image = gr.Image(
-                    label="TARGET",
+                    label="target",
                     type="pil",
-                    height=400
+                    height=300
                 )
                 
                 target_image = gr.Image(
-                    label="SOURCE",
+                    label="src img",
                     type="pil",
-                    height=400
+                    height=300
                 )
                 
                 with gr.Row():
                     section_size = gr.Radio(
                         choices=[8, 16, 32],
                         value=16,
-                        label="Section Size (pixels)",
-                        info="Size of each matching section"
+                        label="block px",
+                        
                     )
                 
                 with gr.Row():
-                    generate_btn = gr.Button("Start Optimization", variant="primary", size="lg")
-                    stop_btn = gr.Button("Stop", variant="stop", size="lg")
+                    generate_btn = gr.Button("start optimizing", variant="primary", size="lg")
+                    stop_btn = gr.Button("stop", variant="stop", size="lg")
             
             with gr.Column():
                 result_image = gr.Image(
-                    label="Matched Result",
+                    label="out",
                     type="pil",
                     height=600
                 )
                 
                 status_output = gr.Textbox(
-                    label="Status",
+                    label="prog:",
                     lines=4,
                     max_lines=10
                 )
                 
                 stop_status = gr.Textbox(
-                    label="Control",
+                    label="ctrl",
                     lines=1,
                     visible=True
                 )
-        
-        gr.Markdown("""
-        ### How it works:
-        - Divides both images into sections of the selected size
-        - Randomly assigns target sections to source positions
-        - Continuously performs random swaps to improve match quality
-        - Each swap is kept only if it improves the overall similarity (using MSE in LAB color space)
-        - LAB color space ensures perceptually uniform color matching
-        - Progress updates shown every 2 seconds
-        - Click "Stop" in Gradio to end the optimization
-        """)
         
         # Set up the generation action
         generate_btn.click(
