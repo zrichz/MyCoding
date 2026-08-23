@@ -1,7 +1,7 @@
 black,
 white,
 red,
-blue,
+nude,
 pink,
 silver,
 cyan,
