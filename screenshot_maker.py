@@ -15,6 +15,10 @@ from scipy.interpolate import griddata
 import io
 import os
 from datetime import datetime
+import warnings
+
+# Suppress Gradio deprecation warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="gradio")
 
 
 class PoissonDiskSampler:
@@ -583,6 +587,94 @@ def apply_focus_blur(image, focus_map, blur_strength):
     return result.astype(np.uint8)
 
 
+def apply_perspective_transform(image):
+    """Apply subtle perspective transformation to simulate off-axis camera angle.
+    
+    Returns:
+        transformed_image: The perspective-transformed and cropped image
+        tilt_angle: The angle (in radians) of the tilt direction for focus blur
+    """
+    height, width = image.shape[:2]
+    
+    # Random tilt parameters - small values for subtle effect
+    tilt_angle = np.random.uniform(0, 2 * np.pi)
+    tilt_strength = np.random.uniform(0.02, 0.06)  # 2-6% distortion
+    
+    # Calculate corner displacements based on tilt angle
+    # The tilt creates a trapezoid where one edge is closer to camera
+    dx = tilt_strength * width * np.cos(tilt_angle)
+    dy = tilt_strength * height * np.sin(tilt_angle)
+    
+    # Define source corners
+    src_pts = np.float32([
+        [0, 0],
+        [width, 0],
+        [width, height],
+        [0, height]
+    ])
+    
+    # Define destination corners with perspective distortion
+    # Near edge (in focus direction) is larger, far edge is smaller
+    dst_pts = np.float32([
+        [0 - dx/2, 0 - dy/2],
+        [width + dx/2, 0 + dy/2],
+        [width - dx/2, height + dy/2],
+        [0 + dx/2, height - dy/2]
+    ])
+    
+    # Calculate perspective transform matrix
+    matrix = cv2.getPerspectiveTransform(src_pts, dst_pts)
+    
+    # Apply transformation with larger canvas to avoid cropping corners
+    margin = int(max(abs(dx), abs(dy)) + 50)
+    canvas_width = width + 2 * margin
+    canvas_height = height + 2 * margin
+    
+    # Adjust matrix to account for margin
+    translation = np.array([[1, 0, margin], [0, 1, margin], [0, 0, 1]], dtype=np.float32)
+    matrix_adjusted = translation @ matrix
+    
+    transformed = cv2.warpPerspective(image, matrix_adjusted, (canvas_width, canvas_height),
+                                      borderMode=cv2.BORDER_CONSTANT, borderValue=(0, 0, 0))
+    
+    # Crop to remove black borders aggressively
+    # Find rows and columns that contain any black pixels and exclude them
+    gray = cv2.cvtColor(transformed, cv2.COLOR_RGB2GRAY)
+    
+    # Find non-black regions (with small tolerance for near-black pixels)
+    non_black = gray > 5
+    
+    # Find valid rows (rows with all non-black pixels)
+    valid_rows = np.all(non_black, axis=1)
+    valid_row_indices = np.where(valid_rows)[0]
+    
+    # Find valid columns (columns with all non-black pixels)
+    valid_cols = np.all(non_black, axis=0)
+    valid_col_indices = np.where(valid_cols)[0]
+    
+    if len(valid_row_indices) > 0 and len(valid_col_indices) > 0:
+        # Get the bounds of the valid region
+        y_min = valid_row_indices[0]
+        y_max = valid_row_indices[-1] + 1
+        x_min = valid_col_indices[0]
+        x_max = valid_col_indices[-1] + 1
+        
+        # Additional aggressive inset to ensure no edge artifacts
+        inset = 3
+        y_min += inset
+        y_max -= inset
+        x_min += inset
+        x_max -= inset
+        
+        # Crop to the valid region
+        cropped = transformed[y_min:y_max, x_min:x_max]
+    else:
+        # Fallback: just crop margins
+        cropped = transformed[margin:-margin, margin:-margin]
+    
+    return cropped, tilt_angle
+
+
 def apply_chromatic_aberration(image, ca_vectors, ca_strength):
     """Apply chromatic aberration using analyzed RGB channel shifts from dot field."""
     if ca_strength == 0:
@@ -668,14 +760,17 @@ def apply_screen_effects(image, blur_strength, ca_strength, banding_strength, mo
     else:
         original_image = image.copy()
     
-    height, width = original_image.shape[:2]
-    result = original_image.astype(np.float32)
+    # Apply perspective transformation to simulate off-axis photography
+    progress(0.08, desc="Applying perspective transform...")
+    result, tilt_angle = apply_perspective_transform(original_image)
+    effects_applied = [f"Perspective transform (tilt: {np.degrees(tilt_angle):.1f}°)"]
+    
+    height, width = result.shape[:2]
+    result = result.astype(np.float32)
     
     # Load artifact data
     progress(0.1, desc="Loading artifact data...")
     artifact_data = load_artifact_data()
-    
-    effects_applied = []
     
     # Apply focus blur using analyzed data
     if blur_strength > 0:
@@ -685,14 +780,21 @@ def apply_screen_effects(image, blur_strength, ca_strength, banding_strength, mo
             focus_map = resize_map_to_image(artifact_data['focus_map'], (height, width))
             effects_applied.append(f"Focus blur (analyzed): {blur_strength:.2f}")
         else:
-            # Fallback to synthetic radial focus map
-            center_x, center_y = width / 2, height / 2
+            # Fallback to synthetic linear focus map (tilt-shift style)
+            # Use the perspective tilt angle to align focus blur
             y_coords, x_coords = np.mgrid[0:height, 0:width]
-            dx = (x_coords - center_x) / center_x
-            dy = (y_coords - center_y) / center_y
-            distance = np.sqrt(dx**2 + dy**2)
-            focus_map = distance
-            effects_applied.append(f"Focus blur (synthetic): {blur_strength:.2f}")
+            
+            # Normalize coordinates to -1 to 1
+            x_norm = (x_coords - width / 2) / (width / 2)
+            y_norm = (y_coords - height / 2) / (height / 2)
+            
+            # Linear gradient along the tilt angle
+            focus_map = x_norm * np.cos(tilt_angle) + y_norm * np.sin(tilt_angle)
+            
+            # Shift and scale to 0-1 range
+            focus_map = (focus_map - focus_map.min()) / (focus_map.max() - focus_map.min())
+            
+            effects_applied.append(f"Focus blur (tilt-shift aligned): {blur_strength:.2f}")
         
         result = apply_focus_blur(result.astype(np.uint8), focus_map, blur_strength)
         result = result.astype(np.float32)
