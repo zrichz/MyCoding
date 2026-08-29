@@ -1,7 +1,6 @@
 """
 Overlapping Circles
-Draws circles with thin circumferences where only overlapping areas are colored.
-Uses NumPy vectorization for high performance.
+Draws circles with thin edges. only overlapping areas are colored.
 """
 
 import numpy as np
@@ -12,43 +11,43 @@ import math
 import time
 
 class CircleOverlapVisualizer:
-    def __init__(self, width=1600, height=900, num_circles=400):
+    def __init__(self, width=1600, height=900, num_circles=2400):
         # Resolution
         self.width = width
         self.height = height
         
         # Circle parameters
-        self.num_circles = num_circles  # Number of circles to draw
+        self.num_circles = num_circles
         self.min_radius = 60
         self.max_radius = 200
         
-        # Edge thickness for circumferences
+        # Edge thickness
         self.edge_thickness = 1
         
         # Generate random circles
         self.circles = self.generate_circles()
         
-        # Create the visualization
+        # visualize
         self.create_image()
     
     def generate_circles(self):
         """Generate random circles with positions, sizes, and colors"""
         circles = []
         
-        # Black and white colors - only white for overlaps
+        # Bright pastel colors for overlaps
         bright_colors = [
-            (1.0, 1.0, 1.0),  # White
-            (1.0, 1.0, 1.0),  # White
-            (1.0, 1.0, 1.0),  # White
-            (1.0, 1.0, 1.0),  # White
-            (1.0, 1.0, 1.0),  # White
-            (1.0, 1.0, 1.0),  # White
-            (1.0, 1.0, 1.0),  # White
-            (1.0, 1.0, 1.0),  # White
-            (1.0, 1.0, 1.0),  # White
-            (1.0, 1.0, 1.0),  # White
-            (1.0, 1.0, 1.0),  # White
-            (1.0, 1.0, 1.0),  # White
+            (1.0, 0.8, 0.8),  # Pastel pink
+            (0.8, 1.0, 0.8),  # Pastel green
+            (0.8, 0.8, 1.0),  # Pastel blue
+            (1.0, 1.0, 0.8),  # Pastel yellow
+            (1.0, 0.8, 1.0),  # Pastel magenta
+            (0.8, 1.0, 1.0),  # Pastel cyan
+            (1.0, 0.9, 0.8),  # Pastel peach
+            (0.9, 0.8, 1.0),  # Pastel lavender
+            (0.8, 1.0, 0.9),  # Pastel mint
+            (1.0, 0.8, 0.9),  # Pastel rose
+            (0.9, 1.0, 0.8),  # Pastel lime
+            (0.8, 0.9, 1.0),  # Pastel sky blue
         ]
         
         for i in range(self.num_circles):
@@ -100,19 +99,19 @@ class CircleOverlapVisualizer:
             radius = circle['radius']
             color = np.array(circle['color'])
             
-            # Calculate distance from circle center for all pixels at once
+            # Calc dist from circle center for all pixels at once
             distances = np.sqrt((x_coords - cx)**2 + (y_coords - cy)**2)
             
-            # Create mask for pixels on the circumference
+            # mask edge pixels
             on_edge = (distances >= radius - self.edge_thickness) & (distances <= radius)
             
             # Count overlaps
             new_overlaps = on_edge & (circumference_count > 0)
             circumference_count += on_edge.astype(int)
             
-            # Update colors where we have new overlaps (2+ circumferences)
+            # Update colors where new overlaps (2+ circumferences)
             if np.any(new_overlaps):
-                # Use the color of the current circle for new overlaps
+                # Use color of the current circle for new overlaps
                 image[new_overlaps] = color
         
         # For areas with only one circumference, don't show any color (keep dark grey)
@@ -126,7 +125,7 @@ class CircleOverlapVisualizer:
         print(f"Image generation complete! Time taken: {end_time - start_time:.2f} seconds")
     
     def display_and_save(self):
-        """Display and save the image"""
+        """Display and save image"""
         # Create figure with exact pixel dimensions
         dpi = 100
         fig_width = self.width / dpi
@@ -148,18 +147,8 @@ class CircleOverlapVisualizer:
         plt.savefig(filename, dpi=dpi, bbox_inches='tight', pad_inches=0)
         
         print(f"Image saved as: {filename}")
-        print("\nCircle details:")
-        for i, circle in enumerate(self.circles):
-            cx, cy = circle['center']
-            r = circle['radius']
-            color = circle['color']
-            print(f"Circle {i+1}: Center({cx:.0f}, {cy:.0f}), Radius={r:.0f}, Color=RGB{color}")
         
-        # Show image
-        plt.show()
-
 def main():
-    """Main function to create and display the visualization"""
     print("Overlapping Circles with Distance-Based Color Interpolation")
     print("=" * 60)
     

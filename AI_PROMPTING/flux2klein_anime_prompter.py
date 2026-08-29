@@ -287,13 +287,12 @@ BODY_FEATURES = [
 ]
 
 BODY_DETAILS = [
-    "large breasts",
+    "breasts",
     "medium breasts",
     "cleavage",
     "bare shoulders",
     "bare legs",
     "thighs",
-    "thick thighs",
     "toned legs",
     "navel",
     "collarbone",
@@ -313,7 +312,7 @@ FRAMING = [
     "from side",
     "dynamic angle",
     "dutch angle",
-    "centered composition",
+    "rule of thirds",
     "off-center composition",
 ]
 
@@ -324,10 +323,8 @@ BACKGROUNDS = [
     "outdoors",
     "beach",
     "poolside",
-    "city background",
     "night sky",
     "sunset background",
-    "urban setting",
     "rooftop",
     "balcony",
     "window",
@@ -463,7 +460,7 @@ def generate_prompt():
     return prompt
 
 def generate_batch(num_prompts, progress=gr.Progress()):
-    """Generate a batch of anime prompts."""
+    """Generate batch of anime prompts."""
     prompts = []
     
     for i in range(num_prompts):
@@ -484,7 +481,7 @@ def save_prompts(prompts_text):
     os.makedirs(output_dir, exist_ok=True)
     
     timestamp = datetime.now().strftime("%Y%m%d_%H%M")
-    filename = f"flux2klein_anime_prompts_{timestamp}.txt"
+    filename = f"F2K_anime_prompts_{timestamp}.txt"
     filepath = os.path.join(output_dir, filename)
     
     with open(filepath, 'w', encoding='utf-8') as f:
@@ -496,7 +493,7 @@ def create_interface():
     """Create Gradio interface."""
     with gr.Blocks(title="F2K Anime Prompt Generator") as demo:
         gr.Markdown("""
-        # Flux2Klein Anime Illustration Prompt Generator
+        ### Flux2Klein Anime Illustration Prompt Generator
         
         Generates prompts for anime-style illustrations featuring solo girls with risque aesthetic.
         
