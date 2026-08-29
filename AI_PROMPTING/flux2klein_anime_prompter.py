@@ -468,7 +468,7 @@ def generate_batch(num_prompts, progress=gr.Progress()):
     
     for i in range(num_prompts):
         prompt = generate_prompt()
-        prompts.append(f"{i+1}. {prompt}\n")
+        prompts.append(f"{prompt}\n")
         
         if i % 10 == 0:
             progress((i + 1) / num_prompts, desc=f"Generating prompt {i+1}/{num_prompts}")
