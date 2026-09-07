@@ -1,85 +1,83 @@
 #!/home/rich/MyCoding/venvMyCoding/bin/python
 """
-Lenia Simulation with Taichi and OpenCV
+Lenia Simulation with Taichi and Gradio
 
 A continuous cellular automaton that creates life-like patterns.
-Features real-time parameter control via OpenCV trackbars.
+Every physical parameter (growth rate, target density, growth window,
+kernel radius) can be independently varied across the X axis and the
+Y axis of the simulation grid, giving rich spatial diversity of behavior.
 
-Controls:
-- R: Restart with new random seed
-- SPACE: Pause/Resume
-- ESC or Q: Quit
-- Use trackbars to adjust parameters in real-time
-
-Requirements: pip install taichi opencv-python
+Requirements: pip install taichi gradio numpy
 """
 
-import taichi as ti
-import cv2
+import gradio as gr
 import numpy as np
-import math
+import taichi as ti
 
-# Start Taichi and tell it to use the CPU
-ti.init(arch=ti.cpu)
+ti.init(arch=ti.gpu)
 
 # Size of the grid
-N = 256
+WIDTH = 1024
+HEIGHT = 1024
 
 # The main Lenia field (values between 0 and 1)
-field = ti.field(dtype=ti.f32, shape=(N, N))
+field = ti.field(dtype=ti.f32, shape=(HEIGHT, WIDTH))
 
 # A temporary field used for updates
-next_field = ti.field(dtype=ti.f32, shape=(N, N))
+next_field = ti.field(dtype=ti.f32, shape=(HEIGHT, WIDTH))
 
 # A colour image (RGB) for display
-image = ti.Vector.field(3, dtype=ti.f32, shape=(N, N))
+image = ti.Vector.field(3, dtype=ti.f32, shape=(HEIGHT, WIDTH))
 
-# Parameters (will be controlled by trackbars)
-params = {
-    'dt': 10,           # Growth rate * 100 (0.00 to 0.50)
-    'mu': 15,           # Target density * 100 (0.00 to 1.00)
-    'sigma': 15,        # Growth window * 1000 (0.001 to 0.100)
-    'kernel_radius': 16, # Neighborhood radius (4 to 32)
-    'color_scheme': 0    # Color scheme selector (0-4)
-}
+COLOR_SCHEMES = ["Rainbow", "Fire", "Ocean", "Monochrome", "Plasma"]
 
-# Color scheme names
-COLOR_SCHEMES = [
-    "Rainbow",
-    "Fire",
-    "Ocean",
-    "Monochrome",
-    "Plasma"
-]
 
 @ti.func
 def wrap(i, j):
     """Wrap-around so edges connect (toroidal world)"""
-    return i % N, j % N
+    return i % HEIGHT, j % WIDTH
+
 
 @ti.func
 def kernel(r, m: ti.f32, s: ti.f32):
     """Smooth Gaussian kernel for neighbor weighting"""
     return ti.exp(-((r - m) ** 2) / (2.0 * s * s))
 
-@ti.kernel
-def init():
-    """Initialize with a centered blob plus random noise"""
-    for i, j in field:
-        # Distance from center
-        dx = (i - N // 2) / float(N)
-        dy = (j - N // 2) / float(N)
-        dist = ti.sqrt(dx * dx + dy * dy)
-        
-        # Centered blob with some random noise
-        blob = ti.exp(-dist * dist * 20.0)
-        noise = ti.random() * 0.1
-        field[i, j] = blob + noise
+
+def init_field(seed=None):
+    """Initialize with a single large Gaussian blob centered on the grid."""
+    rng = np.random.default_rng(seed)
+    cx, cy = WIDTH / 2.0, HEIGHT / 2.0
+    sigma = min(WIDTH, HEIGHT) * 0.18
+
+    yy, xx = np.mgrid[0:HEIGHT, 0:WIDTH]
+    blob = np.exp(-(((xx - cx) ** 2 + (yy - cy) ** 2) / (2.0 * sigma ** 2)))
+    noise = rng.uniform(0.85, 1.0, size=blob.shape)
+    seed_field = (blob * noise).astype(np.float32)
+
+    field.from_numpy(seed_field)
+
 
 @ti.kernel
-def step(dt: ti.f32, mu: ti.f32, sigma: ti.f32, radius: ti.i32):
-    """Update every cell in the field based on neighbors"""
+def step(
+    dt_center: ti.f32, dt_x_range: ti.f32, dt_y_range: ti.f32,
+    mu_center: ti.f32, mu_x_range: ti.f32, mu_y_range: ti.f32,
+    sigma_center: ti.f32, sigma_x_range: ti.f32, sigma_y_range: ti.f32,
+    radius_center: ti.f32, radius_x_range: ti.f32, radius_y_range: ti.f32,
+):
+    """Update every cell in the field, with every parameter varying across X and Y."""
     for i, j in field:
+        x = float(j) / float(WIDTH - 1)
+        y = float(i) / float(HEIGHT - 1)
+        xd = x - 0.5
+        yd = y - 0.5
+
+        dt = dt_center + xd * dt_x_range + yd * dt_y_range
+        mu = mu_center + xd * mu_x_range + yd * mu_y_range
+        sigma = ti.max(sigma_center + xd * sigma_x_range + yd * sigma_y_range, 0.001)
+        radius_f = radius_center + xd * radius_x_range + yd * radius_y_range
+        radius = ti.max(ti.min(ti.i32(radius_f + 0.5), 64), 2)
+
         acc = 0.0
         norm = 0.0
 
@@ -114,6 +112,7 @@ def step(dt: ti.f32, mu: ti.f32, sigma: ti.f32, radius: ti.i32):
     for i, j in field:
         field[i, j] = next_field[i, j]
 
+
 @ti.kernel
 def make_color(scheme: ti.i32):
     """Convert the field values into RGB colours based on selected scheme"""
@@ -122,7 +121,7 @@ def make_color(scheme: ti.i32):
         r = 0.0
         g = 0.0
         b = 0.0
-        
+
         # Scheme 0: Rainbow (black -> blue -> cyan -> green -> yellow -> white)
         if scheme == 0:
             if v < 0.2:
@@ -140,7 +139,7 @@ def make_color(scheme: ti.i32):
                 r = 1.0
                 g = 1.0
                 b = (v - 0.8) * 5.0
-        
+
         # Scheme 1: Fire (black -> red -> orange -> yellow -> white)
         elif scheme == 1:
             if v < 0.33:
@@ -152,7 +151,7 @@ def make_color(scheme: ti.i32):
                 r = 1.0
                 g = 1.0
                 b = (v - 0.66) * 3.0
-        
+
         # Scheme 2: Ocean (black -> dark blue -> cyan -> white)
         elif scheme == 2:
             if v < 0.5:
@@ -161,13 +160,13 @@ def make_color(scheme: ti.i32):
                 b = 1.0
                 r = (v - 0.5) * 2.0
                 g = (v - 0.5) * 2.0
-        
+
         # Scheme 3: Monochrome (black -> white)
         elif scheme == 3:
             r = v
             g = v
             b = v
-        
+
         # Scheme 4: Plasma (purple -> magenta -> orange -> yellow)
         else:
             if v < 0.33:
@@ -189,136 +188,186 @@ def make_color(scheme: ti.i32):
 
         image[i, j] = ti.Vector([r, g, b])
 
-def dummy_callback(x):
-    """Dummy callback for trackbars"""
-    pass
 
-def main():
-    """Main simulation loop with OpenCV interface"""
-    # Initialize simulation
-    init()
-    
-    # Create separate windows for display and controls
-    display_window = "Lenia Simulation"
-    control_window = "Controls"
-    
-    cv2.namedWindow(display_window, cv2.WINDOW_NORMAL)
-    cv2.resizeWindow(display_window, 800, 800)
-    
-    cv2.namedWindow(control_window, cv2.WINDOW_NORMAL)
-    cv2.resizeWindow(control_window, 500, 300)
-    
-    # Create trackbars in the control window
-    cv2.createTrackbar("Growth Rate x100", control_window, params['dt'], 50, dummy_callback)
-    cv2.createTrackbar("Target Density x100", control_window, params['mu'], 100, dummy_callback)
-    cv2.createTrackbar("Growth Window x1000", control_window, params['sigma'], 100, dummy_callback)
-    cv2.createTrackbar("Kernel Radius", control_window, params['kernel_radius'], 32, dummy_callback)
-    cv2.createTrackbar("Color Scheme", control_window, params['color_scheme'], len(COLOR_SCHEMES) - 1, dummy_callback)
-    
-    paused = False
-    frame_count = 0
-    
-    print("Lenia Simulation Started")
-    print("Controls:")
-    print("  R - Restart with new random seed")
-    print("  SPACE - Pause/Resume")
-    print("  ESC or Q - Quit")
-    print("\nColor Schemes:")
-    for i, name in enumerate(COLOR_SCHEMES):
-        print(f"  {i}: {name}")
-    print("\nAdjust parameters using trackbars for real-time control")
-    print()
+def render_frame(scheme_name):
+    """Run color mapping and return an 8-bit RGB numpy image."""
+    scheme_index = COLOR_SCHEMES.index(scheme_name)
+    make_color(scheme_index)
+    img_np = image.to_numpy()
+    return (img_np * 255).astype(np.uint8)
 
-    # Main loop
-    while True:
-        # Check if windows are still open
-        if cv2.getWindowProperty(display_window, cv2.WND_PROP_VISIBLE) < 1 or \
-           cv2.getWindowProperty(control_window, cv2.WND_PROP_VISIBLE) < 1:
-            break
-        
-        # Read trackbar values
-        dt_val = cv2.getTrackbarPos("Growth Rate x100", control_window) / 100.0
-        mu_val = cv2.getTrackbarPos("Target Density x100", control_window) / 100.0
-        sigma_val = cv2.getTrackbarPos("Growth Window x1000", control_window) / 1000.0
-        radius_val = max(4, cv2.getTrackbarPos("Kernel Radius", control_window))  # Min radius of 4
-        scheme_val = cv2.getTrackbarPos("Color Scheme", control_window)
-        
-        # Ensure sigma is not zero
-        if sigma_val < 0.001:
-            sigma_val = 0.001
-        
-        # Update simulation if not paused
-        if not paused:
-            step(dt_val, mu_val, sigma_val, radius_val)
+
+init_field()
+
+
+def simulate_tick(
+    is_running, steps_per_tick, frame_count,
+    dt_center, dt_x_range, dt_y_range,
+    mu_center, mu_x_range, mu_y_range,
+    sigma_center, sigma_x_range, sigma_y_range,
+    radius_center, radius_x_range, radius_y_range,
+    color_scheme,
+):
+    """Timer tick handler: advance the simulation and render a frame."""
+    if is_running:
+        for _ in range(int(steps_per_tick)):
+            step(
+                dt_center, dt_x_range, dt_y_range,
+                mu_center, mu_x_range, mu_y_range,
+                sigma_center, sigma_x_range, sigma_y_range,
+                radius_center, radius_x_range, radius_y_range,
+            )
             frame_count += 1
-        
-        # Render with selected color scheme
-        make_color(scheme_val)
-        
-        # Convert Taichi field to numpy array for OpenCV
-        img_np = image.to_numpy()
-        img_bgr = cv2.cvtColor((img_np * 255).astype(np.uint8), cv2.COLOR_RGB2BGR)
-        
-        # Add text overlay with current parameters
-        info_text = [
-            f"Frame: {frame_count}",
-            f"Status: {'PAUSED' if paused else 'Running'}",
-            f"Growth: {dt_val:.3f}",
-            f"Density: {mu_val:.3f}",
-            f"Window: {sigma_val:.4f}",
-            f"Radius: {radius_val}",
-            f"Scheme: {COLOR_SCHEMES[scheme_val]}"
-        ]
-        
-        y_offset = 20
-        for text in info_text:
-            cv2.putText(img_bgr, text, (10, y_offset), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
-            y_offset += 20
-        
-        # Display simulation
-        cv2.imshow(display_window, img_bgr)
-        
-        # Create control panel info display
-        control_panel = np.zeros((300, 500, 3), dtype=np.uint8)
-        control_info = [
-            "LENIA SIMULATION CONTROLS",
-            "",
-            "Keyboard Controls:",
-            "  R - Restart with new random seed",
-            "  SPACE - Pause/Resume",
-            "  Q or ESC - Quit",
-            "",
-            "Use trackbars below to adjust:",
-            f"  Growth Rate: {dt_val:.3f}",
-            f"  Target Density: {mu_val:.3f}",
-            f"  Growth Window: {sigma_val:.4f}",
-            f"  Kernel Radius: {radius_val}",
-            f"  Color Scheme: {COLOR_SCHEMES[scheme_val]}"
-        ]
-        
-        y_pos = 20
-        for line in control_info:
-            cv2.putText(control_panel, line, (10, y_pos),
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.4, (200, 200, 200), 1, cv2.LINE_AA)
-            y_pos += 20
-        
-        cv2.imshow(control_window, control_panel)
-        
-        # Handle keyboard input
-        key = cv2.waitKey(1) & 0xFF
-        if key == ord('q') or key == 27:  # Q or ESC
-            break
-        elif key == ord('r'):
-            print(f"Restarting simulation (Frame: {frame_count})")
-            init()
-            frame_count = 0
-        elif key == ord(' '):
-            paused = not paused
-            print(f"Simulation {'paused' if paused else 'resumed'}")
-    
-    cv2.destroyAllWindows()
-    print(f"Simulation ended after {frame_count} frames")
+
+    frame = render_frame(color_scheme)
+    status = f"Frame {frame_count}  |  {'Running' if is_running else 'Paused'}"
+    return frame, frame_count, status
+
+
+def toggle_running(is_running):
+    new_state = not is_running
+    return new_state, "Pause" if new_state else "Play"
+
+
+def restart_simulation():
+    init_field()
+    frame = render_frame(COLOR_SCHEMES[0])
+    return frame, 0, "Frame 0  |  Restarted"
+
+
+CUSTOM_CSS = """
+.gradio-container {
+    background: radial-gradient(circle at 20% 20%, #1b1f2e 0%, #0d0f16 55%, #08090d 100%) !important;
+}
+#lenia-title {
+    text-align: center;
+    padding: 6px 0 2px 0;
+}
+#lenia-title h1 {
+    font-size: 1.9rem;
+    font-weight: 700;
+    background: linear-gradient(90deg, #7dd3fc, #a78bfa, #f472b6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 0;
+}
+#lenia-title p {
+    color: #8b93a7;
+    margin: 2px 0 0 0;
+    font-size: 0.9rem;
+}
+#sim-display {
+    overflow: auto !important;
+}
+#sim-display img {
+    border-radius: 14px;
+    border: 1px solid #2a2f3d;
+    box-shadow: 0 0 40px rgba(124, 58, 237, 0.15);
+    width: 2048px !important;
+    height: 1600px !important;
+    max-width: none !important;
+    object-fit: none !important;
+}
+#status-bar {
+    text-align: center;
+    color: #9aa4bb;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.85rem;
+}
+.control-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 14px;
+    padding: 8px 12px !important;
+}
+#play-btn {
+    background: linear-gradient(90deg, #7c3aed, #4f46e5) !important;
+    border: none !important;
+    color: white !important;
+}
+#restart-btn {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: #e5e7eb !important;
+}
+"""
+
+AXIS_HELP = "Center is the base value. X-range/Y-range spread the value left-right / top-bottom (negative reverses the gradient)."
+
+
+def param_group(label, default_center, center_range, default_x_range, default_y_range, spread_range, step):
+    """Build a labeled group of Center / X-range / Y-range sliders for one parameter."""
+    with gr.Group(elem_classes="control-card"):
+        gr.Markdown(f"**{label}**")
+        center = gr.Slider(*center_range, value=default_center, step=step, label="Center")
+        with gr.Row():
+            x_range = gr.Slider(*spread_range, value=default_x_range, step=step, label="X-range")
+            y_range = gr.Slider(*spread_range, value=default_y_range, step=step, label="Y-range")
+    return center, x_range, y_range
+
+
+with gr.Blocks(title="Lenia Simulation") as demo:
+    is_running = gr.State(True)
+    frame_count = gr.State(0)
+
+    with gr.Column(elem_id="lenia-title"):
+        gr.Markdown("# Lenia Simulation\n<p>A continuous cellular automaton, fully tunable across space</p>")
+
+    with gr.Row():
+        with gr.Column(scale=3):
+            display = gr.Image(
+                value=render_frame(COLOR_SCHEMES[0]),
+                label=None,
+                show_label=False,
+                elem_id="sim-display",
+                interactive=False,
+                image_mode="RGB",
+                width=WIDTH,
+                height=HEIGHT,
+            )
+            status_text = gr.Markdown("Frame 0  |  Running", elem_id="status-bar")
+            with gr.Row():
+                play_btn = gr.Button("Pause", elem_id="play-btn", scale=2)
+                restart_btn = gr.Button("Restart", elem_id="restart-btn", scale=2)
+                speed = gr.Slider(1, 10, value=1, step=1, label="Steps / tick", scale=3)
+                color_scheme = gr.Dropdown(COLOR_SCHEMES, value=COLOR_SCHEMES[0], label="Colour scheme", scale=2)
+
+        with gr.Column(scale=2):
+            gr.Markdown("### Parameters — every value can vary across X and Y")
+            with gr.Accordion("Growth rate (dt)", open=True):
+                dt_center, dt_x_range, dt_y_range = param_group(
+                    "How fast cells grow or shrink", 0.08, (0.0, 0.3), 0.14, 0.0, (-0.3, 0.3), 0.001
+                )
+            with gr.Accordion("Target density (mu)", open=True):
+                mu_center, mu_x_range, mu_y_range = param_group(
+                    "Neighbourhood density cells prefer", 0.125, (0.0, 0.3), 0.0, 0.03, (-0.3, 0.3), 0.001
+                )
+            with gr.Accordion("Growth window (sigma)", open=False):
+                sigma_center, sigma_x_range, sigma_y_range = param_group(
+                    "Tolerance around the target density", 0.081, (0.001, 0.3), 0.0, 0.0, (-0.2, 0.2), 0.001
+                )
+            with gr.Accordion("Kernel radius", open=False):
+                radius_center, radius_x_range, radius_y_range = param_group(
+                    "Size of the neighbourhood considered", 16, (2, 64), 0, 0, (-60, 60), 1
+                )
+            gr.Markdown(AXIS_HELP)
+
+    param_inputs = [
+        dt_center, dt_x_range, dt_y_range,
+        mu_center, mu_x_range, mu_y_range,
+        sigma_center, sigma_x_range, sigma_y_range,
+        radius_center, radius_x_range, radius_y_range,
+    ]
+
+    timer = gr.Timer(0.05, active=True)
+    timer.tick(
+        fn=simulate_tick,
+        inputs=[is_running, speed, frame_count, *param_inputs, color_scheme],
+        outputs=[display, frame_count, status_text],
+    )
+
+    play_btn.click(fn=toggle_running, inputs=[is_running], outputs=[is_running, play_btn])
+    restart_btn.click(fn=restart_simulation, inputs=None, outputs=[display, frame_count, status_text])
 
 if __name__ == "__main__":
-    main()
+    demo.launch(inbrowser=True, css=CUSTOM_CSS, theme=gr.themes.Base(primary_hue="violet", neutral_hue="slate"))
