@@ -740,70 +740,66 @@ def batch_process_folder(
 
 
 # Build Gradio interface
-with gr.Blocks(theme=gr.themes.Soft(), title="Filmic Effects Processor") as demo:
-    gr.Markdown("# 🎬 Filmic Effects Processor")
-    gr.Markdown("Apply film grain, vignette, chromatic aberration, and other photographic effects to your images")
+COMPACT_CSS = """
+#effect-controls .gr-form { gap: 4px; }
+#effect-controls .gr-slider { min-width: 0; }
+#effect-controls label { font-size: 0.8rem; }
+#effect-controls .block { margin-bottom: 4px; }
+"""
+
+with gr.Blocks(theme=gr.themes.Soft(), title="Filmic Effects Processor", css=COMPACT_CSS) as demo:
+    gr.Markdown("# Filmic Effects Processor")
     
     with gr.Row():
         with gr.Column(scale=1):
-            input_image = gr.Image(label="Input Image", type="pil")
-            
-            with gr.Tabs():
-                with gr.Tab("Original Effects"):
-                    with gr.Group():
-                        vignette_enabled = gr.Checkbox(label="Vignette", value=True)
-                        vignette_strength = gr.Slider(0, 1, value=0.15, step=0.01, label="Vignette Strength")
-                    
-                    with gr.Group():
-                        saturation_enabled = gr.Checkbox(label="Saturation Reduction", value=True)
-                        saturation_reduction = gr.Slider(0, 1, value=0.15, step=0.01, label="Saturation Amount")
-                    
-                    with gr.Group():
-                        chromatic_enabled = gr.Checkbox(label="Chromatic Aberration", value=True)
-                        chromatic_aberration = gr.Slider(0, 0.1, value=0.03, step=0.001, label="CA Amount")
-                        show_ca_center = gr.Checkbox(label="Show Face Center", value=False)
-                    
-                    vintage_border = gr.Checkbox(label="Photo Border", value=False)
-                    unsharp_sharpening = gr.Checkbox(label="Unsharp Sharpening", value=True)
-                    unsharp_half_strength = gr.Checkbox(label="Apply at 50%", value=True)
-                    
-                    with gr.Group():
-                        auto_contrast_stretch = gr.Checkbox(label="Auto-Contrast Stretch", value=True)
-                        auto_contrast_strength = gr.Slider(0, 100, value=50, step=1, label="Contrast Strength %")
-                
-                with gr.Tab("Photo Effects 1"):
-                    with gr.Group():
-                        apply_photo_grain = gr.Checkbox(label="Photo Grain", value=True)
-                        photo_grain_strength = gr.Slider(0, 0.1, value=0.025, step=0.001, label="Grain Strength")
-                    
-                    with gr.Group():
-                        apply_halation = gr.Checkbox(label="Halation (Glow)", value=False)
-                        halation_strength = gr.Slider(0, 0.2, value=0.05, step=0.01, label="Halation Strength")
-                
-                with gr.Tab("Photo Effects 2"):
-                    with gr.Group():
-                        apply_jpeg_artifacts = gr.Checkbox(label="JPEG Artifacts", value=False)
-                        jpeg_quality = gr.Slider(1, 100, value=20, step=1, label="JPEG Quality")
-                    
-                    with gr.Group():
-                        apply_lens_distortion = gr.Checkbox(label="Lens Distortion", value=False)
-                        distortion_strength = gr.Slider(-0.002, 0.002, value=-0.0005, step=0.0001, 
-                                                       label="Distortion (-ve=barrel, +ve=pincushion)")
-                    
-                    with gr.Group():
-                        apply_dithering = gr.Checkbox(label="Color Dithering", value=False)
-                        dithering_type = gr.Radio(["floyd-steinberg", "bayer"], 
-                                                  value="floyd-steinberg", label="Dithering Type")
-                        dithering_colors = gr.Slider(2, 16, value=4, step=1, label="Colors per Channel")
-            
+            input_image = gr.Image(label="Input Image", type="pil", format="png", height=430)
             process_btn = gr.Button("Process Image", variant="primary")
         
         with gr.Column(scale=1):
-            output_image = gr.Image(label="Processed Image", type="pil")
+            output_image = gr.Image(label="Processed Image", type="pil", format="png", height=430)
             info_text = gr.Textbox(label="Info", interactive=False)
-    
-    gr.Markdown("---")
-    gr.Markdown("### 📁 Batch Processing")
+
+    with gr.Row(elem_id="effect-controls"):
+        with gr.Column():
+            with gr.Row():
+                vignette_enabled = gr.Checkbox(label="Vignette", value=True, scale=1)
+                vignette_strength = gr.Slider(0, 1, value=0.15, step=0.01, label="Strength", scale=2)
+            with gr.Row():
+                saturation_enabled = gr.Checkbox(label="Saturation Reduction", value=True, scale=1)
+                saturation_reduction = gr.Slider(0, 1, value=0.15, step=0.01, label="Amount", scale=2)
+            with gr.Row():
+                chromatic_enabled = gr.Checkbox(label="Chromatic Aberration", value=True, scale=1)
+                chromatic_aberration = gr.Slider(0, 0.1, value=0.03, step=0.001, label="Amount", scale=2)
+            with gr.Row():
+                show_ca_center = gr.Checkbox(label="Show Face Center", value=False)
+                vintage_border = gr.Checkbox(label="Photo Border", value=False)
+        with gr.Column():
+            with gr.Row():
+                unsharp_sharpening = gr.Checkbox(label="Unsharp Sharpening", value=True)
+                unsharp_half_strength = gr.Checkbox(label="Apply at 50%", value=True)
+            with gr.Row():
+                auto_contrast_stretch = gr.Checkbox(label="Auto-Contrast Stretch", value=True, scale=1)
+                auto_contrast_strength = gr.Slider(0, 100, value=50, step=1, label="Strength %", scale=2)
+            with gr.Row():
+                apply_photo_grain = gr.Checkbox(label="Photo Grain", value=True, scale=1)
+                photo_grain_strength = gr.Slider(0, 0.1, value=0.025, step=0.001, label="Strength", scale=2)
+            with gr.Row():
+                apply_halation = gr.Checkbox(label="Halation (Glow)", value=False, scale=1)
+                halation_strength = gr.Slider(0, 0.2, value=0.05, step=0.01, label="Strength", scale=2)
+        with gr.Column():
+            with gr.Row():
+                apply_jpeg_artifacts = gr.Checkbox(label="JPEG Artifacts", value=False, scale=1)
+                jpeg_quality = gr.Slider(1, 100, value=20, step=1, label="Quality", scale=2)
+            with gr.Row():
+                apply_lens_distortion = gr.Checkbox(label="Lens Distortion", value=False, scale=1)
+                distortion_strength = gr.Slider(-0.002, 0.002, value=-0.0005, step=0.0001,
+                                                 label="Strength", scale=2)
+            with gr.Row():
+                apply_dithering = gr.Checkbox(label="Color Dithering", value=False)
+                dithering_type = gr.Radio(["floyd-steinberg", "bayer"], value="floyd-steinberg", label="Type")
+            dithering_colors = gr.Slider(2, 16, value=4, step=1, label="Colors per Channel")
+
+    gr.Markdown("### Batch Processing")
     
     with gr.Row():
         folder_input = gr.Textbox(label="Folder Path", placeholder="/path/to/images")
