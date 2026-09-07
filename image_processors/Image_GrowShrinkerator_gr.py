@@ -1,14 +1,14 @@
 """
-Gradio GUI for batch image processing: converts to 720x1600, 2560x1440, or scales to 1440px height.
+Gradio GUI for batch image processing: converts to 720x1600, 3840x2160, or scales to 2160px height.
 
 Features:
 - Batch processing from selected directory
-- Three output modes: 720x1600 (portrait), 2560x1440 (landscape), 1440px height (aspect preserved)
+- Three output modes: 720x1600 (portrait), 3840x2160 (landscape), 2160px height (aspect preserved)
 - Percentage-based center cropping (0-25% per side, 1% steps) applied before expansion
 - Output format: JPEG (Q=90) or PNG
 - 720x1600: crops width, expands height to 20:9 aspect ratio (1:2 top:bottom padding)
-- 2560x1440: crops height, expands width to 16:9 aspect ratio (50:50 left:right padding)
-- 1440px Height: scales to 1440px height preserving aspect ratio (no crop/blur)
+- 3840x2160: crops height, expands width to 16:9 aspect ratio (50:50 left:right padding)
+- 2160px Height: scales to 2160px height preserving aspect ratio (no crop/blur)
 - Expanded regions blurred with luminance reduction for fade effect
 - Timestamped output filenames with conflict resolution
 """
@@ -262,7 +262,7 @@ class ImageExpanderProcessor:
                 processed_image = processed_image.resize((720, 1600), 
                                                         Image.Resampling.LANCZOS)
             
-            elif resolution_mode == "2560x1440 (with blurring)":
+            elif resolution_mode == "3840x2160 (with blurring)":
                 # Landscape mode: crop height, expand width
                 # Step 1: Apply percentage-based center crop to height only
                 if crop_percent_per_side > 0:
@@ -330,20 +330,20 @@ class ImageExpanderProcessor:
                 # Convert back to PIL Image
                 processed_image = Image.fromarray(expanded_array.astype('uint8'))
                 
-                # Step 3: Resize to exactly 2560x1440 using high-quality resampling
-                processed_image = processed_image.resize((2560, 1440), 
+                # Step 3: Resize to exactly 3840x2160 using high-quality resampling
+                processed_image = processed_image.resize((3840, 2160), 
                                                         Image.Resampling.LANCZOS)
             
-            elif resolution_mode == "1440px Height (Aspect Preserved)":
-                # Simple aspect-preserving scaling to 1440px height
+            elif resolution_mode == "2160px Height (Aspect Preserved)":
+                # Simple aspect-preserving scaling to 2160px height
                 # No cropping or blurring - just scale
                 img_array = np.array(original_image)
                 orig_height, orig_width = img_array.shape[:2]
                 
                 # Calculate new dimensions while preserving aspect ratio
-                # Always scale to 1440px height regardless of original size
-                scale_factor = 1440 / orig_height
-                new_height = 1440
+                # Always scale to 2160px height regardless of original size
+                scale_factor = 2160 / orig_height
+                new_height = 2160
                 new_width = int(orig_width * scale_factor)
                 
                 # Resize using highest quality LANCZOS resampling
@@ -646,10 +646,10 @@ with gr.Blocks(title="Image Auto-Expander (Percentage)") as demo:
     gr.Markdown("Accepts any image size • Choose resolution • Crops by percentage • Expands and scales")
     
     resolution_mode = gr.Radio(
-        choices=["720x1600 (with blurring)", "2560x1440 (with blurring)", "1440px Height (Aspect Preserved)"],
+        choices=["720x1600 (with blurring)", "3840x2160 (with blurring)", "2160px Height (Aspect Preserved)"],
         value="720x1600 (with blurring)",
         label="Output Resolution",
-        info="720x1600 = Portrait (crops width, expands height 1:2 top:bottom) | 2560x1440 = Landscape (crops height, expands width 50:50 left:right) | 1440px Height = Scale to max 1440px height, preserving aspect ratio"
+        info="720x1600 = Portrait (crops width, expands height 1:2 top:bottom) | 3840x2160 = Landscape (crops height, expands width 50:50 left:right) | 2160px Height = Scale to max 2160px height, preserving aspect ratio"
     )
     
     input_folder = gr.Textbox(
@@ -665,7 +665,7 @@ with gr.Blocks(title="Image Auto-Expander (Percentage)") as demo:
         step=1,
         value=0,
         label="Crop Percentage (per side)",
-        info="0% = no crop, 8% = crops 8% from each side (16% total). For 720x1600: crops width. For 2560x1440: crops height. Crop is applied before expansion."
+        info="0% = no crop, 8% = crops 8% from each side (16% total). For 720x1600: crops width. For 3840x2160: crops height. Crop is applied before expansion."
     )
     
     with gr.Row():
