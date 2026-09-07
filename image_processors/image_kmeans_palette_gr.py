@@ -5,7 +5,7 @@ Reduces the color palette of an image using k-means clustering
 
 import gradio as gr
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageOps
 from sklearn.cluster import KMeans
 from skimage import color
 
@@ -66,10 +66,10 @@ def reduce_palette(image, num_colors, apply_dithering, use_half_res):
         use_half_res: process at half resolution for speed
         
     Returns:
-        PIL Image with reduced palette
+        Tuple of reduced-palette and RGB-distance images
     """
     if image is None:
-        return None
+        return None, None
     
     # Convert to PIL Image if needed
     if isinstance(image, np.ndarray):
@@ -79,6 +79,7 @@ def reduce_palette(image, num_colors, apply_dithering, use_half_res):
     
     # Ensure RGB
     img = img.convert("RGB")
+    original_img = img.copy()
     original_size = img.size
     
     # Resize to half resolution if requested
@@ -124,70 +125,73 @@ def reduce_palette(image, num_colors, apply_dithering, use_half_res):
     if use_half_res:
         new_img = new_img.resize(original_size, Image.Resampling.NEAREST)
     
-    return new_img
+    original_array = np.asarray(original_img, dtype=np.float32)
+    reduced_array = np.asarray(new_img, dtype=np.float32)
+    distance = np.linalg.norm(original_array - reduced_array, axis=2)
+    distance_image = Image.fromarray(
+        np.clip(distance / (255.0 * np.sqrt(3.0)) * 255.0, 0, 255).astype(np.uint8),
+        mode="L",
+    )
+    distance_image = ImageOps.equalize(distance_image)
+
+    return new_img, distance_image
 
 
 # Create Gradio interface
-with gr.Blocks(title="K-Means Color Palette Reducer") as demo:
+with gr.Blocks() as demo:
     gr.Markdown("# K-Means Color Palette Reducer")
-    gr.Markdown("Upload an image and reduce its color palette using k-means clustering")
-    
+
     with gr.Row():
-        with gr.Column():
-            input_image = gr.Image(
-                label="Input Image",
-                type="pil"
-            )
-            num_colors = gr.Slider(
-                minimum=2,
-                maximum=64,
-                value=8,
-                step=1,
-                label="Number of Colors"
-            )
-            apply_dithering = gr.Checkbox(
-                label="Apply Dithering (4x4 Bayer Pattern)",
-                value=True,
-                info="Ordered dithering pattern for retro-style color reduction"
-            )
-            use_half_res = gr.Checkbox(
-                label="Half Resolution Processing",
-                value=False,
-                info="Process at 50% size for faster results with large images"
-            )
-            process_btn = gr.Button("Process Image", variant="primary")
-        
-        with gr.Column():
-            output_image = gr.Image(
-                label="Reduced Palette Image",
-                type="pil"
-            )
+        num_colors = gr.Slider(
+            minimum=2,
+            maximum=64,
+            value=8,
+            step=1,
+            label="Number of Colors",
+            scale=2,
+        )
+        apply_dithering = gr.Checkbox(
+            label="Apply Dithering (4x4 Bayer Pattern)",
+            value=True,
+            info="Ordered dither",
+        )
+        use_half_res = gr.Checkbox(
+            label="Half Res Processing",
+            value=False,
+            info="Process at 50% size",
+        )
+        process_btn = gr.Button("Process", variant="primary")
+
+    with gr.Row():
+        input_image = gr.Image(label="Input Image", type="pil", format="png", height=620)
+        output_image = gr.Image(label="Reduced Palette", type="pil", format="png", height=620)
+        distance_image = gr.Image(label="RGB Distance", type="pil", format="png", height=620)
     
     # Process button click
     process_btn.click(
         fn=reduce_palette,
         inputs=[input_image, num_colors, apply_dithering, use_half_res],
-        outputs=output_image
+        outputs=[output_image, distance_image]
     )
     
     # Also process on slider change if image is loaded
     num_colors.change(
         fn=reduce_palette,
         inputs=[input_image, num_colors, apply_dithering, use_half_res],
-        outputs=output_image
+        outputs=[output_image, distance_image]
     )
     
     # Process on checkbox changes
     apply_dithering.change(
         fn=reduce_palette,
         inputs=[input_image, num_colors, apply_dithering, use_half_res],
-        outputs=output_image
+        outputs=[output_image, distance_image]
     )
     
     use_half_res.change(
         fn=reduce_palette,
         inputs=[input_image, num_colors, apply_dithering, use_half_res],
-        outputs=output_image
+        outputs=[output_image, distance_image]
     )
 
 
