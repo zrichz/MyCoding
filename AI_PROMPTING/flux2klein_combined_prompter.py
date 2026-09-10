@@ -1,7 +1,7 @@
 """
 F2K Prompt Generator - Photo Mode
 generates 400no. F2K prompts.
-Date: 2026-Feb, Updated: 2026-Aug
+Date: 2026-Sept
 
 STAGES:
   1. Subject identity (hard-coded)
@@ -12,8 +12,7 @@ STAGES:
   6. Body descriptors
   7. Context or location
   8. Shot and light variations
-  9. Film grade
-  10. Overall Feel (with adjustable emphasis weight)
+    9. Overall Feel (with adjustable emphasis weight)
 """
 
 import gradio as gr
@@ -25,7 +24,7 @@ import json
 # WILDCARD CLOTHING LOADER
 def load_wildcard_file(filename):
     """Load and parse a wildcard file, returning list of options."""
-    filepath = os.path.join("AI_PROMPTING", "prompt_clothing_wildcards", filename)
+    filepath = os.path.join(os.path.dirname(__file__), "prompt_clothing_wildcards", filename)
     if not os.path.exists(filepath):
         print(f"Warning: {filepath} not found")
         return []
@@ -83,7 +82,7 @@ SUBJECT = "a photo of a woman, blonde hair styled in a casual updo, hazel eyes, 
 
 STAGES = {
     "Pose and action": [
-        "three-quarter turn","standing","lying on back","walking towards viewer","sitting, legs crossed","kneeling",
+        "three-quarter turn","standing","lying on back","walking towards viewer","sitting, legs crossed","kneeling","hands on hips",
         "deep in thought","stretching","posing","leaning, relaxed","on all fours","looking","reaching, casual stance","leaning over",
         
     ],
@@ -92,27 +91,6 @@ STAGES = {
         
     ],
     "Clothing and key props": [
-        "black lace bralette with matching high-cut panties",
-        "white satin babydoll with sheer overlay",
-        "red lace teddy with cutout details",
-        "pink silk chemise with thin straps",
-        "black string bikini with minimal coverage",
-        "white open blouse with cheeky bottoms",
-        "ripped denim micro shorts with matching bandeau cotton top",
-        "cotton crop top with matching hot pants",
-        "iridescent silver micro dress",
-        "cream patterned lace bodysuit",
-        "white micro bodycon dress",
-        "white lingerie",
-        "lace-trimmed micro dress",
-        "pink latex catsuit unzipped to navel",
-        "choker with matching thong bodysuit",
-        "white wet t-shirt over skimpy bikini bottoms",
-        "bikini with side ties",
-        "barely-there sling bikini in shimmering fabric",
-        "open-front cardigan over lace bralette and panties",
-        "shredded t-shirt exposing sides with denim cut-offs",
-        
     ],
     "Expression and gaze": [
         "neutral expression, direct gaze to viewer", "candid, eyes to viewer", "direct eye contact",
@@ -160,114 +138,19 @@ SHOT_LIGHT = [
 "ring‑light portrait lighting",
 ]
 
-# FILM GRADE OPTIONS
-FILM_GRADE = [
-    "Kodak Portra 160 look",
-    "Kodak Portra 400 look",
-    "Kodak Portra 800 look",
-    "Kodak Gold 200 look",
-    "Kodak Ektar 100 look",
-    "Fuji Pro 400H look",
-    "Fuji Superia 400 look",
-    "Ilford HP5 black-and-white look",
-    "Ilford Delta 3200 black-and-white look",
-    "cinematic teal-and-orange grade",
-    "cinematic neutral-grade",
-    "cinematic desaturated grade",
-    "warm editorial colour grade",
-    "cool fashion colour grade",
-    "natural colour-accurate grade",
-    "high-contrast monochrome",
-    "soft low-contrast monochrome"
-]
-
 # OVERALL FEEL OPTIONS
 OVERALL_FEEL = [
-    "arctic",
-    "tropical",
-    "monsoon",
-    "desert",
-    "nocturnal",
-    "urban",
-    "suburban",
-    "industrial",
-    "futuristic",
-    "retro",
-    "vintage",
-    "neon",
-    "infrared",
-    "thermal",
-    "surreal",
-    "glacial",
-    "volcanic",
-    "coastal",
-    "rain-soaked",
-    "fogbound",
-    "windblown",
-    "stormlit",
-    "moonlit",
-    "sun-drenched",
-    "overcast",
-    "misty",
-    "dusty",
-    "gritty",
-    "opulent",
-    "minimalist",
-    "baroque",
-    "aristocratic",
-    "bohemian",
-    "arctic-blue",
-    "tundra",
-    "equatorial",
-    "high-altitude",
-    "underlit",
-    "overexposed",
-    "cinematic",
-    "documentary",
-    "editorial",
-    "fashion-forward",
-    "hyperreal",
-    "monochrome",
-    "chromatic",
-    "saturated",
-    "desaturated",
-    "bleached",
-    "sepia",
-    "analog",
-    "filmic",
-    "glamour",
-    "raw",
-    "moody",
-    "ethereal",
-    "harsh",
-    "ambient",
-    "backlit",
-    "rimlit",
-    "sunset-grade",
-    "twilight",
-    "nebulous",
-    "cosmic",
-    "Martian",
-    "lunar",
-    "polar",
-    "tropical-rainforest",
-    "mosaic",
-    "geometric",
-    "architectural",
-    "botanical",
-    "oceanic",
-    "arid",
-    "lush",
-    "windswept",
-    "smoky",
-    "holographic",
-    "chromatic-aberration",
-    "bokeh-rich",
-    "macro-styled",
-    "telephoto-styled"
+    "arctic",    "tropical",    "monsoon",    "desert",    "nocturnal",    "urban",    "suburban",    "industrial",    "futuristic",    "retro",    "vintage",
+    "neon",    "infrared",    "thermal",    "surreal",    "glacial",    "volcanic",    "coastal",    "rain-soaked",
+    "fogbound",    "windblown",    "stormlit",    "moonlit",    "sun-drenched",    "overcast",    "misty",    "dusty",    "gritty",    "opulent",    "minimalist",
+    "baroque",    "aristocratic",    "bohemian",    "arctic-blue",    "tundra",    "equatorial",    "high-altitude",    "underlit",    "overexposed",    "cinematic",
+    "documentary",    "editorial",    "fashion-forward",    "hyperreal",    "monochrome",    "chromatic",    "saturated",    "desaturated",    "bleached",    "sepia",
+    "analog",    "filmic",    "glamour",    "raw",    "moody",    "ethereal",    "harsh",    "ambient",    "backlit",    "rimlit",    "sunset-grade",    "twilight",
+    "nebulous",    "cosmic",    "Martian",    "lunar",    "polar",    "tropical-rainforest",    "mosaic",    "geometric",    "architectural",    "botanical",    "oceanic",
+    "arid",    "lush",    "windswept",    "smoky",    "holographic",    "chromatic-aberration",    "bokeh-rich",    "macro-styled",    "telephoto-styled"
 ]
 
-def generate_prompts(primary_enabled, shot_light_enabled, film_grade_enabled, overall_feel_enabled, overall_feel_weight, use_wildcard_clothing=False):
+def generate_prompts(primary_enabled, shot_light_enabled, overall_feel_enabled, overall_feel_weight):
     """Generate 400 prompts based on enabled stages."""
     prompts = []
     
@@ -282,7 +165,7 @@ def generate_prompts(primary_enabled, shot_light_enabled, film_grade_enabled, ov
         for stage_name, options in STAGES.items():
             if primary_enabled.get(stage_name, True):
                 # Special handling for clothing stage
-                if stage_name == "Clothing and key props" and use_wildcard_clothing:
+                if stage_name == "Clothing and key props":
                     prompt_dict[stage_name] = generate_wildcard_clothing()
                 else:
                     prompt_dict[stage_name] = random.choice(options)
@@ -290,10 +173,6 @@ def generate_prompts(primary_enabled, shot_light_enabled, film_grade_enabled, ov
         # Add shot and light if enabled
         if shot_light_enabled:
             prompt_dict["Shot and light variations"] = random.choice(SHOT_LIGHT)
-        
-        # Add film grade if enabled
-        if film_grade_enabled:
-            prompt_dict["Film grade"] = random.choice(FILM_GRADE)
         
         # Add overall feel if enabled
         if overall_feel_enabled:
@@ -307,7 +186,7 @@ def generate_prompts(primary_enabled, shot_light_enabled, film_grade_enabled, ov
     return prompts
 
 
-def generate_and_display(shot_light_check, film_grade_check, overall_feel_check, overall_feel_weight, wildcard_clothing_check, *checkboxes):
+def generate_and_display(shot_light_check, overall_feel_check, overall_feel_weight, *checkboxes):
     """Generate prompts and return formatted text with save option."""
     # Parse checkboxes (7 primary stages)
     primary_enabled = {}
@@ -318,7 +197,7 @@ def generate_and_display(shot_light_check, film_grade_check, overall_feel_check,
         primary_enabled[name] = checkboxes[i]
     
     # Generate prompts
-    prompts = generate_prompts(primary_enabled, shot_light_check, film_grade_check, overall_feel_check, overall_feel_weight, wildcard_clothing_check)
+    prompts = generate_prompts(primary_enabled, shot_light_check, overall_feel_check, overall_feel_weight)
     
     # Format output - show only last 8 prompts, prettified for display
     last_8 = prompts[-8:]
@@ -355,13 +234,6 @@ with gr.Blocks() as demo:
     gr.Markdown("Generate 400 randomized, custom photo prompts")
     gr.Markdown("Enable or disable stages to customize output.")
     
-    # Wildcard Clothing checkbox
-    wildcard_clothing_check = gr.Checkbox(
-        label="Use Wildcard Clothing (Section 4)",
-        value=False,
-        info="Generate clothing from wildcard files instead of built-in list"
-    )
-    
     with gr.Row():
         with gr.Column(scale=1):
             gr.Markdown("*Subject ID automatically included*")
@@ -376,13 +248,6 @@ with gr.Blocks() as demo:
                 label="Shot and light variations",
                 value=False,
                 info="Lighting and framing options"
-            )
-            
-            # Add film grade as separate checkbox
-            film_grade_check = gr.Checkbox(
-                label="Film grade",
-                value=False,
-                info="Film stock and colour grading options"
             )
             
             # Add overall feel as separate checkbox with weight slider
@@ -421,7 +286,7 @@ with gr.Blocks() as demo:
     all_checkboxes = primary_checks
     generate_btn.click(
         fn=generate_and_display,
-        inputs=[shot_light_check, film_grade_check, overall_feel_check, overall_feel_weight_slider, wildcard_clothing_check] + all_checkboxes,
+        inputs=[shot_light_check, overall_feel_check, overall_feel_weight_slider] + all_checkboxes,
         outputs=[output_text, prompts_state]
     )
     
