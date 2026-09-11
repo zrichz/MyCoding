@@ -74,7 +74,7 @@ def generate_wildcard_clothing():
     if footwear_parts:
         clothing_items.append(" ".join(footwear_parts))
     
-    return ", ".join(clothing_items) if clothing_items else "casual outfit"
+    return ", ".join(clothing_items) if clothing_items else " "
 
 # PRIMARY STAGES (8)
 # Subject identity
@@ -82,8 +82,7 @@ SUBJECT = "a photo of a woman, blonde hair styled in a casual updo, hazel eyes, 
 
 STAGES = {
     "Pose and action": [
-        "three-quarter turn","standing","lying on back","walking towards viewer","sitting, legs crossed","kneeling","hands on hips",
-        "deep in thought","stretching","posing","leaning, relaxed","on all fours","looking","reaching, casual stance","leaning over",
+        "three-quarter turn","standing","sitting","hands on hips", "deep in thought","posing","relaxed,casual stance",
         
     ],
     "Framing and crop": [
@@ -93,14 +92,14 @@ STAGES = {
     "Clothing and key props": [
     ],
     "Expression and gaze": [
-        "neutral expression, direct gaze to viewer", "candid, eyes to viewer", "direct eye contact",
+        "neutral expression, direct gaze to viewer", "candid, eyes to viewer", "direct eye contact","smiling, teeth"
         
     ],
     "Body descriptors": [
         "visible (freckles:0.5) on arms", "light sun tan", "toned calves", "natural posture, relaxed",
         
     ],
-    "location": [ "interior", "selfie", "garden", "bedroom", "shower","exterior", ],
+    "location": [ "bedroom", "lounge", ],
 }
 
 # Shot and light variations
