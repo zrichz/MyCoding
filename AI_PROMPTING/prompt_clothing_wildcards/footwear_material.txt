@@ -1,7 +1,1 @@
-mesh,
-cork,
 patent_leather,
-transparent,
-see-through,
-glitter,
-studded,
