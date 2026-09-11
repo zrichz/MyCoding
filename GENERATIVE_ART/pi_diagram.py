@@ -1,56 +1,41 @@
+import io
+import math
 import matplotlib.pyplot as plt
+import mpmath
 import numpy as np
-from decimal import Decimal, getcontext
+import gradio as gr
+from decimal import Decimal, localcontext
+from PIL import Image
 
-# Configuration - Modify these values to experiment
-NUM_DIGITS = 200  # Number of pi digits to generate (more digits = longer path)
-BASE = 10        # Base to convert pi to (2-36, try 4, 6, 8, 10, 16)
+# Config
+NUM_DIGITS = 200  # Number of digits to generate (more = longer path)
+BASE = 10        # Base to convert pi to (2-10)
+MAX_DIGITS = 1_000_000
+MAX_PLOT_POINTS = 100_000
+PATH_COLORS = (
+    "#e63946",  # red
+    "#2a9d8f",  # teal
+    "#457b9d",  # blue
+    "#f4a261",  # orange
+    "#8338ec",  # violet
+    "#ff006e",  # magenta
+)
 
-# Display optimized for 1920x1080 screen with 16:9 aspect ratio
-# Debug feature: When NUM_DIGITS < 20, digit labels are shown on each line segment
-
-# Popular bases to try:
-# BASE = 4   # Quaternary (0,1,2,3)
-# BASE = 6   # Senary (0,1,2,3,4,5) 
-# BASE = 8   # Octal (0,1,2,3,4,5,6,7)
-# BASE = 10  # Decimal (0,1,2,3,4,5,6,7,8,9)
-# BASE = 16  # Hexadecimal (0,1,2,3,4,5,6,7,8,9,A,B,C,D,E,F)
-
-# Set high precision for decimal calculations
-getcontext().prec = NUM_DIGITS + 20
+# Display optimized for 1920x1080
+# When NUM_DIGITS < 20, digit labels are shown on each line segment
 
 def calculate_pi(precision):
-    """
-    Calculate pi using the Bailey–Borwein–Plouffe formula (simpler than Chudnovsky)
-    Returns pi as a Decimal with the specified number of decimal places
-    """
-    getcontext().prec = precision + 20
-    
-    pi_sum = Decimal(0)
-    
-    # BBP formula: π = Σ(k=0 to ∞) [1/16^k * (4/(8k+1) - 2/(8k+4) - 1/(8k+5) - 1/(8k+6))]
-    for k in range(precision + 10):  # More iterations for higher precision
-        term1 = Decimal(4) / (8*k + 1)
-        term2 = Decimal(2) / (8*k + 4) 
-        term3 = Decimal(1) / (8*k + 5)
-        term4 = Decimal(1) / (8*k + 6)
-        
-        term = (term1 - term2 - term3 - term4) / (Decimal(16) ** k)
-        pi_sum += term
-        
-        # Early termination if term becomes negligible
-        if abs(term) < Decimal(10) ** (-precision - 5):
-            break
-    
-    return pi_sum
+    """Return pi to the requested number of decimal places using mpmath."""
+    with mpmath.workdps(precision + 10):
+        return mpmath.nstr(mpmath.pi, n=precision + 1, strip_zeros=False)
 
 def decimal_to_base(decimal_str, base, num_digits):
     """
-    Convert a decimal number string to any base (2-36)
+    Convert a decimal number string to a base from 2 through 10.
     Returns the string representation in the target base
     """
-    if base < 2 or base > 36:
-        raise ValueError("Base must be between 2 and 36")
+    if base < 2 or base > 10:
+        raise ValueError("Base must be between 2 and 10")
     
     # Split into integer and fractional parts
     if '.' in decimal_str:
@@ -58,39 +43,41 @@ def decimal_to_base(decimal_str, base, num_digits):
     else:
         integer_part, fractional_part = decimal_str, '0'
     
+    if base == 10:
+        return integer_part + fractional_part[:num_digits]
+
     # Convert integer part
     integer_val = int(integer_part)
-    if integer_val == 0:
-        integer_result = '0'
-    else:
-        digits = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        integer_result = ''
-        while integer_val > 0:
-            integer_result = digits[integer_val % base] + integer_result
-            integer_val //= base
+    integer_result = str(integer_val)
     
     # Convert fractional part
     fractional_val = Decimal('0.' + fractional_part)
-    fractional_result = ''
-    digits = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    
+    fractional_result = []
+
     for _ in range(num_digits):
         fractional_val *= base
         digit = int(fractional_val)
-        fractional_result += digits[digit]
+        fractional_result.append(str(digit))
         fractional_val -= digit
         
         if fractional_val == 0:
             break
     
-    return integer_result + fractional_result
+    return integer_result + ''.join(fractional_result)
 
 def generate_pi_config(base, num_digits):
     """
     Generate pi configuration for a given base and number of digits
     """
-    # Calculate pi with high precision
-    pi_decimal = calculate_pi(num_digits + 10)
+    if not 2 <= base <= 10:
+        raise ValueError("Base must be between 2 and 10")
+    if not 1 <= num_digits <= MAX_DIGITS:
+        raise ValueError(f"Number of digits must be between 1 and {MAX_DIGITS:,}")
+
+    decimal_precision = (
+        num_digits if base == 10 else math.ceil(num_digits * math.log10(base)) + 10
+    )
+    pi_decimal = calculate_pi(decimal_precision)
     
     # Convert to string and get the required precision
     pi_str = str(pi_decimal)
@@ -100,11 +87,11 @@ def generate_pi_config(base, num_digits):
     
     # Configuration based on base (optimized for 1920x1080 screen)
     configs = {
+        2: {"w": 1600, "h": 900, "oX": 800, "oY": 450, "step": 50},
         4: {"w": 1600, "h": 900, "oX": 400, "oY": 450, "step": 40},
         6: {"w": 1600, "h": 900, "oX": 800, "oY": 450, "step": 70},
         8: {"w": 1600, "h": 900, "oX": 200, "oY": 200, "step": 32},
         10: {"w": 1600, "h": 900, "oX": 800, "oY": 200, "step": 60},
-        16: {"w": 1600, "h": 900, "oX": 800, "oY": 450, "step": 50},
     }
     
     # Use default config for unlisted bases
@@ -121,20 +108,11 @@ def generate_pi_config(base, num_digits):
         "step": config["step"]
     }
 
-# Generate pi configuration
-pi = generate_pi_config(BASE, NUM_DIGITS)
-print(f"Generated π in base {BASE} with {len(pi['value'])} digits: {pi['value'][:50]}...")
-
 def path_finder(pi):
-    x, y = 0, 0
-    path = [(x, y)]
-    for digit in pi["value"]:
-        n = int(digit)
-        r = n * 2 * np.pi / pi["base"]
-        x += pi["step"] * np.cos(r)
-        y += pi["step"] * np.sin(r)
-        path.append((x, y))
-    return np.array(path)
+    digits = np.fromiter((int(digit) for digit in pi["value"]), dtype=np.float64)
+    angles = digits * 2 * np.pi / pi["base"]
+    steps = np.column_stack((np.cos(angles), np.sin(angles))) * pi["step"]
+    return np.vstack((np.zeros((1, 2)), np.cumsum(steps, axis=0)))
 
 def plot_pi_path(pi_config, path, title=None):
     """
@@ -147,13 +125,31 @@ def plot_pi_path(pi_config, path, title=None):
     fig, ax = plt.subplots(figsize=(16, 9))  # 16:9 aspect ratio for widescreen
     ax.set_facecolor('#f0f0f0')
     
-    # Plot the path
-    ax.plot(path[:, 0] + pi_config["oX"], path[:, 1] + pi_config["oY"], 
-            color='gray', linewidth=2, alpha=0.8)
-    
-    # Add dots along the path (smaller for larger display)
-    ax.scatter(path[:, 0] + pi_config["oX"], path[:, 1] + pi_config["oY"], 
-               color='#f0f0f0', s=15, alpha=0.6)
+    segment_count = len(path) - 1
+    section_indices = np.array_split(np.arange(segment_count), len(PATH_COLORS))
+    points_per_section = max(1, MAX_PLOT_POINTS // len(PATH_COLORS))
+
+    for section_number, indices in enumerate(section_indices, start=1):
+        if len(indices) == 0:
+            continue
+
+        start_index = int(indices[0])
+        end_index = int(indices[-1]) + 1
+        section_path = path[start_index:end_index + 1]
+        plot_step = max(1, math.ceil(len(section_path) / points_per_section))
+        plot_section = section_path[::plot_step]
+        if not np.array_equal(plot_section[-1], section_path[-1]):
+            plot_section = np.vstack((plot_section, section_path[-1]))
+
+        first_digit = start_index + 1
+        last_digit = end_index
+        label = f"Section {section_number} (digits {first_digit}-{last_digit})"
+        color = PATH_COLORS[section_number - 1]
+        x_values = plot_section[:, 0] + pi_config["oX"]
+        y_values = plot_section[:, 1] + pi_config["oY"]
+
+        ax.plot(x_values, y_values, color=color, linewidth=2, alpha=0.9, label=label)
+        ax.scatter(x_values, y_values, color=color, s=15, alpha=0.7)
     
     # Add digit labels at line centers for debugging (only when digits < 20)
     if len(pi_config["value"]) < 20:
@@ -184,28 +180,92 @@ def plot_pi_path(pi_config, path, title=None):
     ax.set_aspect('equal')
     ax.axis('off')
     ax.set_title(title, fontsize=14, pad=20)
-    plt.legend()
+    ax.legend(loc="upper left", bbox_to_anchor=(1.01, 1), fontsize=9)
     plt.tight_layout()
-    plt.show()
+    return fig
 
-# Generate and plot the pi path
-path = path_finder(pi)
-plot_pi_path(pi, path)
 
-def test_different_bases():
-    """
-    Function to easily test different bases - uncomment to use
-    """
-    bases_to_test = [4, 6, 8, 10, 16]
-    
-    for base in bases_to_test:
-        print(f"\n=== Testing Base {base} ===")
-        pi_config = generate_pi_config(base, 50)  # Use 50 digits for quick testing
-        print(f"π in base {base}: {pi_config['value'][:30]}...")
-        
-        # You can plot each one by uncommenting the lines below:
-        # path = path_finder(pi_config)
-        # plot_pi_path(pi_config, path, f"Pi in Base {base}")
+def generate_pi_diagram(base, num_digits):
+    """Generate a PNG diagram and summary text for the Gradio interface."""
+    base = int(base)
+    num_digits = int(num_digits)
 
-# Uncomment the line below to test all bases at once:
-# test_different_bases()
+    if not 2 <= base <= 10:
+        raise ValueError("Base must be between 2 and 10")
+    if not 1 <= num_digits <= MAX_DIGITS:
+        raise ValueError(f"Number of digits must be between 1 and {MAX_DIGITS:,}")
+
+    pi_config = generate_pi_config(base, num_digits)
+    path = path_finder(pi_config)
+    figure = plot_pi_path(pi_config, path)
+
+    image_buffer = io.BytesIO()
+    figure.savefig(image_buffer, format="png", dpi=120, bbox_inches="tight")
+    plt.close(figure)
+    image_buffer.seek(0)
+    diagram_image = Image.open(image_buffer).convert("RGB")
+
+    summary = (
+        f"Generated {len(pi_config['value'])} digits of pi in base {base}.\n"
+        f"Sequence: {pi_config['value'][:80]}"
+    )
+    return diagram_image, summary
+
+
+def create_interface():
+    """Create the interactive pi path diagram interface."""
+    with gr.Blocks(
+        title="Pi Path Diagram",
+        theme=gr.themes.Soft()
+    ) as demo:
+        gr.Markdown("Pi Paths")
+        gr.Markdown(
+            "Convert pi to another base and trace each digit as a turn in a path. "
+            "Short sequences are labeled with the digit that created each segment."
+        )
+
+        with gr.Row():
+            with gr.Column(scale=1):
+                base_input = gr.Slider(
+                    minimum=2,
+                    maximum=10,
+                    value=BASE,
+                    step=1,
+                    label="Base",
+                    info="Use bases 2 through 10. Common choices: 4, 6, 8, and 10."
+                )
+                digits_input = gr.Slider(
+                    minimum=1,
+                    maximum=MAX_DIGITS,
+                    value=NUM_DIGITS,
+                    step=1,
+                    label="Number of digits",
+                    info="Fewer than 20 digits displays segment labels."
+                )
+                generate_button = gr.Button("Generate Diagram", variant="primary")
+                summary_output = gr.Textbox(
+                    label="Generation Summary",
+                    lines=4,
+                    interactive=False
+                )
+
+            with gr.Column(scale=2):
+                diagram_output = gr.Image(
+                    label="Pi Path",
+                    type="pil",
+                    format="png",
+                    height=650,
+                    interactive=False
+                )
+
+        generate_button.click(
+            fn=generate_pi_diagram,
+            inputs=[base_input, digits_input],
+            outputs=[diagram_output, summary_output]
+        )
+
+    return demo
+
+if __name__ == "__main__":
+    demo = create_interface()
+    demo.launch(inbrowser=True)

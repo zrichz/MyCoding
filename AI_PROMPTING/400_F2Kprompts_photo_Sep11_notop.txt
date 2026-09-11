@@ -1,0 +1,2400 @@
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in a bedroom wearing white patent_leather platform_heels.
+She has neutral expression, direct gaze to viewer, natural posture, relaxed.
+The photo is studio beauty dish lighting, full body.
+Overall Feel: (overcast:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in an interior wearing silver patent_leather open_toe_heels.
+She has neutral expression, direct gaze to viewer, toned calves.
+The photo is broad lighting, medium shot.
+Overall Feel: (smoky:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in a bedroom wearing pink patent_leather wedge_heels.
+She has candid, eyes to viewer, toned calves.
+The photo is fluorescent ambient lighting, 3/4 body portrait.
+Overall Feel: (backlit:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is sitting in an interior wearing silver patent_leather wedge_heels.
+She has direct eye contact, visible (freckles:0.5) on arms.
+The photo is split lighting, medium shot.
+Overall Feel: (moody:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in a mirror selfie wearing nude patent_leather wedge_heels.
+She has candid, eyes to viewer, light sun tan.
+The photo is short lighting, 3/4 body portrait.
+Overall Feel: (futuristic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in a mirror selfie wearing silver patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, toned calves.
+The photo is studio beauty dish lighting, full body.
+Overall Feel: (bokeh-rich:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in a garden wearing nude patent_leather wedge_heels.
+She has candid, eyes to viewer, natural posture, relaxed.
+The photo is Rembrandt lighting, medium shot.
+Overall Feel: (overcast:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in a garden wearing nude patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, natural posture, relaxed.
+The photo is soft diffused window light, medium shot.
+Overall Feel: (analog:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is sitting in a bedroom wearing silver patent_leather platform_heels.
+She has direct eye contact, toned calves.
+The photo is cinematic top‑down lighting, 3/4 body portrait.
+Overall Feel: (tropical:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in a bedroom wearing pink patent_leather open_toe_heels.
+She has neutral expression, direct gaze to viewer, light sun tan.
+The photo is intimate, 3/4 body portrait.
+Overall Feel: (urban:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in an interior wearing black patent_leather platform_heels.
+She has candid, eyes to viewer, visible (freckles:0.5) on arms.
+The photo is casual, full body.
+Overall Feel: (industrial:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in a mirror selfie wearing white patent_leather wedge_heels.
+She has candid, eyes to viewer, natural posture, relaxed.
+The photo is casual, medium shot.
+Overall Feel: (tropical:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in a garden wearing silver patent_leather wedge_heels.
+She has direct eye contact, visible (freckles:0.5) on arms.
+The photo is dramatic half-lighting, 3/4 body portrait.
+Overall Feel: (dusty:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in an interior wearing pink patent_leather platform_heels.
+She has direct eye contact, light sun tan.
+The photo is hard direct sunlight, full body.
+Overall Feel: (thermal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in a mirror selfie wearing white patent_leather open_toe_heels.
+She has candid, eyes to viewer, natural posture, relaxed.
+The photo is mixed‑temperature lighting, 3/4 body portrait.
+Overall Feel: (filmic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in a mirror selfie wearing pink patent_leather open_toe_heels.
+She has candid, eyes to viewer, light sun tan.
+The photo is soft diffused lighting, medium shot.
+Overall Feel: (windblown:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a mirror selfie wearing white patent_leather mules.
+She has direct eye contact, toned calves.
+The photo is fluorescent ambient lighting, 3/4 body portrait.
+Overall Feel: (nocturnal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in a bedroom wearing black patent_leather platform_heels.
+She has neutral expression, direct gaze to viewer, natural posture, relaxed.
+The photo is loop lighting, 3/4 body portrait.
+Overall Feel: (windswept:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in a mirror selfie wearing teal patent_leather open_toe_heels.
+She has neutral expression, direct gaze to viewer, light sun tan.
+The photo is moody low‑key lighting, medium shot.
+Overall Feel: (high-altitude:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in a bedroom wearing teal patent_leather open_toe_heels.
+She has direct eye contact, light sun tan.
+The photo is neon ambient lighting, medium shot.
+Overall Feel: (monsoon:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in a mirror selfie wearing black patent_leather open_toe_heels.
+She has direct eye contact, visible (freckles:0.5) on arms.
+The photo is loop lighting, medium shot.
+Overall Feel: (tropical:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in a garden wearing silver patent_leather mules.
+She has direct eye contact, toned calves.
+The photo is soft diffused window light, 3/4 body portrait.
+Overall Feel: (cosmic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in a bedroom wearing black patent_leather platform_heels.
+She has candid, eyes to viewer, natural posture, relaxed.
+The photo is cinematic rim lighting, full body.
+Overall Feel: (suburban:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in a garden wearing silver patent_leather open_toe_heels.
+She has candid, eyes to viewer, natural posture, relaxed.
+The photo is cinematic rim lighting, 3/4 body portrait.
+Overall Feel: (rimlit:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in a garden wearing white patent_leather platform_heels.
+She has direct eye contact, light sun tan.
+The photo is overcast natural light, full body.
+Overall Feel: (fashion-forward:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in a garden wearing silver patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, light sun tan.
+The photo is broad lighting, medium shot.
+Overall Feel: (arctic-blue:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in an interior wearing black patent_leather mules.
+She has candid, eyes to viewer, natural posture, relaxed.
+The photo is dynamic perspective, 3/4 body portrait.
+Overall Feel: (coastal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in a mirror selfie wearing teal patent_leather wedge_heels.
+She has candid, eyes to viewer, toned calves.
+The photo is hard direct sunlight, 3/4 body portrait.
+Overall Feel: (high-altitude:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a mirror selfie wearing pink patent_leather platform_heels.
+She has neutral expression, direct gaze to viewer, light sun tan.
+The photo is practical tungsten lighting, medium shot.
+Overall Feel: (moonlit:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is deep in thought in a garden wearing pink patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, light sun tan.
+The photo is practical tungsten lighting, full body.
+Overall Feel: (ambient:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in a garden wearing pink patent_leather wedge_heels.
+She has candid, eyes to viewer, light sun tan.
+The photo is studio softbox lighting, 3/4 body portrait.
+Overall Feel: (ambient:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in an exterior wearing white patent_leather platform_heels.
+She has candid, eyes to viewer, visible (freckles:0.5) on arms.
+The photo is dramatic half-lighting, medium shot.
+Overall Feel: (analog:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in a mirror selfie wearing black patent_leather wedge_heels.
+She has candid, eyes to viewer, toned calves.
+The photo is studio softbox lighting, medium shot.
+Overall Feel: (urban:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in an interior wearing black patent_leather platform_heels.
+She has direct eye contact, toned calves.
+The photo is Rembrandt lighting, 3/4 body portrait.
+Overall Feel: (futuristic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in an interior wearing pink patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, toned calves.
+The photo is mixed‑temperature lighting, medium shot.
+Overall Feel: (surreal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in an exterior wearing nude patent_leather mules.
+She has candid, eyes to viewer, light sun tan.
+The photo is ring‑light portrait lighting, full body.
+Overall Feel: (baroque:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in a bedroom wearing white patent_leather open_toe_heels.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is golden hour lighting mood, full body.
+Overall Feel: (harsh:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is deep in thought in a garden wearing teal patent_leather platform_heels.
+She has direct eye contact, visible (freckles:0.5) on arms.
+The photo is golden hour backlighting, full body.
+Overall Feel: (desert:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in an interior wearing black patent_leather open_toe_heels.
+She has candid, eyes to viewer, visible (freckles:0.5) on arms.
+The photo is practical tungsten lighting, 3/4 body portrait.
+Overall Feel: (gritty:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in an exterior wearing teal patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is shot from below, medium shot.
+Overall Feel: (windswept:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in an interior wearing black patent_leather open_toe_heels.
+She has candid, eyes to viewer, visible (freckles:0.5) on arms.
+The photo is cinematic top‑down lighting, 3/4 body portrait.
+Overall Feel: (volcanic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in an exterior wearing silver patent_leather open_toe_heels.
+She has direct eye contact, toned calves.
+The photo is casual, 3/4 body portrait.
+Overall Feel: (tropical:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in a bedroom wearing white patent_leather platform_heels.
+She has direct eye contact, natural posture, relaxed.
+The photo is short lighting, full body.
+Overall Feel: (neon:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is deep in thought in a bedroom wearing teal patent_leather wedge_heels.
+She has direct eye contact, natural posture, relaxed.
+The photo is Rembrandt lighting, 3/4 body portrait.
+Overall Feel: (filmic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in a bedroom wearing nude patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, toned calves.
+The photo is golden hour lighting mood, 3/4 body portrait.
+Overall Feel: (cosmic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in an interior wearing nude patent_leather open_toe_heels.
+She has candid, eyes to viewer, light sun tan.
+The photo is intimate, full body.
+Overall Feel: (vintage:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in a mirror selfie wearing teal patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, light sun tan.
+The photo is cinematic top‑down lighting, full body.
+Overall Feel: (glamour:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in a bedroom wearing pink patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, natural posture, relaxed.
+The photo is short lighting, full body.
+Overall Feel: (tropical:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in an interior wearing nude patent_leather platform_heels.
+She has candid, eyes to viewer, visible (freckles:0.5) on arms.
+The photo is dynamic perspective, full body.
+Overall Feel: (moonlit:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in a bedroom wearing nude patent_leather wedge_heels.
+She has direct eye contact, toned calves.
+The photo is dynamic perspective, full body.
+Overall Feel: (bohemian:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in an exterior wearing teal patent_leather mules.
+She has neutral expression, direct gaze to viewer, toned calves.
+The photo is shot from below, full body.
+Overall Feel: (opulent:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is deep in thought in a bedroom wearing black patent_leather open_toe_heels.
+She has neutral expression, direct gaze to viewer, natural posture, relaxed.
+The photo is soft diffused window light, 3/4 body portrait.
+Overall Feel: (neon:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in a bedroom wearing pink patent_leather platform_heels.
+She has neutral expression, direct gaze to viewer, natural posture, relaxed.
+The photo is loop lighting, full body.
+Overall Feel: (sepia:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in an exterior wearing silver patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, natural posture, relaxed.
+The photo is studio clamshell lighting, 3/4 body portrait.
+Overall Feel: (moonlit:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in a bedroom wearing nude patent_leather mules.
+She has direct eye contact, light sun tan.
+The photo is bright high‑key lighting, medium shot.
+Overall Feel: (thermal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in an interior wearing teal patent_leather open_toe_heels.
+She has neutral expression, direct gaze to viewer, toned calves.
+The photo is studio clamshell lighting, medium shot.
+Overall Feel: (tropical:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in an exterior wearing white patent_leather open_toe_heels.
+She has direct eye contact, natural posture, relaxed.
+The photo is studio clamshell lighting, 3/4 body portrait.
+Overall Feel: (rimlit:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in an interior wearing pink patent_leather platform_heels.
+She has direct eye contact, toned calves.
+The photo is off‑camera flash photography, full body.
+Overall Feel: (bohemian:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in an exterior wearing pink patent_leather platform_heels.
+She has direct eye contact, light sun tan.
+The photo is casual, 3/4 body portrait.
+Overall Feel: (urban:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in a mirror selfie wearing pink patent_leather platform_heels.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is soft diffused window light, full body.
+Overall Feel: (tropical:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in an interior wearing black patent_leather mules.
+She has direct eye contact, light sun tan.
+The photo is loop lighting, 3/4 body portrait.
+Overall Feel: (windblown:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in a garden wearing black patent_leather open_toe_heels.
+She has neutral expression, direct gaze to viewer, natural posture, relaxed.
+The photo is off‑camera flash photography, full body.
+Overall Feel: (tropical:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in a mirror selfie wearing silver patent_leather open_toe_heels.
+She has candid, eyes to viewer, toned calves.
+The photo is split lighting, medium shot.
+Overall Feel: (macro-styled:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a garden wearing white patent_leather platform_heels.
+She has direct eye contact, visible (freckles:0.5) on arms.
+The photo is shot from above, full body.
+Overall Feel: (harsh:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in an exterior wearing nude patent_leather mules.
+She has direct eye contact, toned calves.
+The photo is golden hour backlighting, medium shot.
+Overall Feel: (analog:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in a garden wearing black patent_leather mules.
+She has candid, eyes to viewer, toned calves.
+The photo is golden hour backlighting, medium shot.
+Overall Feel: (ambient:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in an interior wearing silver patent_leather mules.
+She has direct eye contact, light sun tan.
+The photo is broad lighting, 3/4 body portrait.
+Overall Feel: (surreal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in a garden wearing nude patent_leather open_toe_heels.
+She has neutral expression, direct gaze to viewer, light sun tan.
+The photo is shot from below, full body.
+Overall Feel: (analog:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in a garden wearing nude patent_leather platform_heels.
+She has direct eye contact, toned calves.
+The photo is hard direct sunlight, medium shot.
+Overall Feel: (harsh:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in a mirror selfie wearing white patent_leather mules.
+She has neutral expression, direct gaze to viewer, light sun tan.
+The photo is studio clamshell lighting, medium shot.
+Overall Feel: (dusty:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in an interior wearing teal patent_leather open_toe_heels.
+She has candid, eyes to viewer, visible (freckles:0.5) on arms.
+The photo is mixed‑temperature lighting, medium shot.
+Overall Feel: (macro-styled:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in an interior wearing silver patent_leather mules.
+She has direct eye contact, visible (freckles:0.5) on arms.
+The photo is intimate, 3/4 body portrait.
+Overall Feel: (baroque:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in a mirror selfie wearing silver patent_leather open_toe_heels.
+She has candid, eyes to viewer, natural posture, relaxed.
+The photo is shot from above, 3/4 body portrait.
+Overall Feel: (high-altitude:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in a bedroom wearing nude patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, natural posture, relaxed.
+The photo is shot from below, full body.
+Overall Feel: (surreal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is deep in thought in a mirror selfie wearing pink patent_leather wedge_heels.
+She has direct eye contact, light sun tan.
+The photo is shot from below, medium shot.
+Overall Feel: (hyperreal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is deep in thought in a mirror selfie wearing silver patent_leather platform_heels.
+She has neutral expression, direct gaze to viewer, toned calves.
+The photo is split lighting, 3/4 body portrait.
+Overall Feel: (smoky:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in a bedroom wearing pink patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, natural posture, relaxed.
+The photo is soft diffused lighting, medium shot.
+Overall Feel: (surreal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is sitting in a bedroom wearing black patent_leather mules.
+She has neutral expression, direct gaze to viewer, light sun tan.
+The photo is bounce‑flash photography, full body.
+Overall Feel: (ethereal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is deep in thought in an interior wearing white patent_leather open_toe_heels.
+She has direct eye contact, light sun tan.
+The photo is short lighting, medium shot.
+Overall Feel: (cinematic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is sitting in a garden wearing pink patent_leather mules.
+She has candid, eyes to viewer, natural posture, relaxed.
+The photo is cinematic top‑down lighting, 3/4 body portrait.
+Overall Feel: (futuristic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in a garden wearing silver patent_leather mules.
+She has direct eye contact, toned calves.
+The photo is casual, full body.
+Overall Feel: (hyperreal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in a mirror selfie wearing black patent_leather platform_heels.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is split lighting, full body.
+Overall Feel: (filmic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is deep in thought in a bedroom wearing black patent_leather wedge_heels.
+She has direct eye contact, toned calves.
+The photo is intimate, 3/4 body portrait.
+Overall Feel: (dusty:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in a mirror selfie wearing white patent_leather wedge_heels.
+She has direct eye contact, toned calves.
+The photo is bounce‑flash photography, full body.
+Overall Feel: (coastal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in a garden wearing black patent_leather wedge_heels.
+She has direct eye contact, visible (freckles:0.5) on arms.
+The photo is mixed‑temperature lighting, medium shot.
+Overall Feel: (gritty:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in a garden wearing pink patent_leather open_toe_heels.
+She has direct eye contact, natural posture, relaxed.
+The photo is soft diffused window light, full body.
+Overall Feel: (smoky:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in a mirror selfie wearing pink patent_leather mules.
+She has candid, eyes to viewer, light sun tan.
+The photo is broad lighting, medium shot.
+Overall Feel: (retro:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in a garden wearing teal patent_leather mules.
+She has candid, eyes to viewer, visible (freckles:0.5) on arms.
+The photo is broad lighting, full body.
+Overall Feel: (rain-soaked:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in an interior wearing pink patent_leather mules.
+She has neutral expression, direct gaze to viewer, toned calves.
+The photo is split lighting, 3/4 body portrait.
+Overall Feel: (smoky:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is sitting in a bedroom wearing teal patent_leather platform_heels.
+She has candid, eyes to viewer, visible (freckles:0.5) on arms.
+The photo is intimate, 3/4 body portrait.
+Overall Feel: (windswept:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in an exterior wearing pink patent_leather open_toe_heels.
+She has candid, eyes to viewer, light sun tan.
+The photo is casual, medium shot.
+Overall Feel: (smoky:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in a mirror selfie wearing teal patent_leather mules.
+She has direct eye contact, natural posture, relaxed.
+The photo is overcast natural light, full body.
+Overall Feel: (chromatic-aberration:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in a mirror selfie wearing pink patent_leather platform_heels.
+She has candid, eyes to viewer, toned calves.
+The photo is bounce‑flash photography, full body.
+Overall Feel: (moody:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in a bedroom wearing pink patent_leather mules.
+She has neutral expression, direct gaze to viewer, natural posture, relaxed.
+The photo is loop lighting, 3/4 body portrait.
+Overall Feel: (volcanic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in an exterior wearing black patent_leather platform_heels.
+She has direct eye contact, light sun tan.
+The photo is short lighting, full body.
+Overall Feel: (smoky:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in a garden wearing pink patent_leather mules.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is cinematic top‑down lighting, full body.
+Overall Feel: (volcanic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in a garden wearing pink patent_leather wedge_heels.
+She has candid, eyes to viewer, toned calves.
+The photo is neon ambient lighting, 3/4 body portrait.
+Overall Feel: (coastal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is deep in thought in a bedroom wearing nude patent_leather platform_heels.
+She has candid, eyes to viewer, visible (freckles:0.5) on arms.
+The photo is shot from above, full body.
+Overall Feel: (overexposed:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is sitting in a mirror selfie wearing white patent_leather open_toe_heels.
+She has direct eye contact, visible (freckles:0.5) on arms.
+The photo is cinematic top‑down lighting, full body.
+Overall Feel: (industrial:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is deep in thought in an exterior wearing teal patent_leather wedge_heels.
+She has direct eye contact, natural posture, relaxed.
+The photo is Rembrandt lighting, full body.
+Overall Feel: (fogbound:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in an exterior wearing nude patent_leather platform_heels.
+She has direct eye contact, toned calves.
+The photo is off‑camera flash photography, full body.
+Overall Feel: (fogbound:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in an exterior wearing silver patent_leather platform_heels.
+She has direct eye contact, visible (freckles:0.5) on arms.
+The photo is mixed‑temperature lighting, medium shot.
+Overall Feel: (equatorial:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is deep in thought in a garden wearing pink patent_leather mules.
+She has direct eye contact, light sun tan.
+The photo is broad lighting, full body.
+Overall Feel: (coastal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in an interior wearing silver patent_leather mules.
+She has neutral expression, direct gaze to viewer, natural posture, relaxed.
+The photo is hard direct sunlight, full body.
+Overall Feel: (ethereal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in a mirror selfie wearing teal patent_leather open_toe_heels.
+She has direct eye contact, natural posture, relaxed.
+The photo is short lighting, full body.
+Overall Feel: (analog:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in a mirror selfie wearing black patent_leather platform_heels.
+She has direct eye contact, natural posture, relaxed.
+The photo is split lighting, full body.
+Overall Feel: (sun-drenched:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in a garden wearing nude patent_leather wedge_heels.
+She has direct eye contact, visible (freckles:0.5) on arms.
+The photo is mixed‑temperature lighting, medium shot.
+Overall Feel: (surreal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in an exterior wearing white patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, light sun tan.
+The photo is moody low‑key lighting, 3/4 body portrait.
+Overall Feel: (coastal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is deep in thought in a bedroom wearing black patent_leather platform_heels.
+She has neutral expression, direct gaze to viewer, toned calves.
+The photo is shot from below, full body.
+Overall Feel: (tundra:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in an exterior wearing black patent_leather platform_heels.
+She has neutral expression, direct gaze to viewer, toned calves.
+The photo is golden hour backlighting, full body.
+Overall Feel: (gritty:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in a bedroom wearing silver patent_leather wedge_heels.
+She has candid, eyes to viewer, visible (freckles:0.5) on arms.
+The photo is overcast natural light, medium shot.
+Overall Feel: (cinematic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a mirror selfie wearing white patent_leather wedge_heels.
+She has direct eye contact, toned calves.
+The photo is moody low‑key lighting, 3/4 body portrait.
+Overall Feel: (moonlit:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in an exterior wearing black patent_leather open_toe_heels.
+She has neutral expression, direct gaze to viewer, toned calves.
+The photo is bright high‑key lighting, 3/4 body portrait.
+Overall Feel: (cosmic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in a garden wearing teal patent_leather platform_heels.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is overcast natural light, medium shot.
+Overall Feel: (gritty:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in an interior wearing teal patent_leather open_toe_heels.
+She has neutral expression, direct gaze to viewer, natural posture, relaxed.
+The photo is shot from below, full body.
+Overall Feel: (fogbound:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is deep in thought in a mirror selfie wearing teal patent_leather mules.
+She has candid, eyes to viewer, toned calves.
+The photo is cinematic rim lighting, medium shot.
+Overall Feel: (fogbound:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in a mirror selfie wearing pink patent_leather platform_heels.
+She has candid, eyes to viewer, visible (freckles:0.5) on arms.
+The photo is overcast natural light, full body.
+Overall Feel: (thermal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in an interior wearing white patent_leather platform_heels.
+She has direct eye contact, light sun tan.
+The photo is bright high‑key lighting, medium shot.
+Overall Feel: (vintage:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in an interior wearing black patent_leather open_toe_heels.
+She has direct eye contact, light sun tan.
+The photo is cinematic top‑down lighting, full body.
+Overall Feel: (industrial:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in an exterior wearing silver patent_leather open_toe_heels.
+She has neutral expression, direct gaze to viewer, toned calves.
+The photo is loop lighting, medium shot.
+Overall Feel: (volcanic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a bedroom wearing white patent_leather wedge_heels.
+She has candid, eyes to viewer, visible (freckles:0.5) on arms.
+The photo is split lighting, 3/4 body portrait.
+Overall Feel: (coastal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in a garden wearing silver patent_leather open_toe_heels.
+She has neutral expression, direct gaze to viewer, natural posture, relaxed.
+The photo is studio clamshell lighting, full body.
+Overall Feel: (glacial:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a bedroom wearing pink patent_leather platform_heels.
+She has direct eye contact, light sun tan.
+The photo is overcast natural light, medium shot.
+Overall Feel: (bokeh-rich:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in an exterior wearing nude patent_leather wedge_heels.
+She has candid, eyes to viewer, natural posture, relaxed.
+The photo is cinematic rim lighting, full body.
+Overall Feel: (lush:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in a garden wearing nude patent_leather platform_heels.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is dramatic half-lighting, medium shot.
+Overall Feel: (opulent:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in an exterior wearing nude patent_leather wedge_heels.
+She has direct eye contact, natural posture, relaxed.
+The photo is soft diffused window light, medium shot.
+Overall Feel: (cinematic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is deep in thought in an interior wearing teal patent_leather platform_heels.
+She has neutral expression, direct gaze to viewer, natural posture, relaxed.
+The photo is shot from below, 3/4 body portrait.
+Overall Feel: (overexposed:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in a mirror selfie wearing nude patent_leather open_toe_heels.
+She has direct eye contact, natural posture, relaxed.
+The photo is dynamic perspective, 3/4 body portrait.
+Overall Feel: (nebulous:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is sitting in a mirror selfie wearing silver patent_leather platform_heels.
+She has candid, eyes to viewer, natural posture, relaxed.
+The photo is bounce‑flash photography, 3/4 body portrait.
+Overall Feel: (arctic-blue:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is deep in thought in a garden wearing white patent_leather platform_heels.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is soft diffused lighting, medium shot.
+Overall Feel: (holographic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is sitting in a bedroom wearing nude patent_leather mules.
+She has direct eye contact, light sun tan.
+The photo is studio clamshell lighting, full body.
+Overall Feel: (telephoto-styled:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in an interior wearing nude patent_leather open_toe_heels.
+She has candid, eyes to viewer, light sun tan.
+The photo is bright high‑key lighting, 3/4 body portrait.
+Overall Feel: (rain-soaked:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a bedroom wearing silver patent_leather wedge_heels.
+She has candid, eyes to viewer, visible (freckles:0.5) on arms.
+The photo is ring‑light portrait lighting, 3/4 body portrait.
+Overall Feel: (monsoon:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in a garden wearing silver patent_leather wedge_heels.
+She has direct eye contact, natural posture, relaxed.
+The photo is shot from below, medium shot.
+Overall Feel: (telephoto-styled:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in a garden wearing silver patent_leather platform_heels.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is intimate, 3/4 body portrait.
+Overall Feel: (underlit:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in an exterior wearing nude patent_leather open_toe_heels.
+She has direct eye contact, toned calves.
+The photo is cinematic top‑down lighting, 3/4 body portrait.
+Overall Feel: (high-altitude:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in an interior wearing pink patent_leather platform_heels.
+She has candid, eyes to viewer, light sun tan.
+The photo is golden hour backlighting, 3/4 body portrait.
+Overall Feel: (industrial:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in a garden wearing silver patent_leather mules.
+She has direct eye contact, natural posture, relaxed.
+The photo is loop lighting, 3/4 body portrait.
+Overall Feel: (coastal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in an exterior wearing black patent_leather platform_heels.
+She has candid, eyes to viewer, natural posture, relaxed.
+The photo is studio clamshell lighting, 3/4 body portrait.
+Overall Feel: (bleached:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in an interior wearing teal patent_leather mules.
+She has direct eye contact, toned calves.
+The photo is mixed‑temperature lighting, 3/4 body portrait.
+Overall Feel: (lush:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in a garden wearing nude patent_leather open_toe_heels.
+She has neutral expression, direct gaze to viewer, light sun tan.
+The photo is mixed‑temperature lighting, full body.
+Overall Feel: (moonlit:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in an exterior wearing white patent_leather wedge_heels.
+She has direct eye contact, toned calves.
+The photo is neon ambient lighting, full body.
+Overall Feel: (suburban:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a mirror selfie wearing silver patent_leather mules.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is studio beauty dish lighting, full body.
+Overall Feel: (neon:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is sitting in a garden wearing nude patent_leather wedge_heels.
+She has candid, eyes to viewer, visible (freckles:0.5) on arms.
+The photo is bright high‑key lighting, medium shot.
+Overall Feel: (monochrome:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in a mirror selfie wearing white patent_leather platform_heels.
+She has neutral expression, direct gaze to viewer, light sun tan.
+The photo is studio clamshell lighting, medium shot.
+Overall Feel: (overcast:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in a bedroom wearing nude patent_leather mules.
+She has candid, eyes to viewer, natural posture, relaxed.
+The photo is studio beauty dish lighting, full body.
+Overall Feel: (baroque:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in a mirror selfie wearing white patent_leather platform_heels.
+She has candid, eyes to viewer, light sun tan.
+The photo is fluorescent ambient lighting, 3/4 body portrait.
+Overall Feel: (harsh:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is sitting in a garden wearing nude patent_leather mules.
+She has candid, eyes to viewer, toned calves.
+The photo is dynamic perspective, full body.
+Overall Feel: (thermal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in an exterior wearing silver patent_leather platform_heels.
+She has direct eye contact, visible (freckles:0.5) on arms.
+The photo is studio beauty dish lighting, full body.
+Overall Feel: (desaturated:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in a mirror selfie wearing black patent_leather mules.
+She has direct eye contact, toned calves.
+The photo is neon ambient lighting, full body.
+Overall Feel: (futuristic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in a bedroom wearing white patent_leather mules.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is casual, full body.
+Overall Feel: (opulent:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in an interior wearing pink patent_leather platform_heels.
+She has candid, eyes to viewer, natural posture, relaxed.
+The photo is fluorescent ambient lighting, 3/4 body portrait.
+Overall Feel: (documentary:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in an interior wearing pink patent_leather platform_heels.
+She has candid, eyes to viewer, toned calves.
+The photo is golden hour backlighting, full body.
+Overall Feel: (bohemian:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in a bedroom wearing teal patent_leather mules.
+She has candid, eyes to viewer, light sun tan.
+The photo is soft diffused window light, 3/4 body portrait.
+Overall Feel: (cinematic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in a garden wearing silver patent_leather wedge_heels.
+She has candid, eyes to viewer, toned calves.
+The photo is short lighting, full body.
+Overall Feel: (aristocratic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in a garden wearing white patent_leather open_toe_heels.
+She has candid, eyes to viewer, light sun tan.
+The photo is golden hour lighting mood, medium shot.
+Overall Feel: (chromatic-aberration:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in a mirror selfie wearing teal patent_leather mules.
+She has direct eye contact, visible (freckles:0.5) on arms.
+The photo is studio softbox lighting, medium shot.
+Overall Feel: (overcast:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in an interior wearing silver patent_leather open_toe_heels.
+She has neutral expression, direct gaze to viewer, natural posture, relaxed.
+The photo is moody low‑key lighting, 3/4 body portrait.
+Overall Feel: (baroque:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in a garden wearing silver patent_leather open_toe_heels.
+She has direct eye contact, light sun tan.
+The photo is split lighting, medium shot.
+Overall Feel: (retro:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in a mirror selfie wearing black patent_leather platform_heels.
+She has candid, eyes to viewer, visible (freckles:0.5) on arms.
+The photo is fluorescent ambient lighting, 3/4 body portrait.
+Overall Feel: (holographic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is sitting in an interior wearing silver patent_leather wedge_heels.
+She has direct eye contact, light sun tan.
+The photo is Rembrandt lighting, full body.
+Overall Feel: (tropical:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a mirror selfie wearing pink patent_leather mules.
+She has direct eye contact, natural posture, relaxed.
+The photo is intimate, full body.
+Overall Feel: (surreal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in a bedroom wearing white patent_leather open_toe_heels.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is casual, medium shot.
+Overall Feel: (overcast:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in a bedroom wearing nude patent_leather open_toe_heels.
+She has direct eye contact, visible (freckles:0.5) on arms.
+The photo is overcast natural light, full body.
+Overall Feel: (suburban:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in an exterior wearing pink patent_leather open_toe_heels.
+She has candid, eyes to viewer, light sun tan.
+The photo is fluorescent ambient lighting, medium shot.
+Overall Feel: (retro:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in an exterior wearing teal patent_leather open_toe_heels.
+She has direct eye contact, visible (freckles:0.5) on arms.
+The photo is dramatic half-lighting, full body.
+Overall Feel: (ethereal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in an interior wearing silver patent_leather mules.
+She has neutral expression, direct gaze to viewer, natural posture, relaxed.
+The photo is fluorescent ambient lighting, full body.
+Overall Feel: (chromatic-aberration:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in an interior wearing white patent_leather platform_heels.
+She has direct eye contact, light sun tan.
+The photo is ring‑light portrait lighting, full body.
+Overall Feel: (backlit:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in an interior wearing black patent_leather platform_heels.
+She has direct eye contact, visible (freckles:0.5) on arms.
+The photo is studio beauty dish lighting, 3/4 body portrait.
+Overall Feel: (chromatic-aberration:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in a bedroom wearing nude patent_leather platform_heels.
+She has direct eye contact, natural posture, relaxed.
+The photo is studio beauty dish lighting, 3/4 body portrait.
+Overall Feel: (arctic-blue:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in an exterior wearing teal patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is shot from above, full body.
+Overall Feel: (retro:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a mirror selfie wearing white patent_leather open_toe_heels.
+She has direct eye contact, light sun tan.
+The photo is bounce‑flash photography, full body.
+Overall Feel: (smoky:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in an interior wearing teal patent_leather open_toe_heels.
+She has neutral expression, direct gaze to viewer, natural posture, relaxed.
+The photo is dynamic perspective, 3/4 body portrait.
+Overall Feel: (ethereal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in a bedroom wearing pink patent_leather open_toe_heels.
+She has direct eye contact, light sun tan.
+The photo is dramatic half-lighting, 3/4 body portrait.
+Overall Feel: (arctic-blue:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is sitting in a garden wearing silver patent_leather wedge_heels.
+She has direct eye contact, light sun tan.
+The photo is split lighting, full body.
+Overall Feel: (ethereal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in an exterior wearing teal patent_leather wedge_heels.
+She has direct eye contact, natural posture, relaxed.
+The photo is broad lighting, 3/4 body portrait.
+Overall Feel: (windblown:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in a mirror selfie wearing white patent_leather platform_heels.
+She has candid, eyes to viewer, visible (freckles:0.5) on arms.
+The photo is shot from above, 3/4 body portrait.
+Overall Feel: (ethereal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in a garden wearing white patent_leather platform_heels.
+She has direct eye contact, light sun tan.
+The photo is Rembrandt lighting, medium shot.
+Overall Feel: (sun-drenched:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in an exterior wearing silver patent_leather open_toe_heels.
+She has candid, eyes to viewer, toned calves.
+The photo is studio beauty dish lighting, medium shot.
+Overall Feel: (vintage:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in a garden wearing white patent_leather open_toe_heels.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is golden hour backlighting, full body.
+Overall Feel: (tropical:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in a mirror selfie wearing pink patent_leather platform_heels.
+She has direct eye contact, light sun tan.
+The photo is Rembrandt lighting, 3/4 body portrait.
+Overall Feel: (cosmic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in an interior wearing teal patent_leather open_toe_heels.
+She has direct eye contact, natural posture, relaxed.
+The photo is studio softbox lighting, full body.
+Overall Feel: (ethereal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a garden wearing pink patent_leather wedge_heels.
+She has direct eye contact, light sun tan.
+The photo is overcast natural light, medium shot.
+Overall Feel: (overcast:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is sitting in an exterior wearing black patent_leather platform_heels.
+She has direct eye contact, visible (freckles:0.5) on arms.
+The photo is loop lighting, full body.
+Overall Feel: (glamour:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in a bedroom wearing white patent_leather open_toe_heels.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is golden hour lighting mood, 3/4 body portrait.
+Overall Feel: (desert:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in an interior wearing black patent_leather mules.
+She has candid, eyes to viewer, light sun tan.
+The photo is intimate, medium shot.
+Overall Feel: (overcast:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in an interior wearing silver patent_leather platform_heels.
+She has candid, eyes to viewer, natural posture, relaxed.
+The photo is neon ambient lighting, 3/4 body portrait.
+Overall Feel: (nocturnal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is sitting in an interior wearing pink patent_leather platform_heels.
+She has candid, eyes to viewer, light sun tan.
+The photo is short lighting, 3/4 body portrait.
+Overall Feel: (infrared:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in a bedroom wearing pink patent_leather platform_heels.
+She has direct eye contact, toned calves.
+The photo is shot from above, 3/4 body portrait.
+Overall Feel: (chromatic-aberration:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in a bedroom wearing pink patent_leather mules.
+She has neutral expression, direct gaze to viewer, natural posture, relaxed.
+The photo is ring‑light portrait lighting, full body.
+Overall Feel: (gritty:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in an exterior wearing white patent_leather open_toe_heels.
+She has direct eye contact, visible (freckles:0.5) on arms.
+The photo is Rembrandt lighting, medium shot.
+Overall Feel: (glacial:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in an exterior wearing teal patent_leather mules.
+She has neutral expression, direct gaze to viewer, light sun tan.
+The photo is mixed‑temperature lighting, medium shot.
+Overall Feel: (tundra:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in a mirror selfie wearing teal patent_leather mules.
+She has neutral expression, direct gaze to viewer, light sun tan.
+The photo is ring‑light portrait lighting, medium shot.
+Overall Feel: (nocturnal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a garden wearing pink patent_leather platform_heels.
+She has direct eye contact, toned calves.
+The photo is split lighting, full body.
+Overall Feel: (chromatic-aberration:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is sitting in a garden wearing pink patent_leather mules.
+She has direct eye contact, natural posture, relaxed.
+The photo is golden hour backlighting, full body.
+Overall Feel: (nebulous:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in a mirror selfie wearing pink patent_leather mules.
+She has candid, eyes to viewer, light sun tan.
+The photo is ring‑light portrait lighting, medium shot.
+Overall Feel: (fogbound:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in a bedroom wearing white patent_leather wedge_heels.
+She has direct eye contact, toned calves.
+The photo is moody low‑key lighting, 3/4 body portrait.
+Overall Feel: (analog:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in an interior wearing white patent_leather open_toe_heels.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is mixed‑temperature lighting, full body.
+Overall Feel: (bokeh-rich:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in an exterior wearing white patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is moody low‑key lighting, medium shot.
+Overall Feel: (desert:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is sitting in a garden wearing white patent_leather platform_heels.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is soft diffused window light, medium shot.
+Overall Feel: (surreal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in a mirror selfie wearing white patent_leather platform_heels.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is shot from below, 3/4 body portrait.
+Overall Feel: (sun-drenched:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a mirror selfie wearing silver patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is neon ambient lighting, 3/4 body portrait.
+Overall Feel: (chromatic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in a mirror selfie wearing nude patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, toned calves.
+The photo is off‑camera flash photography, full body.
+Overall Feel: (futuristic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in a garden wearing black patent_leather open_toe_heels.
+She has direct eye contact, toned calves.
+The photo is short lighting, 3/4 body portrait.
+Overall Feel: (lush:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is sitting in an interior wearing pink patent_leather platform_heels.
+She has direct eye contact, toned calves.
+The photo is studio clamshell lighting, medium shot.
+Overall Feel: (telephoto-styled:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is deep in thought in an interior wearing black patent_leather open_toe_heels.
+She has candid, eyes to viewer, light sun tan.
+The photo is studio beauty dish lighting, full body.
+Overall Feel: (high-altitude:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is sitting in a garden wearing white patent_leather mules.
+She has candid, eyes to viewer, toned calves.
+The photo is intimate, full body.
+Overall Feel: (industrial:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in a bedroom wearing white patent_leather platform_heels.
+She has neutral expression, direct gaze to viewer, toned calves.
+The photo is moody low‑key lighting, 3/4 body portrait.
+Overall Feel: (tundra:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is sitting in a bedroom wearing nude patent_leather wedge_heels.
+She has candid, eyes to viewer, light sun tan.
+The photo is moody low‑key lighting, full body.
+Overall Feel: (monsoon:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in a garden wearing black patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, natural posture, relaxed.
+The photo is soft diffused window light, full body.
+Overall Feel: (thermal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in an interior wearing silver patent_leather platform_heels.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is short lighting, full body.
+Overall Feel: (high-altitude:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in a bedroom wearing pink patent_leather open_toe_heels.
+She has neutral expression, direct gaze to viewer, natural posture, relaxed.
+The photo is cinematic top‑down lighting, full body.
+Overall Feel: (industrial:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in a bedroom wearing teal patent_leather open_toe_heels.
+She has direct eye contact, light sun tan.
+The photo is soft diffused window light, medium shot.
+Overall Feel: (bokeh-rich:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in a garden wearing silver patent_leather mules.
+She has direct eye contact, toned calves.
+The photo is cinematic top‑down lighting, 3/4 body portrait.
+Overall Feel: (macro-styled:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in a bedroom wearing pink patent_leather mules.
+She has candid, eyes to viewer, visible (freckles:0.5) on arms.
+The photo is split lighting, full body.
+Overall Feel: (aristocratic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in an exterior wearing teal patent_leather mules.
+She has candid, eyes to viewer, natural posture, relaxed.
+The photo is intimate, medium shot.
+Overall Feel: (fashion-forward:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is deep in thought in a mirror selfie wearing teal patent_leather platform_heels.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is intimate, full body.
+Overall Feel: (infrared:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in an exterior wearing white patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, light sun tan.
+The photo is split lighting, full body.
+Overall Feel: (monsoon:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in an interior wearing nude patent_leather mules.
+She has neutral expression, direct gaze to viewer, toned calves.
+The photo is off‑camera flash photography, 3/4 body portrait.
+Overall Feel: (backlit:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in a bedroom wearing pink patent_leather mules.
+She has neutral expression, direct gaze to viewer, light sun tan.
+The photo is dramatic half-lighting, medium shot.
+Overall Feel: (minimalist:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in a garden wearing black patent_leather platform_heels.
+She has candid, eyes to viewer, visible (freckles:0.5) on arms.
+The photo is soft diffused window light, 3/4 body portrait.
+Overall Feel: (coastal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in an interior wearing white patent_leather mules.
+She has candid, eyes to viewer, natural posture, relaxed.
+The photo is studio beauty dish lighting, 3/4 body portrait.
+Overall Feel: (chromatic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a garden wearing teal patent_leather open_toe_heels.
+She has neutral expression, direct gaze to viewer, toned calves.
+The photo is hard direct sunlight, 3/4 body portrait.
+Overall Feel: (high-altitude:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is sitting in a mirror selfie wearing white patent_leather wedge_heels.
+She has direct eye contact, visible (freckles:0.5) on arms.
+The photo is ring‑light portrait lighting, 3/4 body portrait.
+Overall Feel: (glacial:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is deep in thought in a bedroom wearing black patent_leather mules.
+She has candid, eyes to viewer, natural posture, relaxed.
+The photo is ring‑light portrait lighting, medium shot.
+Overall Feel: (overcast:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in an interior wearing white patent_leather platform_heels.
+She has neutral expression, direct gaze to viewer, natural posture, relaxed.
+The photo is golden hour lighting mood, full body.
+Overall Feel: (industrial:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in a mirror selfie wearing nude patent_leather open_toe_heels.
+She has candid, eyes to viewer, toned calves.
+The photo is golden hour lighting mood, medium shot.
+Overall Feel: (coastal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in an interior wearing silver patent_leather mules.
+She has candid, eyes to viewer, natural posture, relaxed.
+The photo is studio clamshell lighting, full body.
+Overall Feel: (volcanic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is sitting in an interior wearing pink patent_leather mules.
+She has direct eye contact, toned calves.
+The photo is off‑camera flash photography, medium shot.
+Overall Feel: (ethereal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in an interior wearing teal patent_leather mules.
+She has candid, eyes to viewer, light sun tan.
+The photo is practical tungsten lighting, full body.
+Overall Feel: (infrared:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in an interior wearing white patent_leather platform_heels.
+She has neutral expression, direct gaze to viewer, light sun tan.
+The photo is neon ambient lighting, full body.
+Overall Feel: (bohemian:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in a garden wearing white patent_leather mules.
+She has candid, eyes to viewer, toned calves.
+The photo is soft diffused lighting, 3/4 body portrait.
+Overall Feel: (infrared:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is sitting in a garden wearing pink patent_leather mules.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is hard direct sunlight, full body.
+Overall Feel: (monochrome:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in a garden wearing pink patent_leather open_toe_heels.
+She has direct eye contact, natural posture, relaxed.
+The photo is bounce‑flash photography, medium shot.
+Overall Feel: (gritty:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in a garden wearing teal patent_leather open_toe_heels.
+She has neutral expression, direct gaze to viewer, toned calves.
+The photo is neon ambient lighting, full body.
+Overall Feel: (monochrome:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in a bedroom wearing black patent_leather mules.
+She has candid, eyes to viewer, toned calves.
+The photo is casual, full body.
+Overall Feel: (overcast:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a garden wearing white patent_leather platform_heels.
+She has candid, eyes to viewer, light sun tan.
+The photo is cinematic rim lighting, medium shot.
+Overall Feel: (arctic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is deep in thought in a garden wearing pink patent_leather mules.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is hard direct sunlight, 3/4 body portrait.
+Overall Feel: (futuristic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is deep in thought in a bedroom wearing white patent_leather wedge_heels.
+She has candid, eyes to viewer, light sun tan.
+The photo is casual, full body.
+Overall Feel: (analog:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is sitting in a mirror selfie wearing black patent_leather open_toe_heels.
+She has direct eye contact, light sun tan.
+The photo is studio beauty dish lighting, 3/4 body portrait.
+Overall Feel: (rain-soaked:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is deep in thought in a garden wearing teal patent_leather mules.
+She has direct eye contact, natural posture, relaxed.
+The photo is broad lighting, medium shot.
+Overall Feel: (fogbound:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in an interior wearing black patent_leather open_toe_heels.
+She has direct eye contact, natural posture, relaxed.
+The photo is split lighting, medium shot.
+Overall Feel: (chromatic-aberration:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in a mirror selfie wearing pink patent_leather platform_heels.
+She has candid, eyes to viewer, natural posture, relaxed.
+The photo is loop lighting, full body.
+Overall Feel: (rimlit:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in an exterior wearing white patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, natural posture, relaxed.
+The photo is split lighting, medium shot.
+Overall Feel: (underlit:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in an exterior wearing teal patent_leather open_toe_heels.
+She has candid, eyes to viewer, toned calves.
+The photo is shot from above, full body.
+Overall Feel: (windblown:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in an interior wearing nude patent_leather open_toe_heels.
+She has neutral expression, direct gaze to viewer, natural posture, relaxed.
+The photo is casual, medium shot.
+Overall Feel: (saturated:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in a bedroom wearing black patent_leather wedge_heels.
+She has candid, eyes to viewer, light sun tan.
+The photo is short lighting, full body.
+Overall Feel: (filmic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a garden wearing white patent_leather platform_heels.
+She has direct eye contact, light sun tan.
+The photo is intimate, 3/4 body portrait.
+Overall Feel: (neon:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is sitting in a mirror selfie wearing teal patent_leather open_toe_heels.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is dynamic perspective, medium shot.
+Overall Feel: (rimlit:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in a mirror selfie wearing nude patent_leather mules.
+She has direct eye contact, natural posture, relaxed.
+The photo is golden hour lighting mood, medium shot.
+Overall Feel: (sepia:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in a bedroom wearing pink patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is dramatic half-lighting, full body.
+Overall Feel: (glamour:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in an exterior wearing black patent_leather mules.
+She has direct eye contact, light sun tan.
+The photo is bright high‑key lighting, full body.
+Overall Feel: (tropical:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is deep in thought in a bedroom wearing nude patent_leather open_toe_heels.
+She has candid, eyes to viewer, light sun tan.
+The photo is loop lighting, medium shot.
+Overall Feel: (coastal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in a garden wearing pink patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is bright high‑key lighting, 3/4 body portrait.
+Overall Feel: (opulent:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in an exterior wearing white patent_leather mules.
+She has direct eye contact, natural posture, relaxed.
+The photo is short lighting, medium shot.
+Overall Feel: (dusty:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in an interior wearing pink patent_leather open_toe_heels.
+She has candid, eyes to viewer, visible (freckles:0.5) on arms.
+The photo is ring‑light portrait lighting, 3/4 body portrait.
+Overall Feel: (baroque:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in a bedroom wearing nude patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, natural posture, relaxed.
+The photo is overcast natural light, full body.
+Overall Feel: (glamour:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in a bedroom wearing teal patent_leather platform_heels.
+She has direct eye contact, toned calves.
+The photo is Rembrandt lighting, medium shot.
+Overall Feel: (suburban:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in an exterior wearing nude patent_leather mules.
+She has direct eye contact, toned calves.
+The photo is short lighting, 3/4 body portrait.
+Overall Feel: (desert:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in a mirror selfie wearing teal patent_leather open_toe_heels.
+She has candid, eyes to viewer, toned calves.
+The photo is off‑camera flash photography, medium shot.
+Overall Feel: (ambient:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in an interior wearing nude patent_leather mules.
+She has candid, eyes to viewer, light sun tan.
+The photo is golden hour backlighting, 3/4 body portrait.
+Overall Feel: (windblown:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a garden wearing silver patent_leather open_toe_heels.
+She has direct eye contact, toned calves.
+The photo is overcast natural light, full body.
+Overall Feel: (moonlit:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a mirror selfie wearing black patent_leather open_toe_heels.
+She has direct eye contact, natural posture, relaxed.
+The photo is short lighting, 3/4 body portrait.
+Overall Feel: (suburban:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in an interior wearing silver patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, light sun tan.
+The photo is bright high‑key lighting, medium shot.
+Overall Feel: (fashion-forward:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in a mirror selfie wearing silver patent_leather wedge_heels.
+She has candid, eyes to viewer, toned calves.
+The photo is studio clamshell lighting, full body.
+Overall Feel: (baroque:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in a mirror selfie wearing nude patent_leather wedge_heels.
+She has candid, eyes to viewer, natural posture, relaxed.
+The photo is bounce‑flash photography, full body.
+Overall Feel: (glacial:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in an interior wearing black patent_leather open_toe_heels.
+She has neutral expression, direct gaze to viewer, natural posture, relaxed.
+The photo is bounce‑flash photography, 3/4 body portrait.
+Overall Feel: (desert:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a mirror selfie wearing white patent_leather platform_heels.
+She has direct eye contact, natural posture, relaxed.
+The photo is loop lighting, full body.
+Overall Feel: (sunset-grade:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is deep in thought in an interior wearing teal patent_leather mules.
+She has candid, eyes to viewer, toned calves.
+The photo is bounce‑flash photography, 3/4 body portrait.
+Overall Feel: (cosmic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in a garden wearing white patent_leather platform_heels.
+She has direct eye contact, natural posture, relaxed.
+The photo is short lighting, full body.
+Overall Feel: (opulent:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a bedroom wearing pink patent_leather platform_heels.
+She has candid, eyes to viewer, light sun tan.
+The photo is soft diffused lighting, full body.
+Overall Feel: (volcanic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is deep in thought in an interior wearing silver patent_leather mules.
+She has neutral expression, direct gaze to viewer, light sun tan.
+The photo is studio beauty dish lighting, 3/4 body portrait.
+Overall Feel: (misty:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in a garden wearing teal patent_leather platform_heels.
+She has neutral expression, direct gaze to viewer, natural posture, relaxed.
+The photo is fluorescent ambient lighting, 3/4 body portrait.
+Overall Feel: (thermal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in a bedroom wearing pink patent_leather mules.
+She has candid, eyes to viewer, toned calves.
+The photo is split lighting, medium shot.
+Overall Feel: (saturated:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is sitting in a bedroom wearing nude patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, light sun tan.
+The photo is studio beauty dish lighting, 3/4 body portrait.
+Overall Feel: (futuristic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in an interior wearing pink patent_leather wedge_heels.
+She has direct eye contact, light sun tan.
+The photo is dynamic perspective, 3/4 body portrait.
+Overall Feel: (industrial:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in an interior wearing teal patent_leather open_toe_heels.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is bright high‑key lighting, medium shot.
+Overall Feel: (volcanic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a garden wearing black patent_leather mules.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is studio clamshell lighting, medium shot.
+Overall Feel: (bleached:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in a mirror selfie wearing nude patent_leather open_toe_heels.
+She has candid, eyes to viewer, visible (freckles:0.5) on arms.
+The photo is shot from above, full body.
+Overall Feel: (underlit:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is deep in thought in a bedroom wearing silver patent_leather platform_heels.
+She has direct eye contact, natural posture, relaxed.
+The photo is mixed‑temperature lighting, 3/4 body portrait.
+Overall Feel: (tropical:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in an interior wearing white patent_leather mules.
+She has candid, eyes to viewer, toned calves.
+The photo is bright high‑key lighting, 3/4 body portrait.
+Overall Feel: (windswept:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in an interior wearing black patent_leather wedge_heels.
+She has candid, eyes to viewer, toned calves.
+The photo is studio beauty dish lighting, full body.
+Overall Feel: (bohemian:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a garden wearing pink patent_leather mules.
+She has direct eye contact, natural posture, relaxed.
+The photo is golden hour lighting mood, 3/4 body portrait.
+Overall Feel: (sunset-grade:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is sitting in a bedroom wearing black patent_leather wedge_heels.
+She has candid, eyes to viewer, toned calves.
+The photo is studio clamshell lighting, full body.
+Overall Feel: (filmic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in a mirror selfie wearing pink patent_leather platform_heels.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is studio clamshell lighting, full body.
+Overall Feel: (sun-drenched:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in a garden wearing silver patent_leather open_toe_heels.
+She has neutral expression, direct gaze to viewer, natural posture, relaxed.
+The photo is studio clamshell lighting, medium shot.
+Overall Feel: (bleached:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is deep in thought in an interior wearing pink patent_leather mules.
+She has candid, eyes to viewer, visible (freckles:0.5) on arms.
+The photo is golden hour lighting mood, 3/4 body portrait.
+Overall Feel: (glacial:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is sitting in a garden wearing nude patent_leather platform_heels.
+She has candid, eyes to viewer, toned calves.
+The photo is loop lighting, full body.
+Overall Feel: (vintage:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is deep in thought in a mirror selfie wearing black patent_leather platform_heels.
+She has direct eye contact, light sun tan.
+The photo is overcast natural light, 3/4 body portrait.
+Overall Feel: (macro-styled:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in an exterior wearing nude patent_leather mules.
+She has candid, eyes to viewer, light sun tan.
+The photo is broad lighting, medium shot.
+Overall Feel: (lush:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in an exterior wearing black patent_leather open_toe_heels.
+She has direct eye contact, light sun tan.
+The photo is neon ambient lighting, 3/4 body portrait.
+Overall Feel: (arctic-blue:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in an exterior wearing white patent_leather open_toe_heels.
+She has candid, eyes to viewer, toned calves.
+The photo is golden hour backlighting, 3/4 body portrait.
+Overall Feel: (equatorial:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in a mirror selfie wearing nude patent_leather mules.
+She has neutral expression, direct gaze to viewer, light sun tan.
+The photo is bounce‑flash photography, medium shot.
+Overall Feel: (equatorial:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in an exterior wearing pink patent_leather wedge_heels.
+She has direct eye contact, toned calves.
+The photo is fluorescent ambient lighting, 3/4 body portrait.
+Overall Feel: (chromatic-aberration:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is sitting in a bedroom wearing nude patent_leather platform_heels.
+She has neutral expression, direct gaze to viewer, light sun tan.
+The photo is cinematic rim lighting, full body.
+Overall Feel: (neon:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in a bedroom wearing teal patent_leather mules.
+She has direct eye contact, natural posture, relaxed.
+The photo is ring‑light portrait lighting, medium shot.
+Overall Feel: (analog:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in a garden wearing teal patent_leather open_toe_heels.
+She has candid, eyes to viewer, toned calves.
+The photo is shot from above, full body.
+Overall Feel: (windswept:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a garden wearing white patent_leather wedge_heels.
+She has candid, eyes to viewer, light sun tan.
+The photo is studio clamshell lighting, full body.
+Overall Feel: (neon:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in an exterior wearing white patent_leather platform_heels.
+She has candid, eyes to viewer, visible (freckles:0.5) on arms.
+The photo is short lighting, full body.
+Overall Feel: (rimlit:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in a bedroom wearing teal patent_leather platform_heels.
+She has direct eye contact, natural posture, relaxed.
+The photo is golden hour backlighting, medium shot.
+Overall Feel: (macro-styled:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in an exterior wearing white patent_leather open_toe_heels.
+She has direct eye contact, light sun tan.
+The photo is split lighting, 3/4 body portrait.
+Overall Feel: (holographic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is deep in thought in a mirror selfie wearing nude patent_leather platform_heels.
+She has neutral expression, direct gaze to viewer, light sun tan.
+The photo is hard direct sunlight, 3/4 body portrait.
+Overall Feel: (coastal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a garden wearing pink patent_leather platform_heels.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is broad lighting, 3/4 body portrait.
+Overall Feel: (windblown:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is deep in thought in a garden wearing pink patent_leather mules.
+She has candid, eyes to viewer, visible (freckles:0.5) on arms.
+The photo is studio softbox lighting, medium shot.
+Overall Feel: (nocturnal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in a bedroom wearing black patent_leather mules.
+She has neutral expression, direct gaze to viewer, natural posture, relaxed.
+The photo is dramatic half-lighting, 3/4 body portrait.
+Overall Feel: (glacial:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in a mirror selfie wearing nude patent_leather mules.
+She has candid, eyes to viewer, visible (freckles:0.5) on arms.
+The photo is neon ambient lighting, full body.
+Overall Feel: (underlit:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in a garden wearing white patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, toned calves.
+The photo is casual, full body.
+Overall Feel: (twilight:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in a bedroom wearing pink patent_leather wedge_heels.
+She has direct eye contact, visible (freckles:0.5) on arms.
+The photo is neon ambient lighting, 3/4 body portrait.
+Overall Feel: (arctic-blue:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in an exterior wearing silver patent_leather open_toe_heels.
+She has neutral expression, direct gaze to viewer, natural posture, relaxed.
+The photo is broad lighting, medium shot.
+Overall Feel: (rain-soaked:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in a bedroom wearing white patent_leather wedge_heels.
+She has direct eye contact, toned calves.
+The photo is loop lighting, 3/4 body portrait.
+Overall Feel: (dusty:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in an exterior wearing pink patent_leather open_toe_heels.
+She has candid, eyes to viewer, visible (freckles:0.5) on arms.
+The photo is mixed‑temperature lighting, full body.
+Overall Feel: (arctic-blue:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is sitting in an exterior wearing nude patent_leather open_toe_heels.
+She has candid, eyes to viewer, visible (freckles:0.5) on arms.
+The photo is bright high‑key lighting, medium shot.
+Overall Feel: (bohemian:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in an exterior wearing black patent_leather mules.
+She has direct eye contact, toned calves.
+The photo is overcast natural light, full body.
+Overall Feel: (bohemian:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in an interior wearing silver patent_leather mules.
+She has direct eye contact, natural posture, relaxed.
+The photo is dynamic perspective, full body.
+Overall Feel: (vintage:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in a garden wearing pink patent_leather mules.
+She has candid, eyes to viewer, light sun tan.
+The photo is bounce‑flash photography, medium shot.
+Overall Feel: (sunset-grade:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in an exterior wearing teal patent_leather wedge_heels.
+She has direct eye contact, toned calves.
+The photo is shot from above, medium shot.
+Overall Feel: (bohemian:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in a bedroom wearing nude patent_leather mules.
+She has candid, eyes to viewer, toned calves.
+The photo is cinematic rim lighting, full body.
+Overall Feel: (filmic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a bedroom wearing nude patent_leather open_toe_heels.
+She has candid, eyes to viewer, light sun tan.
+The photo is shot from above, medium shot.
+Overall Feel: (aristocratic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is sitting in a mirror selfie wearing black patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, toned calves.
+The photo is dramatic half-lighting, full body.
+Overall Feel: (sunset-grade:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in a garden wearing pink patent_leather open_toe_heels.
+She has direct eye contact, light sun tan.
+The photo is overcast natural light, full body.
+Overall Feel: (harsh:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in an exterior wearing black patent_leather open_toe_heels.
+She has candid, eyes to viewer, toned calves.
+The photo is neon ambient lighting, medium shot.
+Overall Feel: (vintage:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in a garden wearing nude patent_leather open_toe_heels.
+She has candid, eyes to viewer, visible (freckles:0.5) on arms.
+The photo is cinematic rim lighting, medium shot.
+Overall Feel: (baroque:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in a mirror selfie wearing teal patent_leather platform_heels.
+She has candid, eyes to viewer, visible (freckles:0.5) on arms.
+The photo is broad lighting, full body.
+Overall Feel: (coastal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in a bedroom wearing nude patent_leather mules.
+She has neutral expression, direct gaze to viewer, light sun tan.
+The photo is Rembrandt lighting, 3/4 body portrait.
+Overall Feel: (monsoon:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in a mirror selfie wearing silver patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is shot from above, 3/4 body portrait.
+Overall Feel: (overexposed:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is sitting in an interior wearing black patent_leather wedge_heels.
+She has direct eye contact, visible (freckles:0.5) on arms.
+The photo is mixed‑temperature lighting, full body.
+Overall Feel: (bokeh-rich:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in an exterior wearing pink patent_leather platform_heels.
+She has candid, eyes to viewer, visible (freckles:0.5) on arms.
+The photo is hard direct sunlight, 3/4 body portrait.
+Overall Feel: (editorial:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a bedroom wearing white patent_leather mules.
+She has direct eye contact, light sun tan.
+The photo is off‑camera flash photography, medium shot.
+Overall Feel: (macro-styled:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in a mirror selfie wearing teal patent_leather platform_heels.
+She has candid, eyes to viewer, natural posture, relaxed.
+The photo is soft diffused window light, medium shot.
+Overall Feel: (opulent:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in an interior wearing nude patent_leather platform_heels.
+She has direct eye contact, visible (freckles:0.5) on arms.
+The photo is dynamic perspective, 3/4 body portrait.
+Overall Feel: (gritty:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in an exterior wearing teal patent_leather platform_heels.
+She has direct eye contact, toned calves.
+The photo is split lighting, full body.
+Overall Feel: (harsh:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in a mirror selfie wearing silver patent_leather mules.
+She has neutral expression, direct gaze to viewer, toned calves.
+The photo is dynamic perspective, full body.
+Overall Feel: (industrial:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in an exterior wearing black patent_leather open_toe_heels.
+She has candid, eyes to viewer, light sun tan.
+The photo is ring‑light portrait lighting, 3/4 body portrait.
+Overall Feel: (tundra:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in an exterior wearing pink patent_leather mules.
+She has candid, eyes to viewer, natural posture, relaxed.
+The photo is off‑camera flash photography, 3/4 body portrait.
+Overall Feel: (fogbound:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is deep in thought in a garden wearing nude patent_leather platform_heels.
+She has candid, eyes to viewer, natural posture, relaxed.
+The photo is moody low‑key lighting, 3/4 body portrait.
+Overall Feel: (monsoon:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in an exterior wearing pink patent_leather wedge_heels.
+She has direct eye contact, light sun tan.
+The photo is practical tungsten lighting, 3/4 body portrait.
+Overall Feel: (raw:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in an interior wearing pink patent_leather mules.
+She has candid, eyes to viewer, natural posture, relaxed.
+The photo is casual, medium shot.
+Overall Feel: (backlit:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in a garden wearing white patent_leather platform_heels.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is shot from below, medium shot.
+Overall Feel: (glamour:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in an exterior wearing teal patent_leather open_toe_heels.
+She has direct eye contact, visible (freckles:0.5) on arms.
+The photo is shot from below, 3/4 body portrait.
+Overall Feel: (rain-soaked:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in a garden wearing teal patent_leather wedge_heels.
+She has direct eye contact, toned calves.
+The photo is shot from below, medium shot.
+Overall Feel: (tropical:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in a garden wearing black patent_leather platform_heels.
+She has neutral expression, direct gaze to viewer, toned calves.
+The photo is shot from above, full body.
+Overall Feel: (vintage:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in an interior wearing nude patent_leather mules.
+She has candid, eyes to viewer, toned calves.
+The photo is soft diffused lighting, full body.
+Overall Feel: (underlit:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in an interior wearing silver patent_leather open_toe_heels.
+She has candid, eyes to viewer, visible (freckles:0.5) on arms.
+The photo is overcast natural light, full body.
+Overall Feel: (glacial:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a mirror selfie wearing white patent_leather platform_heels.
+She has direct eye contact, toned calves.
+The photo is cinematic rim lighting, 3/4 body portrait.
+Overall Feel: (fashion-forward:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in a garden wearing teal patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, light sun tan.
+The photo is cinematic top‑down lighting, 3/4 body portrait.
+Overall Feel: (overcast:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is sitting in an interior wearing pink patent_leather platform_heels.
+She has candid, eyes to viewer, light sun tan.
+The photo is broad lighting, full body.
+Overall Feel: (volcanic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in an interior wearing pink patent_leather mules.
+She has neutral expression, direct gaze to viewer, light sun tan.
+The photo is golden hour backlighting, medium shot.
+Overall Feel: (urban:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a garden wearing black patent_leather mules.
+She has neutral expression, direct gaze to viewer, natural posture, relaxed.
+The photo is ring‑light portrait lighting, medium shot.
+Overall Feel: (twilight:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in an interior wearing teal patent_leather mules.
+She has neutral expression, direct gaze to viewer, toned calves.
+The photo is broad lighting, 3/4 body portrait.
+Overall Feel: (twilight:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a bedroom wearing white patent_leather platform_heels.
+She has candid, eyes to viewer, natural posture, relaxed.
+The photo is bright high‑key lighting, medium shot.
+Overall Feel: (suburban:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in an exterior wearing silver patent_leather open_toe_heels.
+She has candid, eyes to viewer, toned calves.
+The photo is studio beauty dish lighting, 3/4 body portrait.
+Overall Feel: (documentary:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in an exterior wearing nude patent_leather platform_heels.
+She has direct eye contact, light sun tan.
+The photo is golden hour backlighting, full body.
+Overall Feel: (surreal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is sitting in a garden wearing teal patent_leather mules.
+She has candid, eyes to viewer, visible (freckles:0.5) on arms.
+The photo is short lighting, 3/4 body portrait.
+Overall Feel: (analog:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in a mirror selfie wearing white patent_leather platform_heels.
+She has candid, eyes to viewer, toned calves.
+The photo is loop lighting, full body.
+Overall Feel: (sun-drenched:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in a bedroom wearing black patent_leather platform_heels.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is studio softbox lighting, 3/4 body portrait.
+Overall Feel: (surreal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a garden wearing teal patent_leather wedge_heels.
+She has direct eye contact, visible (freckles:0.5) on arms.
+The photo is dynamic perspective, 3/4 body portrait.
+Overall Feel: (nebulous:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a garden wearing pink patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, light sun tan.
+The photo is fluorescent ambient lighting, 3/4 body portrait.
+Overall Feel: (opulent:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in an interior wearing black patent_leather mules.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is broad lighting, medium shot.
+Overall Feel: (moody:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in a garden wearing black patent_leather wedge_heels.
+She has candid, eyes to viewer, light sun tan.
+The photo is split lighting, 3/4 body portrait.
+Overall Feel: (nocturnal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in a mirror selfie wearing black patent_leather open_toe_heels.
+She has direct eye contact, natural posture, relaxed.
+The photo is golden hour backlighting, 3/4 body portrait.
+Overall Feel: (dusty:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a bedroom wearing silver patent_leather wedge_heels.
+She has direct eye contact, natural posture, relaxed.
+The photo is loop lighting, 3/4 body portrait.
+Overall Feel: (fashion-forward:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in an exterior wearing silver patent_leather wedge_heels.
+She has candid, eyes to viewer, visible (freckles:0.5) on arms.
+The photo is bounce‑flash photography, 3/4 body portrait.
+Overall Feel: (futuristic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in an exterior wearing white patent_leather open_toe_heels.
+She has direct eye contact, toned calves.
+The photo is broad lighting, medium shot.
+Overall Feel: (raw:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in an exterior wearing black patent_leather wedge_heels.
+She has candid, eyes to viewer, natural posture, relaxed.
+The photo is casual, full body.
+Overall Feel: (neon:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in a mirror selfie wearing teal patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, toned calves.
+The photo is Rembrandt lighting, 3/4 body portrait.
+Overall Feel: (gritty:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in a mirror selfie wearing teal patent_leather wedge_heels.
+She has candid, eyes to viewer, light sun tan.
+The photo is Rembrandt lighting, medium shot.
+Overall Feel: (infrared:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in a mirror selfie wearing teal patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, light sun tan.
+The photo is shot from above, medium shot.
+Overall Feel: (nocturnal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in a garden wearing silver patent_leather open_toe_heels.
+She has direct eye contact, visible (freckles:0.5) on arms.
+The photo is shot from above, medium shot.
+Overall Feel: (high-altitude:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in a mirror selfie wearing silver patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, light sun tan.
+The photo is cinematic rim lighting, full body.
+Overall Feel: (macro-styled:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in a mirror selfie wearing black patent_leather mules.
+She has neutral expression, direct gaze to viewer, toned calves.
+The photo is soft diffused window light, 3/4 body portrait.
+Overall Feel: (glacial:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in an exterior wearing silver patent_leather mules.
+She has candid, eyes to viewer, toned calves.
+The photo is dramatic half-lighting, full body.
+Overall Feel: (overcast:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in an interior wearing black patent_leather platform_heels.
+She has candid, eyes to viewer, light sun tan.
+The photo is intimate, medium shot.
+Overall Feel: (industrial:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in an exterior wearing nude patent_leather wedge_heels.
+She has direct eye contact, toned calves.
+The photo is loop lighting, full body.
+Overall Feel: (chromatic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in a garden wearing nude patent_leather mules.
+She has direct eye contact, visible (freckles:0.5) on arms.
+The photo is golden hour lighting mood, medium shot.
+Overall Feel: (coastal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a bedroom wearing pink patent_leather mules.
+She has direct eye contact, visible (freckles:0.5) on arms.
+The photo is cinematic rim lighting, 3/4 body portrait.
+Overall Feel: (coastal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in a mirror selfie wearing nude patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is intimate, 3/4 body portrait.
+Overall Feel: (infrared:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in a garden wearing white patent_leather mules.
+She has candid, eyes to viewer, natural posture, relaxed.
+The photo is ring‑light portrait lighting, 3/4 body portrait.
+Overall Feel: (bohemian:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in a mirror selfie wearing silver patent_leather mules.
+She has candid, eyes to viewer, natural posture, relaxed.
+The photo is moody low‑key lighting, full body.
+Overall Feel: (raw:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a garden wearing teal patent_leather open_toe_heels.
+She has direct eye contact, toned calves.
+The photo is broad lighting, medium shot.
+Overall Feel: (arctic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in a bedroom wearing silver patent_leather open_toe_heels.
+She has direct eye contact, toned calves.
+The photo is soft diffused window light, full body.
+Overall Feel: (volcanic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in an interior wearing silver patent_leather open_toe_heels.
+She has candid, eyes to viewer, light sun tan.
+The photo is dramatic half-lighting, full body.
+Overall Feel: (desaturated:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in an exterior wearing teal patent_leather mules.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is mixed‑temperature lighting, 3/4 body portrait.
+Overall Feel: (chromatic-aberration:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in an exterior wearing nude patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, toned calves.
+The photo is casual, medium shot.
+Overall Feel: (arctic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is deep in thought in a bedroom wearing silver patent_leather platform_heels.
+She has direct eye contact, toned calves.
+The photo is loop lighting, full body.
+Overall Feel: (fogbound:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in an interior wearing white patent_leather mules.
+She has direct eye contact, visible (freckles:0.5) on arms.
+The photo is studio clamshell lighting, medium shot.
+Overall Feel: (tundra:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in an interior wearing white patent_leather open_toe_heels.
+She has candid, eyes to viewer, visible (freckles:0.5) on arms.
+The photo is fluorescent ambient lighting, full body.
+Overall Feel: (filmic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is hands on hips in an exterior wearing nude patent_leather platform_heels.
+She has direct eye contact, visible (freckles:0.5) on arms.
+The photo is moody low‑key lighting, full body.
+Overall Feel: (cosmic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is looking in a garden wearing pink patent_leather mules.
+She has candid, eyes to viewer, natural posture, relaxed.
+The photo is overcast natural light, full body.
+Overall Feel: (equatorial:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in a bedroom wearing teal patent_leather open_toe_heels.
+She has candid, eyes to viewer, visible (freckles:0.5) on arms.
+The photo is broad lighting, medium shot.
+Overall Feel: (volcanic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in a mirror selfie wearing black patent_leather mules.
+She has neutral expression, direct gaze to viewer, light sun tan.
+The photo is split lighting, 3/4 body portrait.
+Overall Feel: (ambient:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in an exterior wearing white patent_leather platform_heels.
+She has neutral expression, direct gaze to viewer, light sun tan.
+The photo is broad lighting, 3/4 body portrait.
+Overall Feel: (tropical:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is deep in thought in an interior wearing white patent_leather platform_heels.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is studio clamshell lighting, 3/4 body portrait.
+Overall Feel: (hyperreal:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a garden wearing silver patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is off‑camera flash photography, 3/4 body portrait.
+Overall Feel: (filmic:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is walking towards viewer in a mirror selfie wearing white patent_leather platform_heels.
+She has direct eye contact, natural posture, relaxed.
+The photo is casual, 3/4 body portrait.
+Overall Feel: (suburban:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is bending over in an interior wearing black patent_leather wedge_heels.
+She has direct eye contact, visible (freckles:0.5) on arms.
+The photo is bounce‑flash photography, full body.
+Overall Feel: (equatorial:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in a bedroom wearing black patent_leather wedge_heels.
+She has neutral expression, direct gaze to viewer, light sun tan.
+The photo is Rembrandt lighting, full body.
+Overall Feel: (nebulous:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is standing in an interior wearing silver patent_leather mules.
+She has neutral expression, direct gaze to viewer, visible (freckles:0.5) on arms.
+The photo is loop lighting, medium shot.
+Overall Feel: (rimlit:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is relaxing in a mirror selfie wearing pink patent_leather open_toe_heels.
+She has neutral expression, direct gaze to viewer, light sun tan.
+The photo is bounce‑flash photography, full body.
+Overall Feel: (saturated:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is posing in a mirror selfie wearing white patent_leather open_toe_heels.
+She has candid, eyes to viewer, toned calves.
+The photo is dramatic half-lighting, 3/4 body portrait.
+Overall Feel: (retro:0.2)
+
+a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8).
+She is three-quarter turn in an interior wearing black patent_leather platform_heels.
+She has candid, eyes to viewer, light sun tan.
+The photo is golden hour lighting mood, medium shot.
+Overall Feel: (bleached:0.2)
+
