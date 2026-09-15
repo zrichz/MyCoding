@@ -92,7 +92,7 @@ STAGES = {
     "footwear": [
     ],
     "Expression and gaze": [
-        "neutral expression, direct gaze to viewer", "candid, eyes to viewer", "direct eye contact",
+        "neutral expression, direct gaze to viewer", "candid, eyes to viewer", "direct eye contact","smiling, teeth"
         
     ],
     "Body descriptors": [
