@@ -354,44 +354,6 @@ def render_continuous_canvas(
     return canvas
 
 
-def render_scatter_plot(coords_2d, filenames, x_axis_name, y_axis_name):
-    fig, ax = plt.subplots(figsize=(7, 6), facecolor="#14181e")
-    ax.set_facecolor("#1c222b")
-
-    x = coords_2d[:, 0]
-    y = coords_2d[:, 1]
-
-    ax.scatter(x, y, c="#4c9eff", s=80, edgecolors="#ffffff", linewidth=1.2, alpha=0.9)
-
-    for i, name in enumerate(filenames):
-        short_name = os.path.basename(name)
-        if len(short_name) > 14:
-            short_name = short_name[:11] + "..."
-        ax.annotate(
-            f"{i + 1}. {short_name}",
-            (x[i], y[i]),
-            textcoords="offset points",
-            xytext=(6, 6),
-            fontsize=8,
-            color="#d8e2ed",
-        )
-
-    ax.set_xlabel(f"X: {x_axis_name}", color="#c0cddb", fontsize=10)
-    ax.set_ylabel(f"Y: {y_axis_name}", color="#c0cddb", fontsize=10)
-    ax.set_title("Continuous Embedding Coordinates", color="#e8eff7", fontsize=12, pad=10)
-    ax.grid(True, linestyle="--", alpha=0.25, color="#5a6b82")
-    ax.tick_params(colors="#90a2b8")
-
-    for spine in ax.spines.values():
-        spine.set_color("#3a4556")
-
-    plt.tight_layout()
-    fig.canvas.draw()
-    scatter_img = Image.frombytes("RGBA", fig.canvas.get_width_height(), fig.canvas.buffer_rgba()).convert("RGB")
-    plt.close(fig)
-    return scatter_img
-
-
 def load_images_from_input(dir_path, uploaded_files, max_images=64):
     image_paths = []
 
@@ -438,8 +400,6 @@ def process_image_grid(
     max_images,
     resnet_type,
     dim_reduction_method,
-    invert_x,
-    invert_y,
     cell_size,
     cell_padding,
     fit_mode,
@@ -474,11 +434,6 @@ def process_image_grid(
     y_coords = resnet_1d
     x_name = "CLIP Semantic"
     y_name = f"ResNet ({resnet_type})"
-
-    if invert_x:
-        x_coords = 1.0 - x_coords
-    if invert_y:
-        y_coords = 1.0 - y_coords
 
     coords_2d = np.column_stack([x_coords, y_coords])
 
@@ -533,13 +488,6 @@ def process_image_grid(
         y_axis_name=f"{y_name} ({dim_reduction_method})",
     )
 
-    scatter_img = render_scatter_plot(
-        coords_2d=coords_2d,
-        filenames=paths,
-        x_axis_name=f"{x_name} ({dim_reduction_method})",
-        y_axis_name=f"{y_name} ({dim_reduction_method})",
-    )
-
     status_msg = (
         f"Processed {n_images} images successfully. "
         f"Grid size: {rows} rows x {cols} columns ({total_slots} total slots). "
@@ -549,7 +497,7 @@ def process_image_grid(
     if progress is not None:
         progress(1.0, desc="Completed")
 
-    return quantized_img, continuous_img, scatter_img, status_msg
+    return quantized_img, continuous_img, status_msg
 
 
 # Build Gradio UI
@@ -595,9 +543,6 @@ with gr.Blocks(title="CLIP & ResNet Hungarian 2D Image Grid Sorter") as demo:
                     value="PCA",
                     label="1D Dimensionality Reduction Method",
                 )
-                with gr.Row():
-                    invert_x_box = gr.Checkbox(label="Invert X Axis (CLIP)", value=False)
-                    invert_y_box = gr.Checkbox(label="Invert Y Axis (ResNet)", value=False)
 
             with gr.Group():
                 gr.Markdown("### Grid & Layout Configuration")
@@ -622,8 +567,6 @@ with gr.Blocks(title="CLIP & ResNet Hungarian 2D Image Grid Sorter") as demo:
                     grid_output = gr.Image(label="Hungarian Quantized 2D Grid", format="png", type="pil")
                 with gr.TabItem("Continuous 2D Canvas"):
                     continuous_output = gr.Image(label="Continuous 2D Projection", format="png", type="pil")
-                with gr.TabItem("Scatter Coordinates"):
-                    scatter_output = gr.Image(label="2D Scatter Plot", format="png", type="pil")
 
     run_btn.click(
         fn=process_image_grid,
@@ -633,14 +576,12 @@ with gr.Blocks(title="CLIP & ResNet Hungarian 2D Image Grid Sorter") as demo:
             max_images_slider,
             resnet_choice,
             dim_method,
-            invert_x_box,
-            invert_y_box,
             cell_size_slider,
             padding_slider,
             fit_mode_radio,
             show_labels_box,
         ],
-        outputs=[grid_output, continuous_output, scatter_output, status_text],
+        outputs=[grid_output, continuous_output, status_text],
     )
 
 if __name__ == "__main__":
