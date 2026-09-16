@@ -461,7 +461,7 @@ def process_image_grid(
 
     # Step 5: Rendering
     fit_mode_str = "crop" if "Crop" in fit_mode else "pad"
-    bg_color = "#4a4d52"  # Mid-gray background
+    bg_color = "#777777"  # Mid-gray background
 
     quantized_img = render_quantized_grid(
         images=images,
@@ -471,7 +471,7 @@ def process_image_grid(
         cell_size=int(cell_size),
         padding=int(cell_padding),
         bg_color_hex=bg_color,
-        border_color_hex="#60646c",
+        border_color_hex="#d0d0d0",
         fit_mode=fit_mode_str,
         show_labels=show_labels,
         x_axis_name=f"{x_name} ({dim_reduction_method})",
