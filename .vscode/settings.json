@@ -4,5 +4,6 @@
     "python.terminal.activateEnvInCurrentTerminal": true,
     "code-runner.executorMap": {
         "python": "/home/rich/MyCoding/venvMyCoding/bin/python -u"
-    }
+    },
+    "code-runner.ignoreSelection": true
 }

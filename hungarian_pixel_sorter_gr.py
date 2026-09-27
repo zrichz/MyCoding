@@ -6,7 +6,7 @@ from PIL import Image, ImageDraw
 from scipy.optimize import linear_sum_assignment
 
 
-def generate_anim(start_image, end_image, num_frames=96, grid_size=24):
+def generate_anim(start_image, end_image, num_frames=96, grid_size=24, use_texture=False):
     if start_image is None or end_image is None:
         raise gr.Error("load 2 imgaes")
 
@@ -37,6 +37,16 @@ def generate_anim(start_image, end_image, num_frames=96, grid_size=24):
     canvas_scale = 16
     img_dim = grid_size * canvas_scale
 
+    # crop the real tile textures from the full-res start image (instead of a flat average color)
+    tile_images = None
+    if use_texture:
+        start_full = start_image.convert("RGB").resize((img_dim, img_dim), Image.LANCZOS)
+        tile_images = []
+        for i in range(num_pixels):
+            row, col = divmod(i, grid_size)
+            box = (col * canvas_scale, row * canvas_scale, (col + 1) * canvas_scale, (row + 1) * canvas_scale)
+            tile_images.append(start_full.crop(box))
+
     for frame_idx in range(num_frames):
         t = frame_idx / (num_frames - 1)
         t_smooth = t*t * (3-2*t)  # smoothstep
@@ -49,11 +59,14 @@ def generate_anim(start_image, end_image, num_frames=96, grid_size=24):
         for i in range(num_pixels):
             x = current_positions[i, 0] * (grid_size - 1) * canvas_scale
             y = current_positions[i, 1] * (grid_size - 1) * canvas_scale
-            color_tuple = tuple((start_colors[i] * 255).astype(int))
-            draw.rectangle(
-                [x, y, x + canvas_scale - 1, y + canvas_scale - 1],
-                fill=color_tuple,
-            )
+            if tile_images is not None:
+                frame_img.paste(tile_images[i], (int(round(x)), int(round(y))))
+            else:
+                color_tuple = tuple((start_colors[i] * 255).astype(int))
+                draw.rectangle(
+                    [x, y, x + canvas_scale - 1, y + canvas_scale - 1],
+                    fill=color_tuple,
+                )
 
         frames.append(frame_img)
 
@@ -92,6 +105,7 @@ with gr.Blocks() as demo:
             end_image_input = gr.Image(label="End", type="pil", height=180)
             grid_size_slider = gr.Slider(minimum=8, maximum=64, value=20, step=4, label="Grid size (Res)")
             frames_slider = gr.Slider(minimum=12, maximum=120, value=96, step=4, label="no of frames")
+            use_texture_checkbox = gr.Checkbox(value=False, label="Use tile texture instead of average color")
             morph_btn = gr.Button("Run", variant="primary")
 
         with gr.Column(scale=2):
@@ -99,7 +113,7 @@ with gr.Blocks() as demo:
 
     morph_btn.click(
         fn=generate_anim,
-        inputs=[start_image_input, end_image_input, frames_slider, grid_size_slider],
+        inputs=[start_image_input, end_image_input, frames_slider, grid_size_slider, use_texture_checkbox],
         outputs=[output_image],
     )
 
