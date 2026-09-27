@@ -75,12 +75,15 @@ def generate_wildcard_clothing():
 
 # PRIMARY STAGES (8)
 # Subject identity
-SUBJECT = "a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8)"
+#SUBJECT = "a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8)"
+SUBJECT = "a woman, smiling, teeth"
 
 STAGES = {
     "Pose and action": [
         "three-quarter turn","standing","sitting","relaxing","walking towards viewer","hands on hips",
-        "deep in thought","posing","looking","bending over",
+        "deep in thought","posing","looking","bending over","leaning against a wall",
+        "crossing arms","touching hair","adjusting clothing",
+        "turning to look back","sitting cross-legged","kneeling","stretching","reaching forward","resting one hand on hip",
         
     ],
     "Framing and crop": [
@@ -96,7 +99,7 @@ STAGES = {
         
     ],
     "Body descriptors": [
-        "visible (freckles:0.5) on arms", "light sun tan", "toned calves", "natural posture, relaxed",
+        "freckles:0.5)", "tanned", "toned calves", "relaxed",
         
     ],
     "location": [ "interior", "mirror selfie", "garden", "bedroom", "exterior", ],

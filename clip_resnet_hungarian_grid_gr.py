@@ -7,8 +7,7 @@ import torch
 import torchvision.models as models
 from torchvision import transforms
 from transformers import CLIPModel, CLIPProcessor
-from sklearn.decomposition import PCA, KernelPCA, TruncatedSVD
-from sklearn.manifold import Isomap, TSNE
+from sklearn.decomposition import PCA
 from scipy.optimize import linear_sum_assignment
 import matplotlib
 matplotlib.use("Agg")
@@ -39,6 +38,25 @@ def get_safe_device():
     return "cpu"
 
 
+def get_hf_auth_token():
+    for env_var in ("HF_TOKEN", "HUGGINGFACE_HUB_TOKEN", "HUGGING_FACE_HUB_TOKEN"):
+        token = os.getenv(env_var)
+        if token and token.strip():
+            return token.strip()
+
+    token_path = os.path.expanduser("~/.huggingface/token")
+    if os.path.exists(token_path):
+        try:
+            with open(token_path, "r", encoding="utf-8") as f:
+                token = f.read().strip()
+            if token:
+                return token
+        except Exception:
+            pass
+
+    return None
+
+
 def load_clip_model(model_name="openai/clip-vit-base-patch32"):
     device = get_safe_device()
     if (
@@ -46,13 +64,28 @@ def load_clip_model(model_name="openai/clip-vit-base-patch32"):
         or MODEL_CACHE["clip_name"] != model_name
         or MODEL_CACHE["device"] != device
     ):
-        model = CLIPModel.from_pretrained(model_name)
-        processor = CLIPProcessor.from_pretrained(model_name)
-        model.to(device).eval()
-        MODEL_CACHE["clip_model"] = model
-        MODEL_CACHE["clip_processor"] = processor
-        MODEL_CACHE["clip_name"] = model_name
-        MODEL_CACHE["device"] = device
+        hf_cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "huggingface", "hub")
+        token = get_hf_auth_token()
+        try:
+            model = CLIPModel.from_pretrained(model_name, cache_dir=hf_cache_dir, token=token)
+            processor = CLIPProcessor.from_pretrained(model_name, cache_dir=hf_cache_dir, token=token)
+            model.to(device).eval()
+            MODEL_CACHE["clip_model"] = model
+            MODEL_CACHE["clip_processor"] = processor
+            MODEL_CACHE["clip_name"] = model_name
+            MODEL_CACHE["device"] = device
+        except Exception as exc:
+            raise RuntimeError(
+                "CLIP download failed. This usually means the Hugging Face token is missing or expired.\n"
+                "1) Check whether a token exists in your environment: echo $HF_TOKEN; echo $HUGGINGFACE_HUB_TOKEN\n"
+                "2) Check the local auth file: ls -la ~/.huggingface; cat ~/.huggingface/token\n"
+                "3) If missing, log in with: huggingface-cli login\n"
+                "   or export HF_TOKEN=your_token_here\n"
+                "4) Retry after the token is valid.\n"
+                f"Model: {model_name}\n"
+                f"Cache dir: {hf_cache_dir}\n"
+                f"Original error: {exc}"
+            ) from exc
     return MODEL_CACHE["clip_model"], MODEL_CACHE["clip_processor"], device
 
 
@@ -140,34 +173,13 @@ def extract_features(pil_images, resnet_type="resnet18", batch_size=16, progress
     return clip_all, resnet_all
 
 
-def reduce_to_1d(features, method="PCA", random_seed=42):
+def reduce_to_1d(features, random_seed=42):
     n_samples = features.shape[0]
     if n_samples == 1:
         return np.array([0.5])
 
-    if method == "PCA":
-        reducer = PCA(n_components=1, random_state=random_seed)
-        coords = reducer.fit_transform(features).ravel()
-    elif method == "KernelPCA (Cosine)":
-        reducer = KernelPCA(n_components=1, kernel="cosine", random_state=random_seed)
-        coords = reducer.fit_transform(features).ravel()
-    elif method == "KernelPCA (RBF)":
-        reducer = KernelPCA(n_components=1, kernel="rbf", random_state=random_seed)
-        coords = reducer.fit_transform(features).ravel()
-    elif method == "TruncatedSVD":
-        reducer = TruncatedSVD(n_components=1, random_state=random_seed)
-        coords = reducer.fit_transform(features).ravel()
-    elif method == "Isomap":
-        n_neighbors = max(2, min(5, n_samples - 1))
-        reducer = Isomap(n_components=1, n_neighbors=n_neighbors)
-        coords = reducer.fit_transform(features).ravel()
-    elif method == "t-SNE":
-        perplexity = max(2, min(30, (n_samples - 1) // 3))
-        reducer = TSNE(n_components=1, perplexity=perplexity, random_state=random_seed, init="pca")
-        coords = reducer.fit_transform(features).ravel()
-    else:
-        reducer = PCA(n_components=1, random_state=random_seed)
-        coords = reducer.fit_transform(features).ravel()
+    reducer = PCA(n_components=1, random_state=random_seed)
+    coords = reducer.fit_transform(features).ravel()
 
     # Min-max normalization to [0, 1]
     min_val = coords.min()
@@ -186,12 +198,29 @@ def compute_grid_dimensions(n_items, mode="Auto (Square-like)", custom_cols=4, c
         rows = max(1, int(custom_rows))
         if rows * cols < n_items:
             rows = math.ceil(n_items / cols)
+
+        #return the custom grid dimensions if mode is "Custom"
         return rows, cols
 
-    # Auto layout: near square or balanced aspect ratio
-    cols = math.ceil(math.sqrt(n_items))
-    rows = math.ceil(n_items / cols)
+    # Auto layout: prefer exact square counts, falling back to the next perfect square.
+    target = math.ceil(math.sqrt(n_items))
+    cols = target
+    rows = target
+    while rows * cols < n_items:
+        if rows <= cols:
+            rows += 1
+        else:
+            cols += 1
     return rows, cols
+
+
+def get_square_grid_options(max_items=400):
+    options = []
+    for n in range(2, int(math.isqrt(max_items)) + 1):
+        square = n * n
+        if square <= max_items:
+            options.append(square)
+    return options
 
 
 def fit_thumbnail(img, cell_size, fit_mode="crop", bg_color=(20, 24, 30)):
@@ -354,7 +383,7 @@ def render_continuous_canvas(
     return canvas
 
 
-def load_images_from_input(dir_path, uploaded_files, max_images=64):
+def load_images_from_input(dir_path, max_images=64):
     image_paths = []
 
     if dir_path and os.path.isdir(dir_path.strip()):
@@ -364,13 +393,6 @@ def load_images_from_input(dir_path, uploaded_files, max_images=64):
                 ext = os.path.splitext(file)[1].lower()
                 if ext in SUPPORTED_EXTENSIONS:
                     image_paths.append(os.path.join(root, file))
-
-    if uploaded_files:
-        for f in uploaded_files:
-            file_path = f.name if hasattr(f, "name") else str(f)
-            ext = os.path.splitext(file_path)[1].lower()
-            if ext in SUPPORTED_EXTENSIONS and file_path not in image_paths:
-                image_paths.append(file_path)
 
     image_paths = sorted(image_paths)
 
@@ -396,10 +418,8 @@ def load_images_from_input(dir_path, uploaded_files, max_images=64):
 
 def process_image_grid(
     dir_path,
-    uploaded_files,
     max_images,
     resnet_type,
-    dim_reduction_method,
     cell_size,
     cell_padding,
     fit_mode,
@@ -409,7 +429,7 @@ def process_image_grid(
     if progress is not None:
         progress(0.05, desc="Scanning and loading images")
 
-    images, paths = load_images_from_input(dir_path, uploaded_files, max_images)
+    images, paths = load_images_from_input(dir_path, max_images)
     n_images = len(images)
 
     if n_images < 2:
@@ -427,8 +447,8 @@ def process_image_grid(
         progress(0.70, desc="Running dimensionality reduction")
 
     # Step 2: 1D Dimensionality Reduction for CLIP (X) and ResNet (Y)
-    clip_1d = reduce_to_1d(clip_feats, method=dim_reduction_method)
-    resnet_1d = reduce_to_1d(resnet_feats, method=dim_reduction_method)
+    clip_1d = reduce_to_1d(clip_feats)
+    resnet_1d = reduce_to_1d(resnet_feats)
 
     x_coords = clip_1d
     y_coords = resnet_1d
@@ -474,8 +494,8 @@ def process_image_grid(
         border_color_hex="#d0d0d0",
         fit_mode=fit_mode_str,
         show_labels=show_labels,
-        x_axis_name=f"{x_name} ({dim_reduction_method})",
-        y_axis_name=f"{y_name} ({dim_reduction_method})",
+        x_axis_name=f"{x_name} (PCA)",
+        y_axis_name=f"{y_name} (PCA)",
     )
 
     continuous_img = render_continuous_canvas(
@@ -484,14 +504,14 @@ def process_image_grid(
         canvas_size=max(800, cols * int(cell_size) // 2 + 200),
         thumb_size=max(64, int(cell_size) // 2),
         bg_color_hex=bg_color,
-        x_axis_name=f"{x_name} ({dim_reduction_method})",
-        y_axis_name=f"{y_name} ({dim_reduction_method})",
+        x_axis_name=f"{x_name} (PCA)",
+        y_axis_name=f"{y_name} (PCA)",
     )
 
     status_msg = (
         f"Processed {n_images} images successfully. "
         f"Grid size: {rows} rows x {cols} columns ({total_slots} total slots). "
-        f"X-axis: {x_name}, Y-axis: {y_name} using {dim_reduction_method} 1D projection."
+        f"X-axis: {x_name}, Y-axis: {y_name} using PCA 1D projection."
     )
 
     if progress is not None:
@@ -501,12 +521,12 @@ def process_image_grid(
 
 
 # Build Gradio UI
-with gr.Blocks(title="CLIP & ResNet Hungarian 2D Image Grid Sorter") as demo:
-    gr.Markdown("# CLIP & ResNet Hungarian 2D Image Grid Sorter")
+with gr.Blocks(title="CLIP & ResNet 2D Image Grid") as demo:
+    gr.Markdown("CLIP & ResNet 2D Image Grid")
     gr.Markdown(
-        "Extract semantic features with CLIP and visual/structural representations with ResNet, "
-        "reduce each embedding to a 1D coordinate axis, and arrange thumbnails onto a regular quantized screen grid "
-        "using the Hungarian algorithm for minimal topological distortion."
+        "Extract semantic features with CLIP and visual/structural features with ResNet, "
+        "reduce each embedding to 1D axis, and arrange thumbnails onto a regular quantized screen grid "
+        "using Hungarian algorithm for minimal topological distortion."
     )
 
     with gr.Row():
@@ -518,17 +538,10 @@ with gr.Blocks(title="CLIP & ResNet Hungarian 2D Image Grid Sorter") as demo:
                     value="/home/rich/MyCoding/images_general",
                     placeholder="/path/to/image/folder",
                 )
-                file_upload = gr.File(
-                    label="Or Upload Multiple Images",
-                    file_count="multiple",
-                    file_types=["image"],
-                )
-                max_images_slider = gr.Slider(
-                    minimum=4,
-                    maximum=144,
+                max_images_slider = gr.Dropdown(
+                    choices=get_square_grid_options(400),
                     value=36,
-                    step=1,
-                    label="Max Images to Process",
+                    label="Max Images to Process (Exact Square Counts)",
                 )
 
             with gr.Group():
@@ -538,33 +551,28 @@ with gr.Blocks(title="CLIP & ResNet Hungarian 2D Image Grid Sorter") as demo:
                     value="resnet18",
                     label="ResNet Architecture",
                 )
-                dim_method = gr.Dropdown(
-                    choices=["PCA", "KernelPCA (Cosine)", "KernelPCA (RBF)", "TruncatedSVD", "Isomap", "t-SNE"],
-                    value="PCA",
-                    label="1D Dimensionality Reduction Method",
-                )
 
             with gr.Group():
                 gr.Markdown("### Grid & Layout Configuration")
                 with gr.Row():
                     cell_size_slider = gr.Slider(minimum=64, maximum=320, value=160, step=16, label="Cell Size (px)")
-                    padding_slider = gr.Slider(minimum=0, maximum=32, value=8, step=2, label="Cell Padding (px)")
+                    padding_slider = gr.Slider(minimum=0, maximum=32, value=4, step=2, label="Cell Padding (px)")
 
                 fit_mode_radio = gr.Radio(
                     choices=["Crop to Fill (Square)", "Fit with Padding (Letterbox)"],
                     value="Crop to Fill (Square)",
                     label="Thumbnail Fit Mode",
                 )
-                show_labels_box = gr.Checkbox(label="Show Axis Labels & Title on Canvas", value=True)
+                show_labels_box = gr.Checkbox(label="Show Axis Labels & Title", value=False)
 
-            run_btn = gr.Button("Generate Quantized Hungarian Grid", variant="primary")
+            run_btn = gr.Button("Generate Grid", variant="primary")
 
         with gr.Column(scale=2):
             status_text = gr.Textbox(label="Status", interactive=False)
 
             with gr.Tabs():
-                with gr.TabItem("Quantized Hungarian Grid"):
-                    grid_output = gr.Image(label="Hungarian Quantized 2D Grid", format="png", type="pil")
+                with gr.TabItem("Quantized Grid"):
+                    grid_output = gr.Image(label="2D Grid", format="png", type="pil")
                 with gr.TabItem("Continuous 2D Canvas"):
                     continuous_output = gr.Image(label="Continuous 2D Projection", format="png", type="pil")
 
@@ -572,10 +580,8 @@ with gr.Blocks(title="CLIP & ResNet Hungarian 2D Image Grid Sorter") as demo:
         fn=process_image_grid,
         inputs=[
             dir_input,
-            file_upload,
             max_images_slider,
             resnet_choice,
-            dim_method,
             cell_size_slider,
             padding_slider,
             fit_mode_radio,
