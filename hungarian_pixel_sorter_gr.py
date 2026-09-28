@@ -1,15 +1,65 @@
+"""Create a pixel-morphing animation between two input images.
+
+The script provides a Gradio interface where users upload a start and end
+image and choose the grid resolution, number of animation frames, and the
+penalty for moving pixels across the grid. It downsamples both images,
+matches their pixels with the Hungarian algorithm using color and position
+costs, and smoothly animates the matched pixels from the start layout to the
+end layout.
+
+When run, it creates two looping GIF files: a color-block animation and a
+patchwork animation that uses tiles from the original start image. Both GIFs
+are displayed in the Gradio interface.
+
+Technical details
+-----------------
+The animation operates on a square grid containing ``grid_size ** 2`` cells.
+Each input is first converted to RGB, center-cropped to a square with
+``PIL.ImageOps.fit``, and resized with Pillow's Lanczos filter. The resulting
+small images provide one RGB color vector per grid cell. The original start
+image is also resized to a grid-aligned texture so that each source cell can
+later be represented by a small image patch in the patchwork output.
+
+Pixel correspondence is solved as a linear assignment problem. For every
+start cell and end cell, the cost is the Euclidean distance between their
+normalized RGB vectors plus ``position_distance_factor`` times the Euclidean
+distance between their normalized grid coordinates. This produces a
+``(grid_size ** 2) x (grid_size ** 2)`` dense cost matrix. SciPy's
+``linear_sum_assignment`` implements the Hungarian/Jonker-Volgenant-style
+minimum-cost assignment solver and returns a one-to-one permutation of the
+end cells. The cubic worst-case complexity in the number of cells is why the
+images are reduced before matching; increasing the grid resolution increases
+both the matrix memory requirement and solver time rapidly.
+
+For each animation frame, matched cell coordinates are interpolated from
+their start positions to their assigned end positions. The interpolation
+parameter uses the cubic smoothstep function ``t*t*(3-2*t)`` to ease in and
+out. Positions are rounded to the output cell lattice, then rendered as
+constant-color blocks for the color animation or as extracted texture tiles
+for the patchwork animation. Frames are assembled forward and backward to
+create a ping-pong loop, with one-second holds on the endpoints.
+
+NumPy performs the vectorized color, coordinate, and frame-array operations.
+Pillow creates the frames, enlarges them with nearest-neighbor sampling to
+preserve block edges, reduces each animation to a 128-color palette, and
+writes the looping GIFs. Gradio's ``Blocks`` layout, image inputs, sliders,
+button callback, and filepath outputs provide the interactive front end.
+"""
+
 import io
 
 import gradio as gr
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageOps
 from scipy.optimize import linear_sum_assignment
 
 
-def generate_anim(start_image, end_image, num_frames=96, grid_size=24, position_distance_factor=0.25):
+def generate_anim(start_image, end_image, num_frames=48, grid_size=24, position_distance_factor=0.005):
     if start_image is None or end_image is None:
         raise gr.Error("load 2 imgaes")
 
+    start_image = ImageOps.fit(start_image.convert("RGB"), (min(start_image.size),) * 2, method=Image.LANCZOS)
+    end_image = ImageOps.fit(end_image.convert("RGB"), (min(end_image.size),) * 2, method=Image.LANCZOS)
     grid_size = int(grid_size)
     num_frames = int(num_frames)
     position_distance_factor = float(position_distance_factor)
@@ -79,6 +129,11 @@ def generate_anim(start_image, end_image, num_frames=96, grid_size=24, position_
     full_patchwork_frames = patchwork_frames + reverse_patchwork_frames
     full_durations = forward_durations + reverse_durations
 
+    output_size = (512, 512)
+    full_frames = [frame.resize(output_size, Image.NEAREST) for frame in full_frames]
+    full_patchwork_frames = [
+        frame.resize(output_size, Image.NEAREST) for frame in full_patchwork_frames
+    ]
     color_palette = color_frames[0].quantize(colors=128, method=Image.Quantize.MEDIANCUT)
     patchwork_palette = patchwork_frames[0].quantize(colors=128, method=Image.Quantize.MEDIANCUT)
     full_frames = [frame.quantize(palette=color_palette, dither=Image.Dither.NONE) for frame in full_frames]
@@ -114,19 +169,19 @@ with gr.Blocks() as demo:
             start_image_input = gr.Image(label="Start", type="pil", height=180)
             end_image_input = gr.Image(label="End", type="pil", height=180)
             grid_size_slider = gr.Slider(minimum=8, maximum=64, value=20, step=4, label="Grid size (Res)")
-            frames_slider = gr.Slider(minimum=12, maximum=120, value=96, step=4, label="no of frames")
+            frames_slider = gr.Slider(minimum=12, maximum=120, value=48, step=4, label="no of frames")
             position_distance_factor_slider = gr.Slider(
                 minimum=0,
-                maximum=2,
-                value=0.25,
-                step=0.01,
+                maximum=0.02,
+                value=0.005,
+                step=0.001,
                 label="Position distance factor",
             )
             morph_btn = gr.Button("Run", variant="primary")
 
         with gr.Column(scale=2):
-            output_image = gr.Image(label="Color block animation", type="filepath")
-            patchwork_output_image = gr.Image(label="Patchwork animation", type="filepath")
+            output_image = gr.Image(label="Color block animation", type="filepath", width=512, height=512)
+            patchwork_output_image = gr.Image(label="Patchwork animation", type="filepath", width=512, height=512)
 
     morph_btn.click(
         fn=generate_anim,
