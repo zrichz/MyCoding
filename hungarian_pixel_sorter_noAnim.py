@@ -19,10 +19,10 @@ Workflow:
    optimal one-to-one mapping from start cells to end cells.
 4. The start image is re-sliced into that many textured patches, and each
    patch is placed at its assigned destination cell to build the final image.
-5. The final image is resized to a fixed 1024x1024 output and saved as a PNG.
+5. Native-resolution start-image tiles are rearranged and saved as a PNG.
 
-A Gradio UI wraps this logic, with an optional mode that first turns the end
-image into a diamond-pixelated version to use as the start image.
+A Gradio UI wraps this logic, with options to use a generated cross-hatch
+image or turn the end image into a diamond-pixelated start image.
 """
 
 import gradio as gr
@@ -39,6 +39,57 @@ def center_crop_square(image):
     left = (width - side) // 2
     top = (height - side) // 2
     return image.crop((left, top, left + side, top + side))
+
+
+def make_builtin_crosshatch_start():
+    tile_count = 64
+    tile_size = 16
+    max_total_lines = 32
+    supersample = 16
+    image = np.full((tile_count * tile_size, tile_count * tile_size, 3), 18, dtype=np.uint8)
+    coordinates = (
+        (np.arange(tile_size * supersample, dtype=np.float32) + 0.5)
+        / supersample
+        - tile_size / 2
+    )
+    x_coords, y_coords = np.meshgrid(coordinates, coordinates)
+    random_generator = np.random.default_rng(0)
+
+    for row in range(tile_count):
+        for col in range(tile_count):
+            diagonal_progress = (row + col) / (2 * (tile_count - 1))
+            lines_per_direction = round((max_total_lines // 2) * diagonal_progress)
+            if lines_per_direction == 0:
+                continue
+
+            angle = random_generator.uniform(0, np.pi)
+            cos_angle = np.cos(angle)
+            sin_angle = np.sin(angle)
+            first_projection = -x_coords * sin_angle + y_coords * cos_angle
+            second_projection = x_coords * cos_angle + y_coords * sin_angle
+            first_extent = tile_size / 2 * (abs(sin_angle) + abs(cos_angle))
+            second_extent = tile_size / 2 * (abs(cos_angle) + abs(sin_angle))
+
+            def near_parallel_line(projection, extent):
+                spacing = 2 * extent / lines_per_direction
+                distance = np.abs(
+                    np.mod(projection + extent + spacing / 2, spacing) - spacing / 2
+                )
+                half_width = min(0.25, spacing / 4)
+                return distance <= half_width
+
+            line_mask = near_parallel_line(first_projection, first_extent)
+            line_mask |= near_parallel_line(second_projection, second_extent)
+            coverage = line_mask.reshape(
+                tile_size, supersample, tile_size, supersample
+            ).mean(axis=(1, 3))
+            tile = image[
+                row * tile_size:(row + 1) * tile_size,
+                col * tile_size:(col + 1) * tile_size,
+            ]
+            tile[:] = np.rint(18 + coverage[:, :, None] * 220).astype(np.uint8)
+
+    return Image.fromarray(image)
 
 
 def make_diamond_pixelated_start(image, diamond_size=32):
@@ -77,19 +128,37 @@ def make_diamond_pixelated_start(image, diamond_size=32):
     return Image.fromarray(pixelated.reshape(height, width, 3))
 
 
-def generate_final_image(start_image, end_image, grid_size=24, position_distance_factor=0.25):
+def generate_final_image(
+    start_image,
+    end_image,
+    grid_size=24,
+    position_distance_factor=0.25,
+    use_builtin_start=False,
+):
     # Core algorithm: match start-image grid cells to end-image grid cells by
     # color similarity (with a positional penalty), then rebuild the image by
     # placing each start-image texture patch at its matched destination cell.
-    if start_image is None or end_image is None:
-        raise gr.Error("Load both images.")
+    if end_image is None or (start_image is None and not use_builtin_start):
+        raise gr.Error("Load an end image and either a start image or the built-in image.")
 
+    if use_builtin_start:
+        start_image = make_builtin_crosshatch_start()
     start_image = center_crop_square(start_image)
     end_image = center_crop_square(end_image)
 
     grid_size = int(grid_size)
     position_distance_factor = float(position_distance_factor)
     num_pixels = grid_size * grid_size
+
+    tile_size = start_image.width // grid_size
+    if tile_size < 1:
+        raise gr.Error("The start image must be at least as large as the grid size.")
+    image_size = tile_size * grid_size
+    crop_left = (start_image.width - image_size) // 2
+    crop_top = (start_image.height - image_size) // 2
+    start_image = start_image.crop(
+        (crop_left, crop_top, crop_left + image_size, crop_top + image_size)
+    )
 
     # Downsample both images to grid_size x grid_size so each pixel represents
     # the average color of one grid cell.
@@ -126,32 +195,20 @@ def generate_final_image(start_image, end_image, grid_size=24, position_distance
     row_indices, col_indices = linear_sum_assignment(cost_matrix)
     matched_order = col_indices[np.argsort(row_indices)]
 
-    # Choose a texture resolution per cell (canvas_scale) so the working
-    # canvas stays close to 640px, then upscale the start image to match.
-    canvas_scale = min(16, max(1, 640 // grid_size))
-    image_size = grid_size * canvas_scale
-    start_texture = start_image.convert("RGB").resize(
-        (image_size, image_size),
-        Image.Resampling.LANCZOS,
-    )
-    # Slice the upscaled start image into grid_size x grid_size textured
-    # patches (one canvas_scale x canvas_scale block per grid cell).
-    texture_patches = np.asarray(start_texture).reshape(
-        grid_size, canvas_scale, grid_size, canvas_scale, 3
-    ).transpose(0, 2, 1, 3, 4).reshape(num_pixels, canvas_scale, canvas_scale, 3)
+    # Slice native-resolution tiles from the grid-aligned start image.
+    texture_patches = np.asarray(start_image.convert("RGB")).reshape(
+        grid_size, tile_size, grid_size, tile_size, 3
+    ).transpose(0, 2, 1, 3, 4).reshape(num_pixels, tile_size, tile_size, 3)
 
     # Paste each start-image patch into its Hungarian-assigned destination
     # cell to build the final rearranged image.
     output_array = np.zeros((image_size, image_size, 3), dtype=np.uint8)
     for source_index, destination_index in enumerate(matched_order):
-        x = (destination_index % grid_size) * canvas_scale
-        y = (destination_index // grid_size) * canvas_scale
-        output_array[y:y + canvas_scale, x:x + canvas_scale] = texture_patches[source_index]
+        x = (destination_index % grid_size) * tile_size
+        y = (destination_index // grid_size) * tile_size
+        output_array[y:y + tile_size, x:x + tile_size] = texture_patches[source_index]
 
-    # Always output a fixed 1024x1024 PNG regardless of the working canvas size.
-    output_image_final = Image.fromarray(output_array).resize(
-        (1024, 1024), Image.Resampling.LANCZOS
-    )
+    output_image_final = Image.fromarray(output_array)
     output_path = "hungarian_pixel_sorter_final.png"
     output_image_final.save(output_path, format="PNG")
     return output_path
@@ -190,6 +247,10 @@ with gr.Blocks() as demo:
                 step=4,
                 label="Grid size (Res)",
             )
+            builtin_start_checkbox = gr.Checkbox(
+                value=False,
+                label="Use built-in cross-hatch start image",
+            )
             position_distance_factor_slider = gr.Slider(
                 minimum=0,
                 maximum=2,
@@ -208,7 +269,15 @@ with gr.Blocks() as demo:
             diamond_start_button = gr.Button("Run with diamond-pixelated end as start")
 
         with gr.Column(scale=2):
-            # Output is always rendered/saved at a fixed 1024x1024 resolution.
+            builtin_start_preview = gr.Image(
+                value=make_builtin_crosshatch_start(),
+                label="Built-in cross-hatch source (debug preview)",
+                type="pil",
+                format="png",
+                width=512,
+                height=512,
+            )
+            # The saved image keeps the native dimensions of the extracted tiles.
             output_image = gr.Image(
                 label="Final chunk positions",
                 type="filepath",
@@ -225,6 +294,7 @@ with gr.Blocks() as demo:
             end_image_input,
             grid_size_slider,
             position_distance_factor_slider,
+            builtin_start_checkbox,
         ],
         outputs=output_image,
     )
