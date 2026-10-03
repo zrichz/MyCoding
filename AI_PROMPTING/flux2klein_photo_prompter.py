@@ -4,7 +4,7 @@ generates 400no. F2K prompts.
 Date: 2026-Sept
 
 STAGES:
-  1. Subject identity (hard-coded)
+  1. Subject ID (hard-coded)
   2. Pose and action
   3. Framing and crop
   4. Clothing and key props
@@ -76,14 +76,17 @@ def generate_wildcard_clothing():
 # PRIMARY STAGES (8)
 # Subject identity
 #SUBJECT = "a photo of a woman, blonde hair styled in a casual updo, hazel eyes, kind expression (faint smile:0.2), (teeth:0.8)"
-SUBJECT = "a woman, smiling, teeth"
+SUBJECT = "a photo of a woman, smiling, showing her teeth"
 
 STAGES = {
-    "Pose and action": [
-        "three-quarter turn","standing","sitting","relaxing","walking towards viewer","hands on hips",
+    "Pose and action": ["over-the-shoulder glance", "soft lip part", "hand-in-hair run", 
+        "arched back stretch", "leg cross", "leaning wall prop", "kneeling squat",
+        "hands-on-hips power stance", "forward bend", "head tilt", "collarbone touch",
+        "chin rest", "dynamic stride", "poolside sprawl", "looking away reflection",
+        "stomach lie", "side-profile twist", "jacket drape", "hands-in-pockets slouch",
+        "floor sit with bent knees", "three-quarter turn","standing","sitting","relaxing","walking towards viewer","hands on hips",
         "deep in thought","posing","looking","bending over","leaning against a wall",
-        "crossing arms","touching hair","adjusting clothing",
-        "turning to look back","sitting cross-legged","kneeling","stretching","reaching forward","resting one hand on hip",
+        "crossing arms","touching hair","adjusting clothing","turning to look back","sitting cross-legged","kneeling","stretching","reaching forward","resting one hand on hip",
         
     ],
     "Framing and crop": [
@@ -95,14 +98,19 @@ STAGES = {
     "footwear": [
     ],
     "Expression and gaze": [
-        "neutral expression, direct gaze to viewer", "candid, eyes to viewer", "direct eye contact","smiling, teeth"
+        "She has a neutral expression, with a direct gaze to the viewer",
+        "A candid shot, with her eyes to the viewer",
+        "She makes direct eye contact with the viewer",
+        "She is smiling, showing her teeth"
         
     ],
     "Body descriptors": [
-        "freckles:0.5)", "tanned", "toned calves", "relaxed",
-        
+        "freckles:(0.4)", "tanned", "toned calves", "relaxed",
+        "athletic", "slender", "curvy", "muscular", "petite", "tall",
+        "lean", "voluptuous", "graceful", "elegant",
     ],
-    "location": [ "interior", "mirror selfie", "garden", "bedroom", "exterior", ],
+    "location": [ "interior", "selfie", "garden", "bedroom", "exterior", "studio", "beach", "pool",
+    ],
 }
 
 # Shot and light variations
@@ -123,14 +131,6 @@ SHOT_LIGHT = [
 "studio beauty dish lighting",
 "studio clamshell lighting",
 "Rembrandt lighting",
-"split lighting",
-"loop lighting",
-"broad lighting",
-"short lighting",
-"neon ambient lighting",
-"practical tungsten lighting",
-"fluorescent ambient lighting",
-"mixed‑temperature lighting",
 "cinematic rim lighting",
 "cinematic top‑down lighting",
 "moody low‑key lighting",
@@ -142,13 +142,13 @@ SHOT_LIGHT = [
 
 # OVERALL FEEL OPTIONS
 OVERALL_FEEL = [
-    "arctic",    "tropical",    "monsoon",    "desert",    "nocturnal",    "urban",    "suburban",    "industrial",    "futuristic",    "retro",    "vintage",
-    "neon",    "infrared",    "thermal",    "surreal",    "glacial",    "volcanic",    "coastal",    "rain-soaked",
-    "fogbound",    "windblown",    "moonlit",    "sun-drenched",    "overcast",    "misty",    "dusty",    "gritty",    "opulent",    "minimalist",
-    "baroque",    "aristocratic",    "bohemian",    "arctic-blue",    "tundra",    "equatorial",    "high-altitude",    "underlit",    "overexposed",    "cinematic",
-    "documentary",    "editorial",    "fashion-forward",    "hyperreal",    "monochrome",    "chromatic",    "saturated",    "desaturated",    "bleached",    "sepia",
-    "analog",    "filmic",    "glamour",    "raw",    "moody",    "ethereal",    "harsh",    "ambient",    "backlit",    "rimlit",    "sunset-grade",    "twilight",
-    "nebulous",    "cosmic",    "tropical",    "coastal",  "lush",    "windswept",    "smoky",    "holographic",    "chromatic-aberration",    "bokeh-rich",    "macro-styled",    "telephoto-styled"
+    "arctic","tropical","monsoon","polaroid","nocturnal","urban","suburban","industrial","futuristic",
+    "retro","vintage","1970s","1980s","1990s","soaked, dripping",
+    "coastal","rain-soaked","windblown","moonlit","sun-drenched","overcast","misty","dusty","gritty",    "opulent",    "minimalist",
+    "bohemian","underexposed","overexposed","cinematic","documentary","editorial","fashion-forward",    "hyperreal",    "monochrome",    "chromatic",    "saturated",    "desaturated",    "bleached",    "sepia",
+    "analog","glamour","raw","moody","ethereal","harsh","ambient","backlit","rimlit",
+    "sunset-grade","twilight","tropical","coastal","lush","windswept",
+    "chromatic-aberration","bokeh-rich", "telephoto-styled","wide-angle-styled","dreamlike",
 ]
 
 def generate_prompts(primary_enabled, shot_light_enabled, overall_feel_enabled, overall_feel_weight):
@@ -211,7 +211,7 @@ def format_natural_prompt(prompt_json):
     footwear = prompt.get("footwear")
 
     if pose:
-        scene_parts.append(f"She is {pose}")
+        scene_parts.append(f'She is posing in the "{pose}" pose')
     if location:
         scene_parts.append(f"in {_with_article(location)}")
     if clothing or footwear:
@@ -220,7 +220,7 @@ def format_natural_prompt(prompt_json):
             worn_items.append(clothing)
         if footwear:
             worn_items.append(footwear)
-        scene_parts.append(f"wearing {' and '.join(worn_items)}")
+        scene_parts.append(f", wearing {_with_article(' and '.join(worn_items))}")
     if scene_parts:
         paragraphs.append(" ".join(scene_parts) + ".")
 
@@ -232,7 +232,7 @@ def format_natural_prompt(prompt_json):
     if body:
         appearance_parts.append(body)
     if appearance_parts:
-        paragraphs.append(f"She has {', '.join(appearance_parts)}.")
+        paragraphs.append(f"{', '.join(appearance_parts)}.")
 
     capture_parts = []
     shot = prompt.get("Shot and light variations")
@@ -299,26 +299,26 @@ with gr.Blocks() as demo:
             gr.Markdown("*Subject ID automatically included*")
             primary_checks = []
             # Defaults for the 7 primary stages (subject identity is automatic).
-            primary_defaults = [True, False, False, False, True, False, False]
+            primary_defaults = [True] * len(STAGES)
             for i, stage_name in enumerate(STAGES.keys()):
                 primary_checks.append(gr.Checkbox(label=stage_name, value=primary_defaults[i]))
             
             # Add shot and light as separate checkbox
             shot_light_check = gr.Checkbox(
                 label="Shot and light variations",
-                value=False,
+                value=True,
                 info="Lighting and framing options"
             )
             
             # Add overall feel as separate checkbox with weight slider
             overall_feel_check = gr.Checkbox(
                 label="Overall Feel",
-                value=False,
+                value=True,
                 info="Stylistic atmosphere keywords with adjustable emphasis"
             )
             
             overall_feel_weight_slider = gr.Slider(
-                minimum=0.1, maximum=2.0, value=1.0, step=0.1,
+                minimum=0.1, maximum=2.0, value=0.3, step=0.1,
                 label="Overall Feel emphasis weight",
                 info="0.1 to 2.0"
             )
