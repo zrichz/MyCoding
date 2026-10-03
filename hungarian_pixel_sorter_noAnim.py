@@ -132,7 +132,7 @@ def generate_final_image(start_image, end_image, grid_size=24, position_distance
     image_size = grid_size * canvas_scale
     start_texture = start_image.convert("RGB").resize(
         (image_size, image_size),
-        Image.Resampling.LANCZOS,
+        Image.Resampling.NEAREST,
     )
     # Slice the upscaled start image into grid_size x grid_size textured
     # patches (one canvas_scale x canvas_scale block per grid cell).
