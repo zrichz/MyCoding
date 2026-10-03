@@ -3,9 +3,9 @@
 The script provides a Gradio interface where users upload a start and end
 image and choose the grid resolution, number of animation frames, and the
 penalty for moving pixels across the grid. It downsamples both images,
-matches their pixels with the Hungarian algorithm using color and position
-costs, and smoothly animates the matched pixels from the start layout to the
-end layout.
+matches their pixels with the Hungarian algorithm using perceptual color and
+position costs, and smoothly animates the matched pixels from the start layout
+to the end layout.
 
 When run, it creates two looping GIF files: a color-block animation and a
 patchwork animation that uses tiles from the original start image. Both GIFs
@@ -22,9 +22,11 @@ later be represented by a small image patch in the patchwork output.
 
 Pixel correspondence is solved as a linear assignment problem. For every
 start cell and end cell, the cost is the Euclidean distance between their
-normalized RGB vectors plus ``position_distance_factor`` times the Euclidean
-distance between their normalized grid coordinates. This produces a
-``(grid_size ** 2) x (grid_size ** 2)`` dense cost matrix. SciPy's
+OKLab color vectors plus ``position_distance_factor`` times the Euclidean
+distance between their normalized grid coordinates. OKLab is used instead of
+raw sRGB because its axes are designed to make Euclidean distances more
+closely reflect perceived lightness and chromatic differences. This produces
+a ``(grid_size ** 2) x (grid_size ** 2)`` dense cost matrix. SciPy's
 ``linear_sum_assignment`` implements the Hungarian/Jonker-Volgenant-style
 minimum-cost assignment solver and returns a one-to-one permutation of the
 end cells. The cubic worst-case complexity in the number of cells is why the
@@ -54,6 +56,57 @@ from PIL import Image, ImageOps
 from scipy.optimize import linear_sum_assignment
 
 
+def srgb_to_oklab(rgb_colors):
+    """Convert an array of normalized sRGB colors to OKLab coordinates.
+
+    The input is expected to have shape ``(..., 3)`` and values in the
+    normalized sRGB range ``[0, 1]``. The output has the same leading shape,
+    with the final three values representing OKLab ``L``, ``a``, and ``b``.
+
+    sRGB values are gamma-encoded, so their numeric distances do not directly
+    correspond to distances in emitted light. The conversion first removes
+    that encoding, transforms linear-light RGB into the intermediate LMS cone
+    response space, applies the perceptual cube-root compression used by
+    OKLab, and finally rotates the result into the OKLab axes. All operations
+    are vectorized with NumPy so the function can process every grid cell in
+    one call.
+    """
+    # Decode gamma-encoded sRGB into linear-light RGB. The piecewise threshold
+    # is the standard sRGB transfer function breakpoint.
+    linear_rgb = np.where(
+        rgb_colors <= 0.04045,
+        rgb_colors / 12.92,
+        ((rgb_colors + 0.055) / 1.055) ** 2.4,
+    )
+
+    # Convert linear RGB into an LMS-like cone response space. The final axis
+    # contains R, G, and B, so matrix multiplication applies to every pixel.
+    lms = linear_rgb @ np.array(
+        [
+            [0.4122214708, 0.5363325363, 0.0514459929],
+            [0.2119034982, 0.6806995451, 0.1073969566],
+            [0.0883024619, 0.2817188376, 0.6299787005],
+        ],
+        dtype=np.float64,
+    ).T
+
+    # OKLab uses a cube-root compression of the LMS responses. np.cbrt also
+    # handles negative values correctly, which is useful for general inputs.
+    lms_cuberoot = np.cbrt(lms)
+
+    # Rotate the compressed cone responses into perceptual lightness and two
+    # opponent-color axes. For colors originating in sRGB, L is approximately
+    # in [0, 1], while a and b describe green/red and blue/yellow differences.
+    return lms_cuberoot @ np.array(
+        [
+            [0.2104542553, 0.7936177850, -0.0040720468],
+            [1.9779984951, -2.4285922050, 0.4505937099],
+            [0.0259040371, 0.7827717662, -0.8086757660],
+        ],
+        dtype=np.float64,
+    ).T
+
+
 def generate_anim(start_image, end_image, num_frames=48, grid_size=24, position_distance_factor=0.005):
     if start_image is None or end_image is None:
         raise gr.Error("load 2 imgaes")
@@ -72,12 +125,22 @@ def generate_anim(start_image, end_image, num_frames=48, grid_size=24, position_
     start_colors = np.asarray(start_small, dtype=np.float64).reshape(-1, 3) / 255.0
     end_colors = np.asarray(end_small, dtype=np.float64).reshape(-1, 3) / 255.0
 
+    # Keep the normalized sRGB values for rendering the color-block output,
+    # but compare colors in OKLab for a more perceptually meaningful match.
+    # Converting after downsampling keeps the expensive pairwise assignment
+    # matrix at the selected grid resolution.
+    start_oklab = srgb_to_oklab(start_colors)
+    end_oklab = srgb_to_oklab(end_colors)
+
     # Grid coords (normalized), in raster order
     x_coords, y_coords = np.meshgrid(np.linspace(0, 1, grid_size), np.linspace(0, 1, grid_size))
     grid_positions = np.vstack([x_coords.ravel(), y_coords.ravel()]).T
 
-    # Pair pixels by color while penalizing assignments that move far across the grid.
-    color_cost = np.linalg.norm(start_colors[:, None, :] - end_colors[None, :, :], axis=2)
+    # Pair pixels by perceptual color while penalizing assignments that move
+    # far across the grid. The broadcasted arrays compare every start cell to
+    # every end cell, producing the dense color-cost matrix required by the
+    # linear assignment solver.
+    color_cost = np.linalg.norm(start_oklab[:, None, :] - end_oklab[None, :, :], axis=2)
     position_cost = np.linalg.norm(grid_positions[:, None, :] - grid_positions[None, :, :], axis=2)
     cost_matrix = color_cost + position_distance_factor * position_cost
     row_indices, col_indices = linear_sum_assignment(cost_matrix)
