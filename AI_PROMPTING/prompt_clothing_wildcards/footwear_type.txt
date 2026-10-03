@@ -1,4 +1,4 @@
-platform_heels,
-wedge_heels,
+platform heels,
+wedge heels,
 mules,
-open_toe_heels,
+open-toe heels,
