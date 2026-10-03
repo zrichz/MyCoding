@@ -4,7 +4,7 @@ generates 400no. F2K prompts.
 Date: 2026-Sept
 
 STAGES:
-  1. Subject identity (hard-coded)
+  1. Subject ID (hard-coded)
   2. Pose and action
   3. Framing and crop
   4. Clothing and key props
@@ -102,7 +102,7 @@ STAGES = {
         "freckles:0.5)", "tanned", "toned calves", "relaxed",
         
     ],
-    "location": [ "interior", "mirror selfie", "garden", "bedroom", "exterior", ],
+    "location": [ "interior", "selfie", "garden", "bedroom", "exterior", ],
 }
 
 # Shot and light variations
@@ -143,12 +143,12 @@ SHOT_LIGHT = [
 # OVERALL FEEL OPTIONS
 OVERALL_FEEL = [
     "arctic",    "tropical",    "monsoon",    "desert",    "nocturnal",    "urban",    "suburban",    "industrial",    "futuristic",    "retro",    "vintage",
-    "neon",    "infrared",    "thermal",    "surreal",    "glacial",    "volcanic",    "coastal",    "rain-soaked",
-    "fogbound",    "windblown",    "moonlit",    "sun-drenched",    "overcast",    "misty",    "dusty",    "gritty",    "opulent",    "minimalist",
-    "baroque",    "aristocratic",    "bohemian",    "arctic-blue",    "tundra",    "equatorial",    "high-altitude",    "underlit",    "overexposed",    "cinematic",
+    "coastal",    "rain-soaked",
+    "windblown",    "moonlit",    "sun-drenched",    "overcast",    "misty",    "dusty",    "gritty",    "opulent",    "minimalist",
+    "bohemian",    "underlit",    "overexposed",    "cinematic",
     "documentary",    "editorial",    "fashion-forward",    "hyperreal",    "monochrome",    "chromatic",    "saturated",    "desaturated",    "bleached",    "sepia",
-    "analog",    "filmic",    "glamour",    "raw",    "moody",    "ethereal",    "harsh",    "ambient",    "backlit",    "rimlit",    "sunset-grade",    "twilight",
-    "nebulous",    "cosmic",    "tropical",    "coastal",  "lush",    "windswept",    "smoky",    "holographic",    "chromatic-aberration",    "bokeh-rich",    "macro-styled",    "telephoto-styled"
+    "analog",    "glamour",    "raw",    "moody",    "ethereal",    "harsh",    "ambient",    "backlit",    "rimlit",    "sunset-grade",    "twilight",
+    "tropical","coastal","lush","windswept",  "chromatic-aberration","bokeh-rich", "telephoto-styled"
 ]
 
 def generate_prompts(primary_enabled, shot_light_enabled, overall_feel_enabled, overall_feel_weight):

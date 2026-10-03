@@ -150,7 +150,7 @@ def generate_final_image(start_image, end_image, grid_size=24, position_distance
 
     # Always output a fixed 1024x1024 PNG regardless of the working canvas size.
     output_image_final = Image.fromarray(output_array).resize(
-        (1024, 1024), Image.Resampling.LANCZOS
+        (1024, 1024), Image.Resampling.NEAREST
     )
     output_path = "hungarian_pixel_sorter_final.png"
     output_image_final.save(output_path, format="PNG")
