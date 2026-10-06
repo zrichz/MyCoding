@@ -90,24 +90,30 @@ def generate_halftone(input_image, sample_size, invert, color_mode, angle, contr
         img_bgr = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
 
         if color_mode:
-            # CMY-style color halftone: process each channel with a different screen angle
-            b, g, r = cv2.split(img_bgr)
-            channel_angles = [angle, angle + 15, angle + 30]
+            cmyk = np.array(input_image.convert("CMYK"))
+            cyan, magenta, yellow, black = cv2.split(cmyk)
+            channel_angles = (15, 75, 0, 45)
 
-            cyan = dot_halftone_channel(255 - r, sample_size, not invert, channel_angles[0], contrast)
-            magenta = dot_halftone_channel(255 - g, sample_size, not invert, channel_angles[1], contrast)
-            yellow = dot_halftone_channel(255 - b, sample_size, not invert, channel_angles[2], contrast)
+            screened_channels = [
+                dot_halftone_channel(channel, sample_size, not invert, channel_angle, contrast)
+                for channel, channel_angle in zip(
+                    (cyan, magenta, yellow, black), channel_angles
+                )
+            ]
+            ink_c, ink_m, ink_y, ink_k = [
+                (255 - screened).astype(np.int32)
+                for screened in screened_channels
+            ]
 
-            # Subtractive combine: each channel's "ink" darkens the final color
-            ink_c = (255 - cyan).astype(np.int32)
-            ink_m = (255 - magenta).astype(np.int32)
-            ink_y = (255 - yellow).astype(np.int32)
+            out_r = ((255 - ink_c) * (255 - ink_k) + 127) // 255
+            out_g = ((255 - ink_m) * (255 - ink_k) + 127) // 255
+            out_b = ((255 - ink_y) * (255 - ink_k) + 127) // 255
 
-            out_r = np.clip(255 - ink_c, 0, 255).astype(np.uint8)
-            out_g = np.clip(255 - ink_m, 0, 255).astype(np.uint8)
-            out_b = np.clip(255 - ink_y, 0, 255).astype(np.uint8)
-
-            output_rgb = cv2.merge([out_r, out_g, out_b])
+            output_rgb = cv2.merge([
+                out_r.astype(np.uint8),
+                out_g.astype(np.uint8),
+                out_b.astype(np.uint8),
+            ])
             output_image = Image.fromarray(output_rgb)
         else:
             gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
@@ -140,7 +146,7 @@ with gr.Blocks(theme=gr.themes.Soft(), title="Halftone Pattern Generator") as de
                 label="Contrast / Dot Gain (lower = darker, bigger dots)"
             )
             invert = gr.Checkbox(label="Invert (light areas get larger dots)", value=False)
-            color_mode = gr.Checkbox(label="Color halftone (CMY channels)", value=False)
+            color_mode = gr.Checkbox(label="Color halftone (CMYK, standard screen angles)", value=False)
             generate_btn = gr.Button("Generate Halftone", variant="primary")
 
         with gr.Column():

@@ -248,7 +248,7 @@ def format_natural_prompt(prompt_json):
     if overall_feel:
         paragraphs.append(f"Overall Feel: {overall_feel}")
 
-    return "\n".join(paragraphs)
+    return " ".join(paragraphs).replace("\r", " ").replace("\n", " ")
 
 
 def generate_and_display(shot_light_check, overall_feel_check, overall_feel_weight, *checkboxes):
@@ -268,7 +268,7 @@ def generate_and_display(shot_light_check, overall_feel_check, overall_feel_weig
     last_8 = prompts[-8:]
     output_lines = [format_natural_prompt(prompt_json) for prompt_json in last_8]
     
-    output = "\n\n".join(output_lines)
+    output = "\n".join(output_lines)
 
     return output, prompts
 
@@ -283,7 +283,7 @@ def save_prompts(prompts_data):
     
     with open(filename, 'w', encoding='utf-8') as f:
         for prompt in prompts_data:
-            f.write(f'{format_natural_prompt(prompt)}\n\n')
+            f.write(f'{format_natural_prompt(prompt)}\n')
     
     return f"Saved {len(prompts_data)} prompts to {filename}"
 
