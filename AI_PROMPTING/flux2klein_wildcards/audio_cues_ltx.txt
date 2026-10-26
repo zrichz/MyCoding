@@ -1,0 +1,5 @@
+"silence with air ambience", "distant rainfall", "urban traffic noise", "wind through trees"
+"electronic hum and beeping", "footsteps echoing", "heartbeat thumping", "music swelling"
+"dialogue whispered", "door creaking open", "impact crash sound", "breathing heavily"
+"mechanical whirring", "glass shattering", "water dripping", "door slamming"
+"laughter distant", "alarm blaring", "clock ticking", "vinyl record scratch"

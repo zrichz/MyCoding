@@ -1,24 +1,70 @@
 #!/home/rich/MyCoding/venvMyCoding/bin/python
+"""
+Neural style transfer between two images.
+Each image is centre-cropped to a 512x512 square, then the style (colours, textures, brushwork) of one is painted onto the content of the other, and vice versa.
+Results are shown in a 1024x1024 montage.
+Built with PyTorch and Gradio.
+
+How it works:
+The script optimises the pixels of a copy of the content image (500 L-BFGS steps) so that its VGG19 activations match two targets at once.
+VGG19 is a 19-layer convolutional neural network from Oxford's Visual Geometry Group, and only its convolutional "features" part is used here, with frozen pretrained weights.
+Early layers respond to colours and edges, middle layers to textures and patterns, and deeper layers to object parts and overall layout.
+  - Content: layer 21 (conv4_2), a deep layer. The output is penalised for differing from the content image's activations there, which preserves its layout and objects.
+  - Style: layers 0, 5, 10, 19 and 28 (conv1_1, conv2_1, conv3_1, conv4_1, conv5_1), one from each block. At each, the Gram matrix (how strongly feature channels fire together, ignoring where) is compared with that of the style image. Fine layers capture colour and brushstrokes, coarse layers capture larger motifs.
+  - Weights: style 100000, content 0.1, so style dominates.
+
+About ImageNet:
+VGG19's weights come from training on ImageNet, a dataset of over 14 million web-scraped photos labelled with about 20,000 categories.
+Models like this one are normally trained on the 1.28 million image, 1000 class subset used in the ILSVRC 2012 challenge.
+The images were collected from internet search engines and photo sites, and ImageNet does not own them: the copyright stays with the original photographers and publishers, and consent was not sought from them or from the people pictured.
+ImageNet is distributed for non-commercial research and educational use under its terms of access,
+and the dataset's own people categories have been criticised for biased and offensive labels, with some removed in 2019 to 2021.
+Whether weights trained on such data may be used commercially,
+and whether training counts as fair use, is legally unsettled and varies by jurisdiction.
+"""
 import torch
-import torch.nn as nn
 import torch.optim as optim
 from torchvision import models, transforms
 from PIL import Image
 import gradio as gr
 import numpy as np
-import time
+
+# Fixed settings
+ITERATIONS = 500
+STYLE_WEIGHT = 100000.0
+CONTENT_WEIGHT = 0.1
+IMAGE_SIZE = 512
+
+_vgg_cache = {}
+
+
+def get_vgg(device):
+    """Load VGG19 once per device and reuse it."""
+    if device not in _vgg_cache:
+        vgg = models.vgg19(weights=models.VGG19_Weights.DEFAULT).features.to(device).eval()
+        vgg.requires_grad_(False)
+        _vgg_cache[device] = vgg
+    return _vgg_cache[device]
+
+
+def to_square(image, size=IMAGE_SIZE):
+    """Center crop to 1:1 and resize to size x size RGB."""
+    if isinstance(image, np.ndarray):
+        img = Image.fromarray(image)
+    else:
+        img = image
+    img = img.convert("RGB")
+    side = min(img.size)
+    left = (img.width - side) // 2
+    top = (img.height - side) // 2
+    img = img.crop((left, top, left + side, top + side))
+    return img.resize((size, size), Image.Resampling.LANCZOS)
+
 
 # --- 1. Image loading ---
-def load_image(image, max_size=512):
-    """Convert PIL Image or numpy array to tensor."""
-    if isinstance(image, np.ndarray):
-        img = Image.fromarray(image).convert("RGB")
-    else:
-        img = image.convert("RGB")
-    
-    size = max(img.size) if max(img.size) < max_size else max_size
+def load_image(img):
+    """Convert a PIL image to a normalized tensor."""
     transform = transforms.Compose([
-        transforms.Resize(size),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
@@ -26,7 +72,7 @@ def load_image(image, max_size=512):
 
 # --- 2. Helper: Gram matrix ---
 def gram_matrix(tensor):
-    b, c, h, w = tensor.size()
+    _, c, h, w = tensor.size()
     features = tensor.view(c, h * w)
     G = torch.mm(features, features.t())
     return G / (c * h * w)
@@ -41,50 +87,29 @@ def extract_features(x, vgg, content_layer, style_layers):
     return features
 
 # --- 4. Main style transfer function ---
-def style_transfer(content_img, style_img, iterations=300, style_weight=1e6, content_weight=1.0, max_size=512, progress=gr.Progress()):
-    """
-    Apply neural style transfer.
-    
-    Args:
-        content_img: PIL Image or numpy array of content image
-        style_img: PIL Image or numpy array of style image
-        iterations: Number of optimization steps
-        style_weight: Weight for style loss
-        content_weight: Weight for content loss
-        max_size: Maximum size for images
-        progress: gr.Progress object for updating progress
-    
-    Returns:
-        PIL Image of stylized result
-    """
-    
-    # Check for CUDA availability
+def style_transfer(content_img, style_img, iterations=ITERATIONS, style_weight=STYLE_WEIGHT,
+                   content_weight=CONTENT_WEIGHT, progress=None, progress_range=(0.0, 1.0),
+                   label=""):
+    """Apply neural style transfer to two square PIL images; returns a PIL image."""
+    p0, p1 = progress_range
+
+    def report(fraction, desc):
+        if progress is not None:
+            progress(p0 + (p1 - p0) * fraction, desc=desc)
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
-    
-    # Update initial progress
-    progress(0, desc="Initializing...")
-    
-    # Load and prepare images
-    print("Loading images...")
-    progress(0.05, desc="Loading images...")
-    content = load_image(content_img, max_size).to(device)
-    style = load_image(style_img, max_size).to(device)
-    print(f"Content shape: {content.shape}, Style shape: {style.shape}")
-    
-    # Load VGG19
-    print("Loading VGG19 model...")
-    progress(0.1, desc="Loading VGG19...")
-    vgg = models.vgg19(weights=models.VGG19_Weights.DEFAULT).features.to(device).eval()
+    report(0.0, f"{label}Preparing")
+
+    content = load_image(content_img).to(device)
+    style = load_image(style_img).to(device)
+    vgg = get_vgg(device)
     
     # Layers used for content and style
     content_layer = "21"   # conv4_2
     style_layers = ["0", "5", "10", "19", "28"]  # conv1_1 ... conv5_1
     
     # Extract features
-    print("Extracting features...")
-    progress(0.15, desc="Extracting features...")
-    
     with torch.no_grad():
         content_feats = extract_features(content, vgg, content_layer, style_layers)
         style_feats = extract_features(style, vgg, content_layer, style_layers)
@@ -95,50 +120,50 @@ def style_transfer(content_img, style_img, iterations=300, style_weight=1e6, con
     # Initialize output image
     output = content.clone().requires_grad_(True)
     
-    # Optimization - use Adam with higher learning rate for normalized space
-    optimizer = optim.Adam([output], lr=0.01)
-    
-    # Run optimization
+    optimizer = optim.LBFGS(
+        [output],
+        lr=1.0,
+        max_iter=1,
+        max_eval=20,
+        history_size=10,
+        line_search_fn="strong_wolfe"
+    )
+
+    # Run quasi-Newton optimization. Each step may evaluate the closure several times
+    # while the line search finds a suitable update.
     print(f"Starting optimization for {iterations} iterations...")
-    progress(0.2, desc="Starting optimization...")
     
     for i in range(iterations):
-        optimizer.zero_grad()
-        
-        # Forward pass
-        feats = extract_features(output, vgg, content_layer, style_layers)
-        
-        # Content loss
-        content_loss = torch.nn.functional.mse_loss(feats[content_layer], content_target)
-        
-        # Style loss
-        style_loss = 0
-        for layer in style_layers:
-            gram_output = gram_matrix(feats[layer])
-            style_loss += torch.nn.functional.mse_loss(gram_output, style_grams[layer])
-        
-        total_loss = content_weight * content_loss + style_weight * style_loss
-        
-        # Backward pass
-        total_loss.backward()
-        optimizer.step()
-        
-        # Clamp pixel values to valid range (normalized space)
+        latest_loss = None
+
+        def closure():
+            nonlocal latest_loss
+            optimizer.zero_grad()
+            feats = extract_features(output, vgg, content_layer, style_layers)
+            content_loss = torch.nn.functional.mse_loss(
+                feats[content_layer], content_target
+            )
+            style_loss = sum(
+                torch.nn.functional.mse_loss(
+                    gram_matrix(feats[layer]), style_grams[layer]
+                )
+                for layer in style_layers
+            )
+            total_loss = content_weight * content_loss + style_weight * style_loss
+            total_loss.backward()
+            latest_loss = total_loss.detach()
+            return total_loss
+
+        optimizer.step(closure)
+
         with torch.no_grad():
-            output.clamp_(-2.5, 2.5)  # Reasonable bounds for normalized images
+            output.clamp_(-2.5, 2.5)
+
+        report((i + 1) / iterations,
+               f"{label}Step {i+1}/{iterations} - Loss: {latest_loss.item():.0f}")
         
-        # Update progress bar EVERY iteration
-        progress_value = 0.2 + ((i + 1) / iterations) * 0.75
-        desc = f"Step {i+1}/{iterations} - Loss: {total_loss.item():.0f}"
-        progress(progress_value, desc=desc)
-        
-        # Print to console periodically
-        if (i + 1) % 5 == 0 or i == 0:
-            print(f"Step {i+1}/{iterations} - Loss: {total_loss.item():.0f} "
-                  f"(Content: {content_loss.item():.2f}, Style: {style_loss.item():.2f})")
-    
-    print("Optimization complete. Converting to PIL Image...")
-    progress(0.95, desc="Converting to image...")
+        if (i + 1) % 10 == 0 or i == 0:
+            print(f"Step {i+1}/{iterations} - Loss: {latest_loss.item():.0f}")
     
     # Convert output to PIL Image - denormalize first
     out_tensor = output.detach().cpu().squeeze()
@@ -149,55 +174,32 @@ def style_transfer(content_img, style_img, iterations=300, style_weight=1e6, con
     out_tensor = out_tensor * std + mean
     out_tensor = out_tensor.clamp(0, 1)
     
-    result = transforms.ToPILImage()(out_tensor)
-    print(f"Generated image size: {result.size}, mode: {result.mode}")
-    
-    progress(1.0, desc="Complete!")
-    
-    return result
+    return transforms.ToPILImage()(out_tensor)
 
 # --- 5. Gradio Interface ---
-def process_images(content_img, style_img, iterations, style_weight, content_weight, size_preset, progress=gr.Progress()):
-    """Wrapper function for Gradio interface."""
-    if content_img is None or style_img is None:
-        print("Error: Missing content or style image")
+def process_images(image_1, image_2, progress=gr.Progress()):
+    """Style each image with the other and return a 2x2 montage."""
+    if image_1 is None or image_2 is None:
         return None
-    
-    # Parse size preset
-    size_map = {
-        "Fast (256px)": 256,
-        "Normal (512px)": 512,
-        "High Quality (768px)": 768
-    }
-    max_size = size_map.get(size_preset, 256)
-    
-    print("\n" + "="*50)
-    print("Starting Neural Style Transfer")
-    print(f"Mode: {size_preset} (max size: {max_size}px)")
-    print("="*50)
-    
+
     try:
-        result = style_transfer(
-            content_img, 
-            style_img, 
-            iterations=int(iterations),
-            style_weight=float(style_weight),
-            content_weight=float(content_weight),
-            max_size=int(max_size),
-            progress=progress
-        )
-        print("="*50)
-        print("Style transfer completed successfully")
-        print(f"Returning image: {result.size if result else 'None'}, type: {type(result)}")
-        print("="*50 + "\n")
-        
-        # Ensure we're returning a PIL Image
-        if result and isinstance(result, Image.Image):
-            return result
-        else:
-            print("Warning: Result is not a valid PIL Image")
-            return None
-            
+        img1 = to_square(image_1)
+        img2 = to_square(image_2)
+
+        styled_1 = style_transfer(img1, img2, progress=progress,
+                                  progress_range=(0.0, 0.5), label="Image 1: ")
+        styled_2 = style_transfer(img2, img1, progress=progress,
+                                  progress_range=(0.5, 1.0), label="Image 2: ")
+
+        # Left column: image 1 over its restyled version.
+        # Right column: restyled image 2 over the original image 2.
+        montage = Image.new("RGB", (IMAGE_SIZE * 2, IMAGE_SIZE * 2))
+        montage.paste(img1, (0, 0))
+        montage.paste(styled_1, (0, IMAGE_SIZE))
+        montage.paste(styled_2, (IMAGE_SIZE, 0))
+        montage.paste(img2, (IMAGE_SIZE, IMAGE_SIZE))
+        return montage
+
     except Exception as e:
         print(f"Error during style transfer: {str(e)}")
         import traceback
@@ -207,57 +209,21 @@ def process_images(content_img, style_img, iterations, style_weight, content_wei
 # Create Gradio interface
 with gr.Blocks(title="Neural Style Transfer") as demo:
     gr.Markdown("# Neural Style Transfer")
-    gr.Markdown("Upload a content image and a style image to transfer the artistic style.")
-    
+    gr.Markdown("Upload two images. Each is cropped to a square, then the style of each is applied to the other.")
+
     with gr.Row():
         with gr.Column():
-            content_input = gr.Image(label="Content Image", type="pil")
-            style_input = gr.Image(label="Style Image", type="pil")
-        
+            content_input = gr.Image(label="Image 1", type="pil", height=300)
+            style_input = gr.Image(label="Image 2", type="pil", height=300)
+
         with gr.Column():
-            output_image = gr.Image(label="Stylized Result", type="pil")
-    
-    with gr.Row():
-        iterations_slider = gr.Slider(
-            minimum=50, maximum=500, value=200, step=10,
-            label="Iterations (lower is faster)"
-        )
-        style_weight_slider = gr.Slider(
-            minimum=1e4, maximum=1e7, value=1e6, step=1e4,
-            label="Style Weight"
-        )
-    
-    with gr.Row():
-        content_weight_slider = gr.Slider(
-            minimum=0.1, maximum=10.0, value=1.0, step=0.1,
-            label="Content Weight"
-        )
-        size_preset = gr.Radio(
-            choices=["Fast (256px)", "Normal (512px)", "High Quality (768px)"],
-            value="Fast (256px)",
-            label="Processing Size (smaller is faster)"
-        )
-    
+            output_image = gr.Image(label="Montage (1024x1024)", type="pil")
+
     process_btn = gr.Button("Apply Style Transfer", variant="primary")
-    
-    gr.Markdown("### Notes")
-    gr.Markdown("- Fast mode recommended for CPU processing")
-    gr.Markdown("- Higher iterations produce better quality but take longer")
-    gr.Markdown("- Higher style weight emphasizes the artistic style more")
-    gr.Markdown("- Higher content weight preserves the original content better")
-    gr.Markdown("- Progress bar shows real-time updates during processing")
-    
-    # Connect button to processing function
+
     process_btn.click(
         fn=process_images,
-        inputs=[
-            content_input, 
-            style_input, 
-            iterations_slider, 
-            style_weight_slider, 
-            content_weight_slider,
-            size_preset
-        ],
+        inputs=[content_input, style_input],
         outputs=output_image,
         show_progress="full"
     )

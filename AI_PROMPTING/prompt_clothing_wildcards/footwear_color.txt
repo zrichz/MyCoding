@@ -1,0 +1,6 @@
+black,
+white,
+nude,
+pink,
+silver,
+teal,

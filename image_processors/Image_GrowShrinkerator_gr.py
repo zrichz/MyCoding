@@ -1,12 +1,11 @@
 """
-Gradio GUI for batch image processing: converts to 720x1600, 3840x2160, or scales to 2160px height.
+Gradio GUI for batch image processing: converts to 3840x2160 or scales to 2160px height.
 
 Features:
 - Batch processing from selected directory
-- Three output modes: 720x1600 (portrait), 3840x2160 (landscape), 2160px height (aspect preserved)
+- Two output modes: 3840x2160 (landscape), 2160px height (aspect preserved)
 - Percentage-based center cropping (0-25% per side, 1% steps) applied before expansion
 - Output format: JPEG (Q=90) or PNG
-- 720x1600: crops width, expands height to 20:9 aspect ratio (1:2 top:bottom padding)
 - 3840x2160: crops height, expands width to 16:9 aspect ratio (50:50 left:right padding)
 - 2160px Height: scales to 2160px height preserving aspect ratio (no crop/blur)
 - Expanded regions blurred with luminance reduction for fade effect
@@ -30,10 +29,6 @@ except ImportError:
 
 class ImageExpanderProcessor:
     def __init__(self):
-        # Target dimensions (will be set per resolution choice)
-        self.target_width = 720
-        self.target_height = 1600
-        
         # Fixed settings
         self.blur_amount = 160
         self.luminance_drop = 25
@@ -102,40 +97,6 @@ class ImageExpanderProcessor:
             if counter > 999:
                 raise Exception("Too many files with the same timestamp")
     
-    def apply_horizontal_blur(self, line_array, blur_amount):
-        """Apply horizontal-only blur using pre-cached Gaussian kernels"""
-        if blur_amount <= 0:
-            return line_array
-        
-        blur_key = round(blur_amount * 2) / 2.0
-        
-        if blur_key not in self.kernel_cache:
-            available_keys = list(self.kernel_cache.keys())
-            blur_key = min(available_keys, key=lambda x: abs(x - blur_amount))
-        
-        kernel = self.kernel_cache[blur_key]['kernel']
-        
-        if len(line_array.shape) == 2:  # Color image
-            line_float = line_array.astype(np.float32)
-            blurred = np.zeros_like(line_float)
-            
-            for channel in range(line_array.shape[1]):
-                blurred[:, channel] = ndimage.convolve1d(
-                    line_float[:, channel], 
-                    kernel, 
-                    axis=0, 
-                    mode='nearest'
-                )
-            return np.clip(blurred, 0, 255).astype(np.uint8)
-        else:  # Grayscale
-            blurred = ndimage.convolve1d(
-                line_array.astype(np.float32), 
-                kernel, 
-                axis=0, 
-                mode='nearest'
-            )
-            return np.clip(blurred, 0, 255).astype(np.uint8)
-    
     def apply_vertical_blur(self, column_array, blur_amount):
         """Apply vertical-only blur using pre-cached Gaussian kernels"""
         if blur_amount <= 0:
@@ -187,82 +148,7 @@ class ImageExpanderProcessor:
             original_image = Image.open(input_path)
             processed_image = None  # Initialize to avoid unbound variable warning
             
-            if resolution_mode == "720x1600 (with blurring)":
-                # Portrait mode: crop width, expand height
-                # Step 1: Apply percentage-based center crop to width only
-                if crop_percent_per_side > 0:
-                    # Calculate total crop percentage (both sides)
-                    total_crop_percent = crop_percent_per_side * 2
-                    # Calculate new width after cropping
-                    new_width = int(original_image.width * (1 - total_crop_percent / 100.0))
-                    # Calculate crop positions (centered)
-                    left = (original_image.width - new_width) // 2
-                    right = left + new_width
-                    # Crop only the width, keep full height
-                    original_image = original_image.crop((left, 0, right, original_image.height))
-                
-                # Get the cropped width (z in the requirements)
-                z = original_image.width
-                
-                # Step 2: Calculate target height based on (20/9) aspect ratio
-                # Target height should be (20/9) * z
-                target_expanded_height = int((20.0 / 9.0) * z)
-            
-                # Convert to numpy array for processing
-                img_array = np.array(original_image)
-                orig_height, orig_width = img_array.shape[:2]
-                
-                # Calculate how much height expansion is needed
-                height_expansion = max(0, target_expanded_height - orig_height)
-                
-                # Vertical padding: 1:2 ratio (top:bottom)
-                # Top gets 1/3, bottom gets 2/3 of the expansion
-                top_pad = height_expansion // 3
-                bottom_pad = height_expansion - top_pad
-                
-                # Create expanded image array with new dimensions
-                final_height = orig_height + height_expansion
-                if len(img_array.shape) == 3:  # Color image
-                    expanded_array = np.zeros((final_height, orig_width, img_array.shape[2]), dtype=img_array.dtype)
-                else:  # Grayscale
-                    expanded_array = np.zeros((final_height, orig_width), dtype=img_array.dtype)
-                
-                # Copy original image to position (top-weighted due to 1:3, 2:3 ratio)
-                y_start = top_pad
-                y_end = y_start + orig_height
-                expanded_array[y_start:y_end, :] = img_array
-                
-                max_blur = self.blur_amount
-                max_luminance_drop = self.luminance_drop
-                
-                # Process top and bottom expansions
-                if top_pad > 0:
-                    self._process_top_expansion_vectorized(expanded_array, img_array, 
-                                                         top_pad, 0, orig_width, 
-                                                         max_blur, max_luminance_drop)
-                
-                if bottom_pad > 0:
-                    self._process_bottom_expansion_vectorized(expanded_array, img_array, 
-                                                            bottom_pad, y_end, 0, orig_width,
-                                                            max_blur, max_luminance_drop)
-                
-                # Optionally blur inside original image boundaries with gradient
-                if enable_internal_blur and internal_blur_width > 0:
-                    blur_width = min(internal_blur_width, orig_height // 2)
-                    self._blur_original_boundary_horizontal(expanded_array, y_start, y_start + blur_width, 
-                                                           0, orig_width, max_blur)
-                    if orig_height >= internal_blur_width * 2:
-                        self._blur_original_boundary_horizontal(expanded_array, y_end - blur_width, y_end, 
-                                                               0, orig_width, max_blur)
-                
-                # Convert back to PIL Image
-                processed_image = Image.fromarray(expanded_array.astype('uint8'))
-                
-                # Step 3: Resize to exactly 720x1600 using high-quality resampling
-                processed_image = processed_image.resize((720, 1600), 
-                                                        Image.Resampling.LANCZOS)
-            
-            elif resolution_mode == "3840x2160 (with blurring)":
+            if resolution_mode == "3840x2160 (with blurring)":
                 # Landscape mode: crop height, expand width
                 # Step 1: Apply percentage-based center crop to height only
                 if crop_percent_per_side > 0:
@@ -371,54 +257,6 @@ class ImageExpanderProcessor:
             print(f"Error processing {input_path}: {e}")
             return False
     
-    def _process_top_expansion_vectorized(self, expanded_array, img_array, top_pad, x_start, x_end, max_blur, max_luminance_drop):
-        """Vectorized processing of top expansion region"""
-        if top_pad <= 0:
-            return
-            
-        top_line = img_array[0]
-        
-        progress_values = np.array([(top_pad - i) / top_pad for i in range(top_pad)])
-        blur_amounts = progress_values * max_blur
-        luminance_reductions = progress_values * max_luminance_drop
-        
-        unique_blurs = np.unique(np.round(blur_amounts * 2) / 2.0)
-        
-        for blur_amount in unique_blurs:
-            mask = np.abs(blur_amounts - blur_amount) < 0.25
-            line_indices = np.where(mask)[0]
-            
-            if len(line_indices) > 0:
-                blurred_line = self.apply_horizontal_blur(top_line, blur_amount)
-                
-                for idx in line_indices:
-                    final_line = self.apply_luminance_reduction(blurred_line, luminance_reductions[idx])
-                    expanded_array[idx, x_start:x_end] = final_line
-    
-    def _process_bottom_expansion_vectorized(self, expanded_array, img_array, bottom_pad, y_end, x_start, x_end, max_blur, max_luminance_drop):
-        """Vectorized processing of bottom expansion region"""
-        if bottom_pad <= 0:
-            return
-            
-        bottom_line = img_array[-1]
-        
-        progress_values = np.array([(i + 1) / bottom_pad for i in range(bottom_pad)])
-        blur_amounts = progress_values * max_blur
-        luminance_reductions = progress_values * max_luminance_drop
-        
-        unique_blurs = np.unique(np.round(blur_amounts * 2) / 2.0)
-        
-        for blur_amount in unique_blurs:
-            mask = np.abs(blur_amounts - blur_amount) < 0.25
-            line_indices = np.where(mask)[0]
-            
-            if len(line_indices) > 0:
-                blurred_line = self.apply_horizontal_blur(bottom_line, blur_amount)
-                
-                for idx in line_indices:
-                    final_line = self.apply_luminance_reduction(blurred_line, luminance_reductions[idx])
-                    expanded_array[y_end + idx, x_start:x_end] = final_line
-    
     def _process_left_expansion_vectorized(self, expanded_array, left_pad, x_start, max_blur, max_luminance_drop):
         """Vectorized processing of left expansion region"""
         if left_pad <= 0:
@@ -466,27 +304,6 @@ class ImageExpanderProcessor:
                 for idx in column_indices:
                     final_column = self.apply_luminance_reduction(blurred_column, luminance_reductions[idx])
                     expanded_array[:, x_end + idx] = final_column
-    
-    def _blur_original_boundary_horizontal(self, expanded_array, y_start, y_end, x_start, x_end, max_blur):
-        """Apply progressive gradient blur to horizontal boundary region inside original image"""
-        boundary_height = y_end - y_start
-        if boundary_height <= 0:
-            return
-        
-        for i in range(boundary_height):
-            # Gradient from 0 blur (inside) to max_blur (at edge)
-            progress = i / boundary_height
-            blur_amount = progress * max_blur
-            
-            blur_key = round(blur_amount * 2) / 2.0
-            if blur_key not in self.kernel_cache:
-                available_keys = list(self.kernel_cache.keys())
-                blur_key = min(available_keys, key=lambda x: abs(x - blur_amount))
-            
-            if blur_amount > 0:
-                line = expanded_array[y_start + i, x_start:x_end].copy()
-                blurred_line = self.apply_horizontal_blur(line, blur_amount)
-                expanded_array[y_start + i, x_start:x_end] = blurred_line
     
     def _blur_original_boundary_vertical(self, expanded_array, y_start, y_end, x_start, x_end, max_blur):
         """Apply progressive gradient blur to vertical boundary region inside original image"""
@@ -578,8 +395,13 @@ class ImageExpanderProcessor:
         log_lines.append(f"Input folder: {os.path.normpath(input_folder)}")
         log_lines.append(f"Output folder: {os.path.normpath(output_dir)}")
         log_lines.append(f"Resolution mode: {resolution_mode}")
-        crop_dimension = "Width" if resolution_mode == "720x1600" else "Height"
-        log_lines.append(f"{crop_dimension} crop: {crop_percent_per_side}% per side ({crop_percent_per_side * 2}% total)")
+        if resolution_mode == "3840x2160 (with blurring)":
+            log_lines.append(
+                f"Height crop: {crop_percent_per_side}% per side "
+                f"({crop_percent_per_side * 2}% total)"
+            )
+        else:
+            log_lines.append("Crop: not applied in aspect-preserving height mode")
         log_lines.append(f"Format: {'JPEG (Q=90)' if save_as_jpg else 'PNG'}")
         log_lines.append(f"Found {total_files} images to process\n")
         
@@ -646,10 +468,10 @@ with gr.Blocks(title="Image Auto-Expander (Percentage)") as demo:
     gr.Markdown("Accepts any image size • Choose resolution • Crops by percentage • Expands and scales")
     
     resolution_mode = gr.Radio(
-        choices=["720x1600 (with blurring)", "3840x2160 (with blurring)", "2160px Height (Aspect Preserved)"],
-        value="720x1600 (with blurring)",
+        choices=["3840x2160 (with blurring)", "2160px Height (Aspect Preserved)"],
+        value="3840x2160 (with blurring)",
         label="Output Resolution",
-        info="720x1600 = Portrait (crops width, expands height 1:2 top:bottom) | 3840x2160 = Landscape (crops height, expands width 50:50 left:right) | 2160px Height = Scale to max 2160px height, preserving aspect ratio"
+        info="3840x2160 = Landscape (crops height, expands width 50:50 left:right) | 2160px Height = Scale to max 2160px height, preserving aspect ratio"
     )
     
     input_folder = gr.Textbox(
@@ -665,7 +487,7 @@ with gr.Blocks(title="Image Auto-Expander (Percentage)") as demo:
         step=1,
         value=0,
         label="Crop Percentage (per side)",
-        info="0% = no crop, 8% = crops 8% from each side (16% total). For 720x1600: crops width. For 3840x2160: crops height. Crop is applied before expansion."
+        info="0% = no crop, 8% = crops 8% from each side (16% total). For 3840x2160: crops height before expansion. Cropping is not applied in aspect-preserving height mode."
     )
     
     with gr.Row():

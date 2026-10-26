@@ -10,6 +10,8 @@ Modes:
   Black and white      - single layer of black waves from luminance.
   CMYK                 - four wave layers (C, M, Y, K), each at its own angle,
                          combined subtractively like print halftones.
+  RGB                  - three wave layers (R, G, B), each at its own angle,
+                         combined additively on a black background.
   Line colour from image - luminance-driven black-and-white wave structure,
                          with each line coloured by the local image colour.
 """
@@ -28,6 +30,11 @@ INKS = {
     "M": np.array([1.0, 0.0, 1.0], np.float32),
     "Y": np.array([1.0, 1.0, 0.0], np.float32),
     "K": np.array([0.0, 0.0, 0.0], np.float32),
+}
+LIGHTS = {
+    "R": np.array([1.0, 0.0, 0.0], np.float32),
+    "G": np.array([0.0, 1.0, 0.0], np.float32),
+    "B": np.array([0.0, 0.0, 1.0], np.float32),
 }
 
 
@@ -76,7 +83,7 @@ def rgb_to_cmyk(rgb):
 
 
 def render_waves(image, mode, spacing, amplitude, mult, thickness, invert,
-                 ang_c, ang_m, ang_y, ang_k):
+                 ang_c, ang_m, ang_y, ang_k, ang_r, ang_g, ang_b):
     if image is None:
         return None, "Please load an image."
 
@@ -96,6 +103,14 @@ def render_waves(image, mode, spacing, amplitude, mult, thickness, invert,
             cov = draw_layer(d, spacing, amplitude, mult, thickness,
                              angles[name], row_offset=spacing * i // 4, fade=True)
             out *= 1.0 - cov[..., None] * (1.0 - INKS[name])
+    elif mode == "RGB":
+        angles = {"R": ang_r, "G": ang_g, "B": ang_b}
+        out = np.zeros((h, w, 3), np.float32)
+        for i, name in enumerate("RGB"):
+            d = rgb[..., i].astype(np.float32)
+            cov = draw_layer(d, spacing, amplitude, mult, thickness,
+                             angles[name], row_offset=spacing * i // 3, fade=True)
+            out += cov[..., None] * LIGHTS[name]
     else:
         gray = rgb @ np.array([0.299, 0.587, 0.114], np.float32)
         cov = draw_layer((1.0 - gray).astype(np.float32), spacing, amplitude,
@@ -121,7 +136,8 @@ def create_demo():
         with gr.Row():
             with gr.Column():
                 inp = gr.Image(label="Input image", type="numpy")
-                mode = gr.Radio(["Black and white", "CMYK", "Line colour from image"],
+                mode = gr.Radio(["Black and white", "CMYK", "RGB",
+                                 "Line colour from image"],
                                 value="Black and white", label="Mode")
                 spacing = gr.Slider(2, 128, value=16, step=1, label="Vertical spacing (px)")
                 amplitude = gr.Slider(0, 64, value=6, step=0.5, label="Amplitude (px)")
@@ -134,13 +150,17 @@ def create_demo():
                     ang_m = gr.Slider(-90, 90, value=75, step=1, label="Magenta")
                     ang_y = gr.Slider(-90, 90, value=0, step=1, label="Yellow")
                     ang_k = gr.Slider(-90, 90, value=45, step=1, label="Black")
+                with gr.Accordion("RGB wave angles (degrees)", open=False):
+                    ang_r = gr.Slider(-90, 90, value=15, step=1, label="Red")
+                    ang_g = gr.Slider(-90, 90, value=75, step=1, label="Green")
+                    ang_b = gr.Slider(-90, 90, value=0, step=1, label="Blue")
                 btn = gr.Button("Generate", variant="primary")
             with gr.Column():
                 out = gr.Image(label="Sine wave output", type="numpy", format="png")
                 msg = gr.Textbox(label="Info", interactive=False)
 
         inputs = [inp, mode, spacing, amplitude, mult, thickness, invert,
-                  ang_c, ang_m, ang_y, ang_k]
+                  ang_c, ang_m, ang_y, ang_k, ang_r, ang_g, ang_b]
         btn.click(render_waves, inputs, [out, msg])
     return demo
 
