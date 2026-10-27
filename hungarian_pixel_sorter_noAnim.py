@@ -22,8 +22,10 @@ Workflow:
 5. Native-resolution start-image tiles are rearranged and saved as a PNG.
 
 A Gradio UI wraps this logic, with options to use a generated cross-hatch
-image or turn the end image into a diamond-pixelated start image.
+image or generate a start image of random symmetric retro sprites.
 """
+
+import colorsys
 
 import gradio as gr
 import numpy as np
@@ -92,40 +94,62 @@ def make_builtin_crosshatch_start():
     return Image.fromarray(image)
 
 
-def make_diamond_pixelated_start(image, diamond_size=32):
-    # Builds an alternate "start" image by averaging pixels within diamond-
-    # shaped (45-degree rotated square) cells, producing a pixelated look
-    # whose cell boundaries run diagonally instead of on the usual grid axes.
-    if image is None:
-        raise gr.Error("Load an end image first.")
+def make_sprite_start(sprite_count=64, sprite_size=8, seed=None):
+    # sprite_count x sprite_count grid of sprite_size x sprite_size sprites,
+    # each left-right symmetric on a black or white background, with a
+    # one-pixel clear border and low-saturation colors of varying brightness.
+    """
+Sprite sheet generation (make_sprite_start):
+- Output is a sprite_count x sprite_count grid (64 x 64) of 8x8 pixel sprites,
+  giving a 512x512 image.
+- Each sprite has a plain black or white background (50/50 chance) and a
+  one-pixel clear border; the character lives in the central 6x6 region.
+- Each sprite gets one random overall brightness (0.1 to 0.95), so the sheet
+  spans dark to light sprites.
+- A random hue is chosen per sprite and used to make 3 moderate-saturation
+  (0.1 to 0.75) palette colors, with small hue jitter (+/-0.12) and brightness
+  jitter (+/-0.1) around the sprite brightness.
+- Only the left 6x3 half is generated: a random mask decides which cells are
+  filled (fill density is random per sprite, 40 to 75 percent), and each
+  filled cell picks one of the 3 palette colors; unfilled cells stay background.
+- The left half is mirrored horizontally to make a left-right symmetric 6x6
+  character, which is pasted into the background-filled 8x8 sprite and placed
+  into its slot on the sheet.
+"""
 
-    image = center_crop_square(image).convert("RGB")
-    pixels = np.asarray(image, dtype=np.uint8)
-    height, width = pixels.shape[:2]
-    x_coords, y_coords = np.meshgrid(np.arange(width), np.arange(height))
-    # Rotate coordinates by 45 degrees (via sum/difference) so that grouping
-    # by integer bins carves the image into diamonds rather than squares.
-    diagonal_a = np.floor((x_coords + y_coords) / diamond_size + 0.5).astype(np.int64)
-    diagonal_b = np.floor((x_coords - y_coords) / diamond_size + 0.5).astype(np.int64)
-    # Combine the two diagonal bins into a single 1D id (much faster to sort
-    # and unique than 2D row tuples) before mapping each pixel to its cell.
-    diagonal_a -= diagonal_a.min()
-    diagonal_b -= diagonal_b.min()
-    combined_id = (diagonal_a * (diagonal_b.max() + 1) + diagonal_b).ravel()
-    # `inverse` maps each pixel back to the index of its cell so per-cell
-    # stats can be scattered/gathered.
-    _, inverse = np.unique(combined_id, return_inverse=True)
+    rng = np.random.default_rng(seed)
+    inner = sprite_size - 2
+    half = inner // 2
+    side = sprite_count * sprite_size
+    image = np.zeros((side, side, 3), dtype=np.uint8)
 
-    flattened_pixels = pixels.reshape(-1, 3)
-    cell_counts = np.bincount(inverse)
-    pixelated = np.empty_like(flattened_pixels)
-    for channel in range(3):
-        # Sum each channel's values per cell, then divide by cell size to get
-        # the per-cell average, broadcast back out to every pixel in the cell.
-        channel_totals = np.bincount(inverse, weights=flattened_pixels[:, channel])
-        pixelated[:, channel] = np.rint(channel_totals[inverse] / cell_counts[inverse])
+    for row in range(sprite_count):
+        for col in range(sprite_count):
+            background = np.full(3, 255 if rng.random() < 0.5 else 0)
+            # Overall sprite brightness spans dark to light across sprites.
+            brightness = rng.uniform(0.1, 0.95)
+            hue = rng.random()
+            palette = np.array([
+                colorsys.hsv_to_rgb(
+                    (hue + rng.uniform(-0.12, 0.12)) % 1.0,
+                    rng.uniform(0.1, 0.75),
+                    float(np.clip(brightness + rng.uniform(-0.1, 0.1), 0.05, 1.0)),
+                )
+                for _ in range(3)
+            ]) * 255
+            fill = rng.random((inner, half)) < rng.uniform(0.4, 0.75)
+            color_index = rng.integers(0, 3, (inner, half))
+            left = np.where(fill[:, :, None], palette[color_index], background)
+            character = np.concatenate([left, left[:, ::-1]], axis=1)
+            sprite = np.empty((sprite_size, sprite_size, 3))
+            sprite[:] = background
+            sprite[1:-1, 1:-1] = character
+            image[
+                row * sprite_size:(row + 1) * sprite_size,
+                col * sprite_size:(col + 1) * sprite_size,
+            ] = np.rint(sprite).astype(np.uint8)
 
-    return Image.fromarray(pixelated.reshape(height, width, 3))
+    return Image.fromarray(image)
 
 
 def generate_final_image(
@@ -214,24 +238,6 @@ def generate_final_image(
     return output_path
 
 
-def generate_with_diamond_start(
-    end_image,
-    grid_size=24,
-    position_distance_factor=0.25,
-    diamond_size=32,
-):
-    # Convenience wrapper: derive the start image from the end image itself
-    # (via diamond pixelation) instead of requiring a separate uploaded start.
-    diamond_start = make_diamond_pixelated_start(end_image, diamond_size)
-    output_path = generate_final_image(
-        diamond_start,
-        end_image,
-        grid_size,
-        position_distance_factor,
-    )
-    return diamond_start, output_path
-
-
 # --- Gradio UI wiring ---
 with gr.Blocks() as demo:
     with gr.Row():
@@ -258,15 +264,8 @@ with gr.Blocks() as demo:
                 step=0.01,
                 label="Position distance factor",
             )
-            diamond_size_slider = gr.Slider(
-                minimum=4,
-                maximum=128,
-                value=32,
-                step=4,
-                label="Diamond size (px)",
-            )
             run_button = gr.Button("Run", variant="primary")
-            diamond_start_button = gr.Button("Run with diamond-pixelated end as start")
+            sprite_start_button = gr.Button("Generate sprite start image")
 
         with gr.Column(scale=2):
             builtin_start_preview = gr.Image(
@@ -299,17 +298,11 @@ with gr.Blocks() as demo:
         outputs=output_image,
     )
 
-    # "Run with diamond-pixelated end as start" derives the start image from
-    # the end image and also refreshes the Start preview with it.
-    diamond_start_button.click(
-        fn=generate_with_diamond_start,
-        inputs=[
-            end_image_input,
-            grid_size_slider,
-            position_distance_factor_slider,
-            diamond_size_slider,
-        ],
-        outputs=[start_image_input, output_image],
+    # Fills the Start input with a freshly generated random sprite sheet.
+    sprite_start_button.click(
+        fn=make_sprite_start,
+        inputs=None,
+        outputs=start_image_input,
     )
 
 if __name__ == "__main__":

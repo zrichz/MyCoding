@@ -1,0 +1,464 @@
+{
+ "format": "band_timestamps",
+ "version": 1,
+ "audio_file": "test.wav",
+ "duration": 6.0,
+ "analysis": {
+  "bands": [
+   {
+    "name": "sub",
+    "low_hz": 20.0,
+    "high_hz": 60.0,
+    "sensitivity": 0.5
+   },
+   {
+    "name": "bass",
+    "low_hz": 60.0,
+    "high_hz": 250.0,
+    "sensitivity": 0.5
+   },
+   {
+    "name": "low_mid",
+    "low_hz": 250.0,
+    "high_hz": 500.0,
+    "sensitivity": 0.5
+   },
+   {
+    "name": "mid",
+    "low_hz": 500.0,
+    "high_hz": 2000.0,
+    "sensitivity": 0.5
+   },
+   {
+    "name": "upper_mid",
+    "low_hz": 2000.0,
+    "high_hz": 4000.0,
+    "sensitivity": 0.5
+   },
+   {
+    "name": "presence",
+    "low_hz": 4000.0,
+    "high_hz": 8000.0,
+    "sensitivity": 0.5
+   },
+   {
+    "name": "brilliance",
+    "low_hz": 8000.0,
+    "high_hz": 16000.0,
+    "sensitivity": 0.5
+   }
+  ],
+  "global_offset": 0,
+  "min_gap_ms": 100
+ },
+ "bands": [
+  {
+   "index": 0,
+   "name": "sub",
+   "low_hz": 20.0,
+   "high_hz": 60.0,
+   "events": [
+    {
+     "t": 0.4876,
+     "strength": 1.0
+    },
+    {
+     "t": 0.9868,
+     "strength": 0.997
+    },
+    {
+     "t": 1.4861,
+     "strength": 0.9884
+    },
+    {
+     "t": 1.9853,
+     "strength": 0.9774
+    },
+    {
+     "t": 2.4845,
+     "strength": 0.964
+    },
+    {
+     "t": 2.9954,
+     "strength": 0.9512
+    },
+    {
+     "t": 3.4946,
+     "strength": 0.9661
+    },
+    {
+     "t": 3.9938,
+     "strength": 0.9787
+    },
+    {
+     "t": 4.4931,
+     "strength": 0.9891
+    },
+    {
+     "t": 4.9923,
+     "strength": 0.9974
+    },
+    {
+     "t": 5.4915,
+     "strength": 1.0
+    }
+   ]
+  },
+  {
+   "index": 1,
+   "name": "bass",
+   "low_hz": 60.0,
+   "high_hz": 250.0,
+   "events": [
+    {
+     "t": 0.4992,
+     "strength": 0.9859
+    },
+    {
+     "t": 0.9985,
+     "strength": 0.9915
+    },
+    {
+     "t": 1.4977,
+     "strength": 0.996
+    },
+    {
+     "t": 1.9969,
+     "strength": 0.9992
+    },
+    {
+     "t": 2.4961,
+     "strength": 1.0
+    },
+    {
+     "t": 2.9954,
+     "strength": 1.0
+    },
+    {
+     "t": 3.4946,
+     "strength": 1.0
+    },
+    {
+     "t": 3.9938,
+     "strength": 0.9988
+    },
+    {
+     "t": 4.4931,
+     "strength": 0.9951
+    },
+    {
+     "t": 4.9923,
+     "strength": 0.9899
+    },
+    {
+     "t": 5.4915,
+     "strength": 0.9832
+    }
+   ]
+  },
+  {
+   "index": 2,
+   "name": "low_mid",
+   "low_hz": 250.0,
+   "high_hz": 500.0,
+   "events": [
+    {
+     "t": 0.4876,
+     "strength": 1.0
+    },
+    {
+     "t": 0.9868,
+     "strength": 1.0
+    },
+    {
+     "t": 1.4861,
+     "strength": 0.9879
+    },
+    {
+     "t": 1.9853,
+     "strength": 0.9716
+    },
+    {
+     "t": 2.4845,
+     "strength": 0.9514
+    },
+    {
+     "t": 2.9838,
+     "strength": 0.9272
+    },
+    {
+     "t": 3.483,
+     "strength": 0.8993
+    },
+    {
+     "t": 3.9938,
+     "strength": 0.8996
+    },
+    {
+     "t": 4.4931,
+     "strength": 0.9279
+    },
+    {
+     "t": 4.9923,
+     "strength": 0.9519
+    },
+    {
+     "t": 5.4915,
+     "strength": 0.9716
+    }
+   ]
+  },
+  {
+   "index": 3,
+   "name": "mid",
+   "low_hz": 500.0,
+   "high_hz": 2000.0,
+   "events": [
+    {
+     "t": 0.2902,
+     "strength": 0.9695
+    },
+    {
+     "t": 0.4876,
+     "strength": 0.7824
+    },
+    {
+     "t": 0.7895,
+     "strength": 0.9902
+    },
+    {
+     "t": 0.9868,
+     "strength": 0.7761
+    },
+    {
+     "t": 1.2887,
+     "strength": 1.0
+    },
+    {
+     "t": 1.4861,
+     "strength": 0.7659
+    },
+    {
+     "t": 1.7879,
+     "strength": 0.9998
+    },
+    {
+     "t": 1.9853,
+     "strength": 0.7516
+    },
+    {
+     "t": 2.2872,
+     "strength": 0.9941
+    },
+    {
+     "t": 2.4845,
+     "strength": 0.7335
+    },
+    {
+     "t": 2.74,
+     "strength": 0.9902
+    },
+    {
+     "t": 3.2392,
+     "strength": 0.9983
+    },
+    {
+     "t": 3.7384,
+     "strength": 1.0
+    },
+    {
+     "t": 4.2376,
+     "strength": 0.9986
+    },
+    {
+     "t": 4.7369,
+     "strength": 0.9908
+    },
+    {
+     "t": 4.9923,
+     "strength": 0.7325
+    },
+    {
+     "t": 5.2361,
+     "strength": 0.978
+    },
+    {
+     "t": 5.4915,
+     "strength": 0.7507
+    },
+    {
+     "t": 5.7353,
+     "strength": 0.9601
+    }
+   ]
+  },
+  {
+   "index": 4,
+   "name": "upper_mid",
+   "low_hz": 2000.0,
+   "high_hz": 4000.0,
+   "events": [
+    {
+     "t": 0.2902,
+     "strength": 0.9694
+    },
+    {
+     "t": 0.7895,
+     "strength": 0.9901
+    },
+    {
+     "t": 1.2887,
+     "strength": 1.0
+    },
+    {
+     "t": 1.7879,
+     "strength": 0.9998
+    },
+    {
+     "t": 2.2872,
+     "strength": 0.9942
+    },
+    {
+     "t": 2.74,
+     "strength": 0.9903
+    },
+    {
+     "t": 3.2392,
+     "strength": 0.9982
+    },
+    {
+     "t": 3.7384,
+     "strength": 1.0
+    },
+    {
+     "t": 4.2376,
+     "strength": 0.9985
+    },
+    {
+     "t": 4.7369,
+     "strength": 0.9909
+    },
+    {
+     "t": 5.2361,
+     "strength": 0.9783
+    },
+    {
+     "t": 5.7353,
+     "strength": 0.9607
+    }
+   ]
+  },
+  {
+   "index": 5,
+   "name": "presence",
+   "low_hz": 4000.0,
+   "high_hz": 8000.0,
+   "events": [
+    {
+     "t": 0.2438,
+     "strength": 0.9914
+    },
+    {
+     "t": 0.743,
+     "strength": 0.9989
+    },
+    {
+     "t": 1.2423,
+     "strength": 1.0
+    },
+    {
+     "t": 1.7415,
+     "strength": 1.0
+    },
+    {
+     "t": 2.2407,
+     "strength": 1.0
+    },
+    {
+     "t": 2.74,
+     "strength": 0.9953
+    },
+    {
+     "t": 3.2392,
+     "strength": 0.9857
+    },
+    {
+     "t": 3.7384,
+     "strength": 0.9726
+    },
+    {
+     "t": 4.2376,
+     "strength": 0.956
+    },
+    {
+     "t": 4.7369,
+     "strength": 0.9359
+    },
+    {
+     "t": 5.2361,
+     "strength": 0.9125
+    },
+    {
+     "t": 5.7469,
+     "strength": 0.9306
+    }
+   ]
+  },
+  {
+   "index": 6,
+   "name": "brilliance",
+   "low_hz": 8000.0,
+   "high_hz": 16000.0,
+   "events": [
+    {
+     "t": 0.2902,
+     "strength": 0.9698
+    },
+    {
+     "t": 0.7895,
+     "strength": 0.9904
+    },
+    {
+     "t": 1.2887,
+     "strength": 1.0
+    },
+    {
+     "t": 1.7879,
+     "strength": 0.9998
+    },
+    {
+     "t": 2.2872,
+     "strength": 0.9939
+    },
+    {
+     "t": 2.74,
+     "strength": 0.9902
+    },
+    {
+     "t": 3.2392,
+     "strength": 0.9984
+    },
+    {
+     "t": 3.7384,
+     "strength": 1.0
+    },
+    {
+     "t": 4.2376,
+     "strength": 0.9987
+    },
+    {
+     "t": 4.7369,
+     "strength": 0.9908
+    },
+    {
+     "t": 5.2361,
+     "strength": 0.9777
+    },
+    {
+     "t": 5.7353,
+     "strength": 0.9594
+    }
+   ]
+  }
+ ]
+}
