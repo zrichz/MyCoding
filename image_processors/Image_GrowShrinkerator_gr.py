@@ -3,7 +3,7 @@ Gradio GUI for batch image processing: converts to 3840x2160 or scales to 2160px
 
 Features:
 - Batch processing from selected directory
-- Two output modes: 3840x2160 (landscape), 2160px height (aspect preserved)
+- Three output modes: 3840x2160 (landscape), 1024x1536 (portrait), 2160px height (aspect preserved)
 - Percentage-based center cropping (0-25% per side, 1% steps) applied before expansion
 - Output format: JPEG (Q=90) or PNG
 - 3840x2160: crops height, expands width to 16:9 aspect ratio (50:50 left:right padding)
@@ -25,6 +25,12 @@ try:
 except ImportError:
     print("NumPy is required but not installed. Please install it using: pip install numpy")
     exit(1)
+
+
+BLUR_MODES = {
+    "3840x2160 (with blurring)": (3840, 2160),
+    "1024x1536 (with blurring)": (1024, 1536),
+}
 
 
 class ImageExpanderProcessor:
@@ -148,8 +154,9 @@ class ImageExpanderProcessor:
             original_image = Image.open(input_path)
             processed_image = None  # Initialize to avoid unbound variable warning
             
-            if resolution_mode == "3840x2160 (with blurring)":
-                # Landscape mode: crop height, expand width
+            if resolution_mode in BLUR_MODES:
+                target_w, target_h = BLUR_MODES[resolution_mode]
+                # Blur mode: crop height, expand width
                 # Step 1: Apply percentage-based center crop to height only
                 if crop_percent_per_side > 0:
                     # Calculate total crop percentage (both sides)
@@ -165,9 +172,13 @@ class ImageExpanderProcessor:
                 # Get the cropped height (z in the requirements)
                 z = original_image.height
                 
-                # Step 2: Calculate target width based on (16/9) aspect ratio
-                # Target width should be (16/9) * z
-                target_expanded_width = int((16.0 / 9.0) * z)
+                # Step 2: Calculate target width from the target aspect ratio
+                target_expanded_width = int(round(z * target_w / target_h))
+
+                # Images wider than the target aspect are centre-cropped in width
+                if original_image.width > target_expanded_width:
+                    left = (original_image.width - target_expanded_width) // 2
+                    original_image = original_image.crop((left, 0, left + target_expanded_width, z))
                 
                 # Convert to numpy array for processing
                 img_array = np.array(original_image)
@@ -216,8 +227,8 @@ class ImageExpanderProcessor:
                 # Convert back to PIL Image
                 processed_image = Image.fromarray(expanded_array.astype('uint8'))
                 
-                # Step 3: Resize to exactly 3840x2160 using high-quality resampling
-                processed_image = processed_image.resize((3840, 2160), 
+                # Step 3: Resize to the exact target size using high-quality resampling
+                processed_image = processed_image.resize((target_w, target_h), 
                                                         Image.Resampling.LANCZOS)
             
             elif resolution_mode == "2160px Height (Aspect Preserved)":
@@ -395,7 +406,7 @@ class ImageExpanderProcessor:
         log_lines.append(f"Input folder: {os.path.normpath(input_folder)}")
         log_lines.append(f"Output folder: {os.path.normpath(output_dir)}")
         log_lines.append(f"Resolution mode: {resolution_mode}")
-        if resolution_mode == "3840x2160 (with blurring)":
+        if resolution_mode in BLUR_MODES:
             log_lines.append(
                 f"Height crop: {crop_percent_per_side}% per side "
                 f"({crop_percent_per_side * 2}% total)"
@@ -468,10 +479,10 @@ with gr.Blocks(title="Image Auto-Expander (Percentage)") as demo:
     gr.Markdown("Accepts any image size • Choose resolution • Crops by percentage • Expands and scales")
     
     resolution_mode = gr.Radio(
-        choices=["3840x2160 (with blurring)", "2160px Height (Aspect Preserved)"],
+        choices=["3840x2160 (with blurring)", "1024x1536 (with blurring)", "2160px Height (Aspect Preserved)"],
         value="3840x2160 (with blurring)",
         label="Output Resolution",
-        info="3840x2160 = Landscape (crops height, expands width 50:50 left:right) | 2160px Height = Scale to max 2160px height, preserving aspect ratio"
+        info="3840x2160 = Landscape (crops height, expands width 50:50 left:right) | 1024x1536 = Portrait 2:3, same method (images wider than 2:3 are centre-cropped in width) | 2160px Height = Scale to max 2160px height, preserving aspect ratio"
     )
     
     input_folder = gr.Textbox(
