@@ -65,24 +65,36 @@ def run_depth(img, detect_res):
     return res.convert("RGB").resize((w, h), Image.BICUBIC)
 
 
-def run_canny(img, low, high):
-    arr = np.array(img)
-    edges = cv2.Canny(arr, int(low), int(high))
+def run_canny(img, low, high, smooth=7, min_len=30):
+    arr = np.array(img.convert("L"))
+    smooth = int(smooth)
+    if smooth > 0:
+        # edge-preserving blur removes texture and grain but keeps strong edges
+        arr = cv2.bilateralFilter(arr, d=0, sigmaColor=25 + smooth * 5, sigmaSpace=smooth)
+    edges = cv2.Canny(arr, int(low), int(high), L2gradient=True)
+    min_len = int(min_len)
+    if min_len > 0:
+        # drop small disconnected fragments (speckle)
+        n, labels, stats, _ = cv2.connectedComponentsWithStats(edges, connectivity=8)
+        keep = np.zeros(n, dtype=bool)
+        keep[1:] = stats[1:, cv2.CC_STAT_AREA] >= min_len
+        edges = (keep[labels] * 255).astype(np.uint8)
     return Image.fromarray(edges).convert("RGB")
 
 
-def process(image, do_pose, do_depth, do_canny, include_body, include_hands, include_face, detect_res, low, high):
+def process(image, do_pose, do_depth, do_canny, include_body, include_hands, include_face, detect_res, low, high, as_jpg=False, smooth=7, min_len=30):
     if image is None:
         raise gr.Error("Please upload an image.")
     img = image.convert("RGB")
     pose = run_openpose(img, include_body, include_hands, include_face, detect_res) if do_pose else None
     depth = run_depth(img, detect_res) if do_depth else None
-    canny = run_canny(img, low, high) if do_canny else None
-    return pose, depth, canny
+    canny = run_canny(img, low, high, smooth, min_len) if do_canny else None
+    fmt = "jpeg" if as_jpg else "png"
+    return tuple(gr.Image(value=r, format=fmt) for r in (pose, depth, canny))
 
 
 def run_batch(in_dir, out_dir, do_pose, do_depth, do_canny, include_body, include_hands, include_face,
-              detect_res, low, high, progress=gr.Progress()):
+              detect_res, low, high, as_jpg=False, smooth=7, min_len=30, progress=gr.Progress()):
     in_dir = (in_dir or "").strip()
     if not os.path.isdir(in_dir):
         raise gr.Error("Input directory does not exist.")
@@ -99,7 +111,7 @@ def run_batch(in_dir, out_dir, do_pose, do_depth, do_canny, include_body, includ
     if do_depth:
         jobs.append(("Depth", lambda im: run_depth(im, detect_res)))
     if do_canny:
-        jobs.append(("Canny", lambda im: run_canny(im, low, high)))
+        jobs.append(("Canny", lambda im: run_canny(im, low, high, smooth, min_len)))
     for name, _ in jobs:
         os.makedirs(os.path.join(out_dir, name), exist_ok=True)
     errors = []
@@ -108,7 +120,11 @@ def run_batch(in_dir, out_dir, do_pose, do_depth, do_canny, include_body, includ
             img = Image.open(os.path.join(in_dir, f)).convert("RGB")
             stem = os.path.splitext(f)[0]
             for name, fn in jobs:
-                fn(img).save(os.path.join(out_dir, name, stem + ".png"), format="PNG")
+                out = fn(img)
+                if as_jpg:
+                    out.save(os.path.join(out_dir, name, stem + ".jpg"), format="JPEG", quality=90)
+                else:
+                    out.save(os.path.join(out_dir, name, stem + ".png"), format="PNG")
         except Exception as e:
             errors.append(f"{f}: {e}")
     msg = f"Processed {len(files) - len(errors)} of {len(files)} images. Output in {out_dir}"
@@ -121,41 +137,55 @@ with gr.Blocks(title="OpenPose Detailed") as demo:
     gr.Markdown("# Pose, Depth and Canny Extraction\nOutputs are the same size as the input.")
     with gr.Tab("Single image"):
         with gr.Row():
-            with gr.Column(scale=1):
-                inp = gr.Image(type="pil", label="Input image", format="png", height=400)
+            with gr.Column():
                 do_pose = gr.Checkbox(True, label="Extract OpenPose")
+                do_depth = gr.Checkbox(True, label="Extract depth map")
+                do_canny = gr.Checkbox(True, label="Extract canny edges")
+                as_jpg = gr.Checkbox(True, label="Save as JPG (quality 90)")
+            with gr.Column():
                 body = gr.Checkbox(True, label="Body")
                 hands = gr.Checkbox(True, label="Hands")
                 face = gr.Checkbox(True, label="Face and head shape")
-                do_depth = gr.Checkbox(True, label="Extract depth map")
-                do_canny = gr.Checkbox(True, label="Extract canny edges")
+                btn = gr.Button("Run", variant="primary")
+            with gr.Column():
                 dres = gr.Slider(256, 1536, value=768, step=64, label="Detection resolution (pose and depth)")
                 low = gr.Slider(0, 255, value=100, step=1, label="Canny low threshold")
                 high = gr.Slider(0, 255, value=200, step=1, label="Canny high threshold")
-                btn = gr.Button("Run", variant="primary")
-            with gr.Column(scale=3):
-                with gr.Row():
-                    out_pose = gr.Image(type="pil", label="OpenPose", format="png", height=400)
-                    out_depth = gr.Image(type="pil", label="Depth map", format="png", height=400)
-                    out_canny = gr.Image(type="pil", label="Canny", format="png", height=400)
-        btn.click(process, [inp, do_pose, do_depth, do_canny, body, hands, face, dres, low, high],
+            with gr.Column():
+                smooth = gr.Slider(0, 20, value=7, step=1, label="Canny smoothing")
+                min_len = gr.Slider(0, 200, value=30, step=5, label="Canny minimum edge length")
+        with gr.Row():
+            inp = gr.Image(type="pil", label="Input image", format="png", height=1200)
+            out_pose = gr.Image(type="pil", label="OpenPose", format="png", height=1200)
+            out_depth = gr.Image(type="pil", label="Depth map", format="png", height=1200)
+            out_canny = gr.Image(type="pil", label="Canny", format="png", height=1200)
+        btn.click(process, [inp, do_pose, do_depth, do_canny, body, hands, face, dres, low, high, as_jpg, smooth, min_len],
                   [out_pose, out_depth, out_canny])
 
     with gr.Tab("Batch directory"):
-        b_in = gr.Textbox(label="Input directory")
-        b_out = gr.Textbox(label="Output directory (blank uses the input directory)")
-        b_pose = gr.Checkbox(True, label="Extract OpenPose")
-        b_body = gr.Checkbox(True, label="Body")
-        b_hands = gr.Checkbox(True, label="Hands")
-        b_face = gr.Checkbox(True, label="Face and head shape")
-        b_depth = gr.Checkbox(True, label="Extract depth map")
-        b_canny = gr.Checkbox(True, label="Extract canny edges")
-        b_dres = gr.Slider(256, 1536, value=768, step=64, label="Detection resolution (pose and depth)")
-        b_low = gr.Slider(0, 255, value=100, step=1, label="Canny low threshold")
-        b_high = gr.Slider(0, 255, value=200, step=1, label="Canny high threshold")
+        with gr.Row():
+            b_in = gr.Textbox(label="Input directory")
+            b_out = gr.Textbox(label="Output directory (blank uses the input directory)")
+        with gr.Row():
+            with gr.Column():
+                b_pose = gr.Checkbox(True, label="Extract OpenPose")
+                b_depth = gr.Checkbox(True, label="Extract depth map")
+                b_canny = gr.Checkbox(True, label="Extract canny edges")
+                b_jpg = gr.Checkbox(True, label="Save as JPG (quality 90)")
+            with gr.Column():
+                b_body = gr.Checkbox(True, label="Body")
+                b_hands = gr.Checkbox(True, label="Hands")
+                b_face = gr.Checkbox(True, label="Face and head shape")
+            with gr.Column():
+                b_dres = gr.Slider(256, 1536, value=768, step=64, label="Detection resolution (pose and depth)")
+                b_low = gr.Slider(0, 255, value=100, step=1, label="Canny low threshold")
+                b_high = gr.Slider(0, 255, value=200, step=1, label="Canny high threshold")
+            with gr.Column():
+                b_smooth = gr.Slider(0, 20, value=7, step=1, label="Canny smoothing")
+                b_min_len = gr.Slider(0, 200, value=30, step=5, label="Canny minimum edge length")
         b_btn = gr.Button("Run batch", variant="primary")
         b_status = gr.Textbox(label="Status", lines=4)
-        b_btn.click(run_batch, [b_in, b_out, b_pose, b_depth, b_canny, b_body, b_hands, b_face, b_dres, b_low, b_high], b_status)
+        b_btn.click(run_batch, [b_in, b_out, b_pose, b_depth, b_canny, b_body, b_hands, b_face, b_dres, b_low, b_high, b_jpg, b_smooth, b_min_len], b_status)
 
 if __name__ == "__main__":
     demo.launch(inbrowser=True, theme=gr.themes.Soft())
