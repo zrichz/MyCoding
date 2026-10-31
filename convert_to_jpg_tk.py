@@ -13,7 +13,7 @@ flattened onto a white background.
 Choose an input directory, optionally an output directory (default is a
 jpg_output folder inside the input directory), the JPEG quality, and whether to
 include subdirectories. Folder structure is preserved in the output, and a
-conversion_log.txt summarising any skipped files is written there."""
+conversion_log.txt with per-file sizes and total savings is written there."""
 import io
 import queue
 import struct
@@ -53,9 +53,10 @@ def convert_directory(src_dir: Path, out_dir: Path, quality: int, recursive: boo
     out_dir.mkdir(parents=True, exist_ok=True)
     files = [f for f in sorted(src_dir.glob("**/*" if recursive else "*"))
              if f.is_file() and out_dir not in f.parents]
-    lines = []
+    file_lines = []
     used = set()
     ok = failed = 0
+    saved_bytes = 0
     for i, src in enumerate(files, 1):
         rel = src.relative_to(src_dir)
         dst = out_dir / rel.parent / (src.stem + ".jpg")
@@ -64,18 +65,34 @@ def convert_directory(src_dir: Path, out_dir: Path, quality: int, recursive: boo
         if dst in used or src.suffix[1:].isdigit():
             dst = out_dir / rel.parent / (src.name + ".jpg")
         used.add(dst)
+        input_size = None
         try:
+            input_size = src.stat().st_size
             dst.parent.mkdir(parents=True, exist_ok=True)
             convert_file(src, dst, quality)
+            output_size = dst.stat().st_size
             ok += 1
+            saved_bytes += input_size - output_size
+            file_lines.append(
+                f"{rel}: input {input_size / 1_000_000:.1f} MB, "
+                f"output {output_size / 1_000_000:.1f} MB"
+            )
         except Exception as exc:
             failed += 1
-            lines.append(f"Skipped {rel}: {exc}")
-            log(lines[-1])
+            input_text = (
+                f"{input_size / 1_000_000:.1f} MB" if input_size is not None else "unavailable"
+            )
+            file_lines.append(
+                f"{rel}: input {input_text}, output unavailable, skipped: {exc}"
+            )
+            log(file_lines[-1])
         if i % 10 == 0 or i == len(files):
             log(f"Processed {i} of {len(files)}: {ok} converted, {failed} skipped")
     summary = f"Done: {ok} converted, {failed} skipped. Output directory: {out_dir}"
-    (out_dir / "conversion_log.txt").write_text(summary + "\n" + "\n".join(lines) + "\n")
+    total = f"Total saved: {saved_bytes / 1_000_000:.1f} MB"
+    (out_dir / "conversion_log.txt").write_text(
+        "\n".join([summary, *file_lines, total]) + "\n"
+    )
     log(summary)
 
 
