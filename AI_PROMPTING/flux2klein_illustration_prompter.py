@@ -336,7 +336,7 @@ def save_prompts(prompts_text):
     os.makedirs(output_dir, exist_ok=True)
     
     timestamp = datetime.now().strftime("%Y%m%d_%H%M")
-    filename = f"F2K_anime_prompts_{timestamp}.txt"
+    filename = f"F2K_illustrationprompts_{timestamp}.txt"
     filepath = os.path.join(output_dir, filename)
     
     with open(filepath, 'w', encoding='utf-8') as f:
