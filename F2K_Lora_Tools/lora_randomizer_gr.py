@@ -24,6 +24,24 @@ def list_loras():
     return sorted(f for f in os.listdir(INPUT_DIR) if f.lower().endswith(".safetensors"))
 
 
+def lora_info(lora_name):
+    if not lora_name:
+        return ""
+    src = os.path.join(INPUT_DIR, lora_name)
+    if not os.path.isfile(src):
+        return f"File not found: {src}"
+    with safe_open(src, framework="pt") as f:
+        metadata = f.metadata() or {}
+        keys = list(f.keys())
+    lines = [f"Tensors: {len(keys)}", f"Sample keys: {', '.join(keys[:3])}", ""]
+    if not metadata:
+        lines.append("No metadata in file.")
+    for k, v in metadata.items():
+        text = v if len(v) <= 2000 else v[:2000] + f"... [truncated, {len(v)} characters]"
+        lines.append(f"{k}: {text}")
+    return "\n".join(lines)
+
+
 def randomize_lora(lora_name, amplitude_pct, seed, skip_alpha, alpha_only):
     if not lora_name:
         return "No LoRA selected.", None
@@ -131,7 +149,9 @@ with gr.Blocks(title="Flux 2 Klein LoRA Randomizer") as demo:
     run = gr.Button("Generate modified LoRA", variant="primary")
     status = gr.Textbox(label="Status", lines=6)
     file_out = gr.File(label="Modified LoRA")
+    info = gr.Textbox(label="LoRA metadata (selected original)", lines=10)
 
+    lora.change(lora_info, lora, info)
     refresh.click(lambda: gr.update(choices=list_loras()), None, lora)
     run.click(randomize_lora, [lora, amp, seed, skip_alpha, alpha_only], [status, file_out])
 
