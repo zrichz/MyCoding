@@ -1,8 +1,7 @@
 #!/home/rich/MyCoding/venvMyCoding/bin/python
 """
-F2K Anime Prompt Generator
-Generates flux2klein prompts for anime-style illustrations
-Focus: Solo girl, risque aesthetic, anime illustration style
+F2K IllustrationPrompt Generator
+Generates flux2klein prompts for illustrations (not explicitly anime)
 Date: 2026-Aug
 
 STAGES:
@@ -10,7 +9,7 @@ STAGES:
   2. Character base (girl, solo)
   3. Hair and eye details
   4. Expression and pose
-  5. Clothing (risque)
+  5. Clothing
   6. Body descriptors
   7. Framing and composition
   8. Background and setting
@@ -46,12 +45,13 @@ WILDCARD_CLOTHING = {
     "dress_type": load_wildcard_file("prompt_clothing_wildcards", "dress_type.txt"),
 }
 
-# CORE ANIME STYLE TAGS
+# CORE STYLE TAGS
 STYLE_BASE = [
     "illustration",
-    "detailed digital concept art illustration",
+    "detailed illustrative art",
+    "high quality illustration",
     "beautiful illustration",
-    "professional illustration",
+    "professional illustration art",
 ]
 
 QUALITY_TAGS = [
@@ -63,28 +63,19 @@ QUALITY_TAGS = [
     "absurdres",
 ]
 
-# CHARACTER BASE
-CHARACTER_BASE = [
-    "1girl",
-    "solo",
-    "solo girl",
-    "single girl",
-]
+CHARACTER_BASE = [    "1girl",    "solo",    "solo girl",    "single girl",]
 
-# HAIR STYLES AND COLORS
 HAIR_COLORS = [
-    "blonde hair",
-    "pink hair",
-    "red hair",
-    "black hair",
-    "brown hair",
-    "platinum blonde hair",
-    "gradient hair",
-    
+    "blonde hair",    "pink hair",    "blue hair",    "purple hair",
+    "red hair",    "black hair", "brown hair",    "platinum blonde hair",
+    "pastel pink hair",    "pastel blue hair",
+    "mint green hair",    "gradient hair",
+    "multicolored hair",    "two-tone hair",
 ]
 
 HAIR_STYLES = [
     "long hair",
+    "very long hair",
     "short hair",
     "medium hair",
     "twintails",
@@ -97,36 +88,28 @@ HAIR_STYLES = [
     "straight hair",
     "wavy hair",
     "curly hair",
+    "hair between eyes",
     "bangs",
     "side-swept bangs",
     "blunt bangs",
-    
+    "ahoge",
+    "hair bun",
+    "double bun",
 ]
 
 HAIR_ACCESSORIES = [
-    "hair ribbon",
-    "hair bow",
-    "hairclip",
-    "flower in hair",
-    "hair scrunchie",
-    "headband",
+    "hair ribbon",    "hair bow",    "hairclip",    "hairpin",
+    "hair ornament",    "flower in hair",    "hair scrunchie",    "headband",
 ]
 
 # EYE COLORS AND DETAILS
-EYE_COLORS = [
-    "blue eyes",
-    "amber eyes",
-    "hazel eyes",
-    ]
+EYE_COLORS = ["blue eyes","green eyes","hazel eyes","brown eyes"]
 
 EYE_DETAILS = [
-    "looking at viewer",
-    "eye contact",
-    "bedroom eyes",
-    "sultry gaze",
-    "sidelong glance",
-    "looking back",
-    "eyes visible through hair",
+    "looking at viewer",    "eye contact",
+    "half-closed eyes",    "bedroom eyes",
+    "sultry gaze",    "sidelong glance",
+    "looking back",    "eyes visible through hair",
 ]
 
 # EXPRESSIONS
@@ -181,179 +164,88 @@ POSES = [
 
 # RISQUE CLOTHING OPTIONS
 CLOTHING_RISQUE = [
-    "bikini",
-    "micro bikini",
-    "string bikini",
-    "lingerie",
-    "lace lingerie",
-    "bra and panties",
-    "see-through clothing",
-    "transparent clothing",
-    "crop top",
-    "sports bra",
-    "tube top",
-    "off-shoulder shirt",
-    "open shirt",
-    "unbuttoned shirt",
-    "loose shirt",
-    "oversized shirt",
-    "torn clothes",
-    "ripped clothes",
-    "shorts",
-    "short shorts",
-    "hot pants",
-    "mini skirt",
-    "micro skirt",
-    "pleated skirt",
-    "thigh strap",
-    "garter belt",
-    "thighhighs",
-    "stockings",
-    "fishnets",
-    "bodystocking",
-    "bodysuit",
-    "leotard",
-    "swimsuit",
-    "one-piece swimsuit",
-    "sling bikini",
-    "side-tie bikini",
-    "latex outfit",
-    "tight clothing",
-    "skin-tight clothing",
-    "cleavage cutout",
-    "navel cutout",
-    "sideboob cutout",
-    "sleeveless",
-    "bare shoulders",
-    "bare arms",
-    "midriff",
-    "underboob",
-    "side cut",
-    "revealing outfit",
+    "bikini",    "micro bikini",    "string bikini","lingerie",    "lace lingerie",
+    "bra and panties",    "see-through clothing", "transparent clothing",
+    "crop top",    "sports bra",    "tube top",  "off-shoulder shirt",
+    "open shirt",    "unbuttoned shirt",    "loose shirt",    "oversized shirt",
+    "torn clothes",    "ripped clothes","shorts",    "short shorts","hot pants",
+    "mini skirt",    "micro skirt",    "pleated skirt","thigh strap","garter belt",
+    "thighhighs",    "stockings","fishnets",    "bodystocking",    "bodysuit",
+    "leotard",    "swimsuit","one-piece swimsuit","sling bikini","side-tie bikini",
+    "latex outfit",    "tight clothing",    "skin-tight clothing","cleavage cutout",
+    "navel cutout",    "sideboob cutout",    "sleeveless",    "bare shoulders",
+    "bare arms",    "midriff",    "underboob",    "side cut","revealing outfit",
 ]
 
 CLOTHING_DETAILS = [
-    "lace trim",
-    "frills",
-    "ribbon",
-    "bow",
-    "choker",
-    "necklace",
-    "collar",
-    "armband",
+    "lace trim",    "frills",
+    "ribbon",    "bow",
+    "choker",    "necklace",
+    "collar",    "armband",
     "wristband",
-    
 ]
 
 # BODY DESCRIPTORS
 BODY_FEATURES = [
-    "slender",
-    "curvy",
-    "hourglass figure",
-    "toned",
-    "petite",
-    "tall",
-    "perfect proportions",
-    "beautiful detailed body",
+    "slender",    "curvy","hourglass figure","athletic build",
+    "toned",    "petite",
+    "tall",    "perfect proportions",    "beautiful detailed body",
 ]
 
 BODY_DETAILS = [
-    "breasts",  "medium breasts", "cleavage",
-    "bare shoulders",  "bare legs",  "thighs",
-    "toned legs",  "navel",  "cute butt",
-    "ass",  "collarbone", "arms",
-    "midriff",  "hips",  "narrow waist",
+    "breasts","medium breasts","cleavage","bare shoulders",
+    "bare legs","thighs","toned legs","navel",
+    "collarbone","arms","midriff","hips","narrow waist",
 ]
 
 # FRAMING AND COMPOSITION
 FRAMING = [
-    "full body",
-    "upper body",
-    "cowboy shot",
-    "from below",
-    "from above",
-    "from side",
-    "dynamic angle",
-    "dutch angle",
-    "rule of thirds",
-    "off-center composition",
+    "full body",    "upper body",
+    "cowboy shot",    "from below",
+    "from above",    "from side",
+    "dynamic angle",    "dutch angle",
+    "rule of thirds",    "off-center composition",
 ]
 
 # BACKGROUNDS AND SETTINGS
 BACKGROUNDS = [
-    "bedroom",
-    "indoors",
-    "outdoors",
-    "beach",
-    "poolside",
-    "night sky",
-    "sunset background",
-    "rooftop",
-    "balcony",
-    "window",
-    "simple background",
-    "gradient background",
-    "blurred background",
-    "bokeh background",
-    "abstract background",
+    "bedroom",    "indoors",    "outdoors",    "beach",
+    "poolside",    "night sky",    "sunset background",
+    "rooftop",    "balcony","window","simple background",
+    "gradient background",    "blurred background",
+    "bokeh background",    "abstract background",
 ]
 
 # LIGHTING
 LIGHTING = [
-    "soft lighting",
-    "dramatic lighting",
-    "rim lighting",
-    "backlight",
-    "side lighting",
-    "sunset lighting",
-    "golden hour lighting",
-    "window light",
-    "natural light",
-    "studio lighting",
-    "volumetric lighting",
-    "glowing",
-    "light particles",
-    "sunbeam",
-    "lens flare",
+    "soft lighting",    "dramatic lighting",
+    "rim lighting",    "backlight",
+    "side lighting",    "sunset lighting",
+    "golden hour lighting",    "window light",
+    "natural light",    "studio lighting",
+    "volumetric lighting",    "glowing",
+    "light particles","sunbeam","lens flare",
 ]
 
 # ATMOSPHERE
 ATMOSPHERE = [
-    "warm atmosphere",
-    "cool atmosphere",
-    "dreamy atmosphere",
-    "romantic atmosphere",
-    "intimate atmosphere",
-    "sensual atmosphere",
-    "ethereal atmosphere",
-    "vibrant colors",
-    "soft colors",
-    "pastel colors",
-    "saturated colors",
+    "warm atmosphere", "cool atmosphere",
+    "dreamy atmosphere",    "romantic atmosphere",
+    "intimate atmosphere",    "sensual atmosphere",
+    "ethereal atmosphere",    "vibrant colors",
+    "soft colors",    "pastel colors",    "saturated colors",
 ]
 
 # ART STYLE MODIFIERS
 ART_STYLES = [
-    "modern style",
-    "cell shaded",
-    "soft shading",
-    "detailed shading",
-    "gradient shading",
-    "clean lineart",
-    "detailed lineart",
-    "smooth lines",
-    "painterly",
-    "semi-realistic ",
-    "manga style coloring",
+    "modern style","cell shaded","soft shading",    "detailed shading",
+    "gradient shading",    "clean lineart","detailed lineart","smooth lines",
+    "painterly",    "semi-realistic anime","manga style coloring",
 ]
 
 COLOR_PALETTES = [
-    "warm color palette",
-    "cool color palette",
-    "pastel palette",
-    "vibrant palette",
-    "muted colors",
-    "rich colors",
+    "warm color palette","cool color palette","pastel palette",
+    "vibrant palette","muted colors","rich colors",
 ]
 
 def generate_prompt():
@@ -388,8 +280,8 @@ def generate_prompt():
     main_clothing = random.choice(CLOTHING_RISQUE)
     parts.append(main_clothing)
     
-    # Add clothing details (30% chance)
-    if random.random() < 0.3:
+    # Add clothing details (60% chance)
+    if random.random() < 0.6:
         parts.append(random.choice(CLOTHING_DETAILS))
     
     # 8. Body descriptors
@@ -409,12 +301,12 @@ def generate_prompt():
     parts.append(random.choice(LIGHTING))
     
     # 12. Atmosphere
-    if random.random() < 0.5:  # 50% chance
+    if random.random() < 0.75:  # 75% chance
         parts.append(random.choice(ATMOSPHERE))
     
     # 13. Art style modifiers
     parts.append(random.choice(ART_STYLES))
-    if random.random() < 0.4:  # 40% chance
+    if random.random() < 0.6:  # 60% chance
         parts.append(random.choice(COLOR_PALETTES))
     
     # Join with commas
@@ -444,7 +336,7 @@ def save_prompts(prompts_text):
     os.makedirs(output_dir, exist_ok=True)
     
     timestamp = datetime.now().strftime("%Y%m%d_%H%M")
-    filename = f"F2K_illustrationprompts_{timestamp}.txt"
+    filename = f"F2K_anime_prompts_{timestamp}.txt"
     filepath = os.path.join(output_dir, filename)
     
     with open(filepath, 'w', encoding='utf-8') as f:
@@ -454,14 +346,7 @@ def save_prompts(prompts_text):
 
 def create_interface():
     """Create Gradio interface."""
-    with gr.Blocks(title="F2K Illustration Prompt Generator") as demo:
-        gr.Markdown("""
-        ### Flux2Klein Illustration Prompt Generator
-        
-        Generates prompts for illustrations featuring solo girls with risque aesthetic.
-        
-        Focus: High-quality art, detailed character designs, sensual poses and outfits.
-        """)
+    with gr.Blocks(title="F2K illustrationPrompt Generator") as demo:
         
         with gr.Row():
             num_prompts = gr.Slider(
@@ -496,8 +381,6 @@ def create_interface():
             outputs=[save_status]
         )
         
-        
-    
     return demo
 
 if __name__ == "__main__":

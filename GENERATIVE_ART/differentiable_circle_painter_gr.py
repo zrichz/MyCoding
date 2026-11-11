@@ -24,7 +24,7 @@ import torch.nn.functional as F
 from PIL import Image
 
 # Default largest permitted circle diameter, as a fraction of the smaller image dimension
-DEFAULT_MAX_DIAMETER_FRACTION = 1.0 / 3.0
+DEFAULT_MAX_DIAMETER_FRACTION = 1.0 / 4.0
 
 # Fixed opacity applied to every circle
 FIXED_ALPHA = 1.0

@@ -31,6 +31,7 @@ import gradio as gr
 import numpy as np
 from PIL import Image, ImageDraw
 from sklearn.cluster import KMeans
+from sklearn.metrics import pairwise_distances_argmin
 
 
 def zoom(image_array, factor=2):
@@ -137,12 +138,20 @@ def draw_representative_tiles(original_rgb, representative_blocks, bw, block_siz
     return debug_im
 
 
-def compress_image(input_image, block_size, num_codes, luma_weight, show_debug_tiles, progress=gr.Progress()):
+def compress_image(
+    input_image,
+    block_size,
+    num_codes,
+    luma_weight,
+    show_debug_tiles,
+    target_image=None,
+    progress=gr.Progress(),
+):
     """
-    Run the full vector quantization pipeline on an uploaded image and return:
+    Build a tileset from the source image and use it to reconstruct an image:
     - the decoded (lossy, reconstructed) image
     - a preview of the codebook ("tileset")
-    - a text summary including the compression ratio
+    - a text summary including image dimensions and tile counts
     """
     if input_image is None:
         return None, None, "Please load an image first.", gr.update(value=None, visible=False)
@@ -150,6 +159,8 @@ def compress_image(input_image, block_size, num_codes, luma_weight, show_debug_t
     block_size = int(block_size)
     num_codes = int(num_codes)
     luma_weight = float(luma_weight)
+
+    render_image = target_image if target_image is not None else input_image
 
     # Convert to YCbCr so brightness (Y) and color (Cb/Cr) can be weighted separately.
     # Human vision is far more sensitive to luma detail than chroma detail, which is
@@ -160,6 +171,15 @@ def compress_image(input_image, block_size, num_codes, luma_weight, show_debug_t
     if h < block_size or w < block_size:
         message = (
             f"Image is smaller than the block size ({block_size}x{block_size}). "
+            "Choose a smaller block size or a larger image."
+        )
+        return None, None, message, gr.update(value=None, visible=False)
+
+    render_im = np.asarray(render_image.convert("YCbCr")).astype(np.float32)
+    render_h, render_w, _ = render_im.shape
+    if render_h < block_size or render_w < block_size:
+        message = (
+            f"Image to approximate is smaller than the block size ({block_size}x{block_size}). "
             "Choose a smaller block size or a larger image."
         )
         return None, None, message, gr.update(value=None, visible=False)
@@ -200,12 +220,26 @@ def compress_image(input_image, block_size, num_codes, luma_weight, show_debug_t
     codebook = X[representative_blocks]
 
     progress(0.7, desc="Decoding compressed image")
-    # 'decoded' has the same shape as X but is degraded due to lossy compression:
-    # each block has been replaced by its assigned codebook tile.
-    decoded = codebook[codes]
+    # Each rendered block is replaced by its assigned codebook tile.
+    if target_image is None:
+        render_bh, render_bw = bh, bw
+        decoded = codebook[codes]
+        cropped_render_im = cropped_im
+    else:
+        render_X, render_bh, render_bw, cropped_render_im = image_to_blocks(
+            render_im, block_size
+        )
+        render_X_weighted = render_X.copy()
+        render_X_weighted[:, 0::3] *= luma_weight
+        codebook_weighted = codebook.copy()
+        codebook_weighted[:, 0::3] *= luma_weight
+        render_codes = pairwise_distances_argmin(
+            render_X_weighted, codebook_weighted, metric="euclidean"
+        )
+        decoded = codebook[render_codes]
 
     # Convert the big list of codes back to pixels, then out of YCbCr into RGB.
-    result = vectors_to_pixels(decoded, bh, bw, block_size)
+    result = vectors_to_pixels(decoded, render_bh, render_bw, block_size)
     result_im = ycbcr_to_rgb_array(result)
 
     progress(0.9, desc="Building previews")
@@ -220,8 +254,12 @@ def compress_image(input_image, block_size, num_codes, luma_weight, show_debug_t
     # 'codes' array (the tilemap itself also needs to be stored/transmitted).
     
     summary = (
-        f"Orig image cropped to: {cropped_im.shape[1]} x {cropped_im.shape[0]} pixels\n"
-        f"Image size in blocks: {bw} x {bh} ({X.shape[0]} blocks total)\n"
+        f"Tileset source cropped to: {cropped_im.shape[1]} x {cropped_im.shape[0]} pixels\n"
+        f"Image approximated: {'second image' if target_image is not None else 'original image'}\n"
+        f"Image approximated cropped to: "
+        f"{cropped_render_im.shape[1]} x {cropped_render_im.shape[0]} pixels\n"
+        f"Image size in blocks: {render_bw} x {render_bh} "
+        f"({render_bw * render_bh} blocks total)\n"
         f"Block size: {block_size} x {block_size} pixels\n"
         f"no of unique tiles: {num_codes}\n"
     )
@@ -239,15 +277,18 @@ with gr.Blocks(title="Tileset img Compressor", theme=gr.themes.Soft()) as demo:
         """
         ### Vector Quantization Tileset Compressor
 
-        lossy image compression:
-        turn a pic into a tileset, cluster these into a smaller tileset "codebook" using K-means
-        replace each block with its closest codebook entry. fewer codebook entries = smaller/blockier.
+        Build a tileset from the source image, then optionally use it to approximate a second image.
+        Blocks are replaced with their closest codebook entry. Fewer codebook entries produce a
+        smaller, blockier result.
         """
     )
 
     with gr.Row():
         with gr.Column():
-            input_image = gr.Image(label="Input", type="pil", height=800)
+            input_image = gr.Image(label="Tileset source image", type="pil", height=500)
+            target_image = gr.Image(
+                label="Image to approximate (optional)", type="pil", height=500
+            )
 
             block_size = gr.Slider(
                 minimum=2, maximum=64, value=16, step=2,
@@ -268,12 +309,16 @@ with gr.Blocks(title="Tileset img Compressor", theme=gr.themes.Soft()) as demo:
             compress_btn = gr.Button("Compress Image", variant="primary")
 
         with gr.Column():
-            output_image = gr.Image(label="Decoded", type="pil", height=800)
+            output_image = gr.Image(label="Decoded", type="pil", height=500)
             summary_text = gr.Textbox(label="Summary", lines=6, interactive=False)
 
     with gr.Row():
-        codebook_image = gr.Image(label="Tileset, ordered by brightness")
-        debug_image = gr.Image(label="Representative tiles (debug)", visible=False)
+        codebook_image = gr.Image(
+            label="Tileset, ordered by brightness", height=500
+        )
+        debug_image = gr.Image(
+            label="Representative tiles (debug)", visible=False, height=500
+        )
 
     show_debug_tiles.change(
         fn=lambda visible: gr.update(visible=visible),
@@ -283,7 +328,14 @@ with gr.Blocks(title="Tileset img Compressor", theme=gr.themes.Soft()) as demo:
 
     compress_btn.click(
         fn=compress_image,
-        inputs=[input_image, block_size, num_codes, luma_weight, show_debug_tiles],
+        inputs=[
+            input_image,
+            block_size,
+            num_codes,
+            luma_weight,
+            show_debug_tiles,
+            target_image,
+        ],
         outputs=[output_image, codebook_image, summary_text, debug_image],
     )
 

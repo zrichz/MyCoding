@@ -1,3 +1,4 @@
+# Creates "Instagram-Style" prompts using wildcard recipes
 import json
 import os
 import random
