@@ -13,18 +13,21 @@ import requests
 SCRIPT_DIR = Path(__file__).resolve().parent
 URL = "http://localhost:11434/api/generate"
 MODEL = "Weird24_Q4_verB"
-SYSTEM_PROMPT = "You are a creative assistant that writes vivid, detailed image generation prompts."
-PROMPT = (
-    "Provide a single, highly descriptive prompt for an AI-image generator, "
-    "where a young female subject is depicted in a detailed and immersive scene. "
-    "the final image will be a detailed illustration, not a photograph. "
-    "Do NOT use the word \"anime\" in your prompt."
-    "Use words and descriptions that will ensure the generation will be of an illustration, for example using words such as \"rendered\" and \"palette\""
-    "Keep the prompt to a concise yet vivid paragraph of around 200 words. "
-    "Only include the final generated prompt in your response."
-)
 PROMPTS = {
-    "1": ("Illustration", SYSTEM_PROMPT, PROMPT),
+    "1": (
+        "Illustration",
+        "You are a creative assistant that writes vivid, detailed image generation prompts.",
+        (
+            "Provide a single, highly descriptive prompt for an AI-image generator, "
+            "where a young female subject is depicted in a detailed and immersive scene. "
+            "The final image will be a detailed illustration, not a photograph. "
+            "Do NOT use the word \"anime\" in your prompt. "
+            "Use words and descriptions that will ensure the generation will be of an illustration, "
+            "for example using words such as \"rendered\" and \"palette\". "
+            "Keep the prompt to a concise yet vivid paragraph of around 200 words. "
+            "Only include the final generated prompt in your response."
+        ),
+    ),
     "2": (
         "Photo",
         "You are a creative assistant that writes vivid, detailed image generation prompts.",
@@ -63,7 +66,13 @@ PROMPTS = {
     ),
 }
 SEEDS = [1,2,3]
-OUTPUT_FILE = "ollama_parameter_test_results_duo4.txt"
+OUTPUT_FILE_PREFIX = "ollama_parameter_test_results"
+OUTPUT_SUFFIXES = {
+    "1": "illust",
+    "2": "photo",
+    "3": "solo",
+    "4": "duo",
+}
 NUM_PREDICT = 500
 TIMEOUT_SECONDS = 180
 FAILED_TEXT = "(timed out/errored)"
@@ -114,7 +123,7 @@ def choose_prompt():
     while True:
         choice = input("Choose option 1-4: ").strip()
         if choice in PROMPTS:
-            return PROMPTS[choice]
+            return choice, *PROMPTS[choice]
         print("Invalid selection. Please choose 1, 2, 3, or 4.")
 
 
@@ -138,11 +147,11 @@ def generate_response(seed, params, full_prompt):
 
 
 def main():
-    role, system_prompt, prompt = choose_prompt()
+    choice, role, system_prompt, prompt = choose_prompt()
     full_prompt = f"{system_prompt}\n{prompt}"
     print(f"Selected prompt role: {role}")
 
-    output_path = SCRIPT_DIR / OUTPUT_FILE
+    output_path = SCRIPT_DIR / f"{OUTPUT_FILE_PREFIX}_{OUTPUT_SUFFIXES[choice]}.txt"
     with output_path.open("w", encoding="utf-8") as output_file:
         for config in PRESETS.values():
             print(f"Generating {len(SEEDS)} responses for {config['label']}...")
@@ -169,7 +178,7 @@ def main():
                 if not failed:
                     print(f"  -> Completed [{idx}/{len(SEEDS)}] (Seed: {seed}): {result[:20]}...")
 
-    print(f"\nDone. Saved '{OUTPUT_FILE}'.")
+    print(f"\nDone. Saved '{output_path.name}'.")
 
 
 if __name__ == "__main__":
