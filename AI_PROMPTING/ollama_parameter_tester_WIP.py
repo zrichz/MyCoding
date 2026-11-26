@@ -1,9 +1,9 @@
 """
 Ollama Parameter Tester
 
-This script sends the same image-prompt request to a local Ollama model using
+This script sends the same request to each local Ollama model in sequence using
 multiple parameter presets and seed values, then saves all responses to a
-single text file beside the script.
+single text file beside the script. Replace the placeholder model name before use.
 """
 
 from pathlib import Path
@@ -12,7 +12,7 @@ import requests
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 URL = "http://localhost:11434/api/generate"
-MODEL = "Weird24_Q4_verB"
+MODELS = ["Weird24_Q4_verB", "BC24_Q4_verB"]
 PROMPTS = {
     "1": (
         "Illustration",
@@ -98,7 +98,7 @@ PRESETS = {
             "top_p": 1.0,
             "top_k": 0,
             "repeat_penalty": 1.2,
-            "repeat_last_n": 256,
+            "repeat_last_n": 128,
         },
     },
     "higher_temperature": {
@@ -109,7 +109,7 @@ PRESETS = {
             "top_p": 1.0,
             "top_k": 0,
             "repeat_penalty": 1.3,
-            "repeat_last_n": 256,
+            "repeat_last_n": 128,
         },
     },
 }
@@ -127,12 +127,12 @@ def choose_prompt():
         print("Invalid selection. Please choose 1, 2, 3, or 4.")
 
 
-def generate_response(seed, params, full_prompt):
+def generate_response(model, seed, params, full_prompt):
     options = {**params, "seed": seed, "num_predict": NUM_PREDICT}
     response = requests.post(
         URL,
         json={
-            "model": MODEL,
+            "model": model,
             "prompt": full_prompt,
             "stream": False,
             "options": options,
@@ -153,30 +153,33 @@ def main():
 
     output_path = SCRIPT_DIR / f"{OUTPUT_FILE_PREFIX}_{OUTPUT_SUFFIXES[choice]}.txt"
     with output_path.open("w", encoding="utf-8") as output_file:
-        for config in PRESETS.values():
-            print(f"Generating {len(SEEDS)} responses for {config['label']}...")
-            output_file.write(f"=== {config['label'].upper()} ===\n")
-            output_file.write(f"Role: {role}\n")
-            output_file.write(f"Model: {MODEL} | Prompt: {full_prompt}\n")
-            output_file.write(f"Parameters: {config['params']}\n")
-            output_file.write(f"num_predict: {NUM_PREDICT} | Timeout: {TIMEOUT_SECONDS}s\n")
-            output_file.write("=" * 60 + "\n\n")
+        for model in MODELS:
+            print(f"Testing model: {model}")
+            output_file.write(f"=== MODEL: {model} ===\n\n")
+            for config in PRESETS.values():
+                print(f"Generating {len(SEEDS)} responses for {config['label']}...")
+                output_file.write(f"=== {config['label'].upper()} ===\n")
+                output_file.write(f"Role: {role}\n")
+                output_file.write(f"Model: {model} | Prompt: {full_prompt}\n")
+                output_file.write(f"Parameters: {config['params']}\n")
+                output_file.write(f"num_predict: {NUM_PREDICT} | Timeout: {TIMEOUT_SECONDS}s\n")
+                output_file.write("=" * 60 + "\n\n")
 
-            for idx, seed in enumerate(SEEDS, start=1):
-                failed = False
-                try:
-                    result = generate_response(seed, config["params"], full_prompt)
-                except (requests.RequestException, requests.exceptions.JSONDecodeError, ValueError) as error:
-                    print(f"  -> Failed [{idx}/{len(SEEDS)}] (Seed: {seed}): {error}")
-                    result = FAILED_TEXT
-                    failed = True
+                for idx, seed in enumerate(SEEDS, start=1):
+                    failed = False
+                    try:
+                        result = generate_response(model, seed, config["params"], full_prompt)
+                    except (requests.RequestException, requests.exceptions.JSONDecodeError, ValueError) as error:
+                        print(f"  -> Failed [{idx}/{len(SEEDS)}] (Seed: {seed}): {error}")
+                        result = FAILED_TEXT
+                        failed = True
 
-                output_file.write(f"[{idx}] (Seed: {seed})\n")
-                output_file.write(f"{result}\n\n")
-                output_file.write("-" * 60 + "\n\n")
+                    output_file.write(f"[{idx}] (Seed: {seed})\n")
+                    output_file.write(f"{result}\n\n")
+                    output_file.write("-" * 60 + "\n\n")
 
-                if not failed:
-                    print(f"  -> Completed [{idx}/{len(SEEDS)}] (Seed: {seed}): {result[:20]}...")
+                    if not failed:
+                        print(f"  -> Completed [{idx}/{len(SEEDS)}] (Seed: {seed}): {result[:20]}...")
 
     print(f"\nDone. Saved '{output_path.name}'.")
 
