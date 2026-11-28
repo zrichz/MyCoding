@@ -1,0 +1,221 @@
+1. Battle Kik
+2. Medium Evil Kik
+3. Axe Kik
+4. Medikik
+5. Royal Kik
+6. Stomp A
+7. Stomp B
+8. Stomp C
+9. Stomp D
+10. Fair Snare
+11. Market Snare
+12. Tambosnare
+13. Jester Snare
+14. Tight Snare
+15. Edge A
+16. Edge B
+17. Edge C
+18. Thud
+19. Big Clap
+20. Tambo A
+21. Tambo B
+22. Tambo C
+23. Tambo D
+24. Tambo E
+25. Tambo Long
+26. Tambo Tight A
+27. Tambo Hat
+28. Tambo Short
+29. Tambo Cap
+30. Clapper A
+31. Clapper B
+32. Coconut A
+33. Coconut B
+34. Coconut C
+35. Coconut D
+36. Dropper
+37. Scrap
+38. Junk
+39. Debris A
+40. Debris B
+41. Rubble
+42. Metal Clank
+43. Chain Hit
+44. Scrap Brush
+45. Roller
+46. Frametom A
+47. Frametom B
+48. Frametom C
+49. Frametom D
+50. War Tom A
+51. War Tom B
+52. War Tom C
+53. Framedrum A
+54. Framedrum B
+55. Framedrum C
+56. Deep Tom A
+57. Deep Tom B
+58. Deep Tom C
+59. Plaguedrum A
+60. Plaguedrum B
+61. Plaguedrum C
+62. Plaguedrum D
+63. Plaguedrum E
+64. Plaguedrum F
+65. Plaguedrum Edg C
+66. Plaguedrum Edge
+67. Plaguedrum Edg B
+68. Plaguedrum Soft
+69. Plaguedrum Sof B
+70. Pipedrone
+71. Fanfare A
+72. Fanfare B
+73. Fanfare C
+74. Fanfare D
+75. Fanfare E
+76. Hurdy A
+77. Hurdy B
+78. Hurdy C
+79. Hurdy D
+80. Floot
+81. Jaw A
+82. Jaw B
+83. Gittern A
+84. Gittern B
+85. Gittern C
+86. Gittern D
+87. Citole A
+88. Citole B
+89. Hurdys
+90. Shawn Mel
+91. Framedrummer
+92. Jangle
+93. Hurdydrone
+94. Gregor A
+95. Gregor B
+96. Citole Rhythm A
+97. Citole Rhythm B
+98. Citole Rhythm C
+99. Citole Rhythm D
+100. Citole Rhythm E
+101. Flute A Wav
+102. Flute B
+103. Flute C
+104. Flute D
+105. Flute E
+106. Flute F
+107. Bowharp A
+108. Bowharp B
+109. Gurdy A
+110. Gurdy B
+111. Gurdy C
+112. Shawnphrase A
+113. Shawnphrase B
+114. Shawnphrase C
+115. Flute
+116. Gittern
+117. Hurdy Gurdy
+118. Trumpet
+119. Bagpipe
+120. Bowharp
+121. Gregorian Vox
+122. Mouth Harp
+123. Shawn
+124. Citole
+125. Bagpipebass
+126. Gitternbass
+127. Tombass
+128. Stabb A
+129. Stabb B
+130. Stab A
+131. Stab B
+132. Stab C
+133. Stab D
+134. Stab E
+135. Gurder
+136. Honk
+137. Honk Long
+138. Horn A
+139. Horn B
+140. Horn C
+141. Bow
+142. Brass Swell
+143. Drill
+144. Citchrd A
+145. Citchrd B
+146. Citchrd C
+147. Citchrd D
+148. Gitrnchrd A
+149. Gitrnchrd B
+150. Gitrnchrd C
+151. Drone A
+152. Drone B
+153. Hurdy Cmaj
+154. Hurdy Cmin
+155. Hellbell
+156. Anvil Hit
+157. Armorthud
+158. Beheading
+158a. headroll
+159. Clank A
+160. Clank B
+161. Clink
+162. Knife Throw
+163. Arrow Hit
+164. Broadsword A I
+165. Broadsword B I
+166. Sword A
+167. Sword B
+168. Sword C
+169. Sword D
+170. Sword Clink
+171. Sword Clang
+172. Sword Scrape
+173. Boil Oil
+174. Chain
+175. CHain Thudwav
+176. Drawbridge
+177. Kings Crowd
+178. Machinery A
+179. Machinery B
+180. Rowdy Tavern
+181. Scrapper
+182. Snapper
+183. Rolling Rock
+184. Rolling Rock B
+185. Wind B
+186. Woosh A
+187. Woosh B
+188. Breath
+189. Fight Grunt A
+190. Fight Grunt B
+191. Ffight[1] Grunt C
+192. Grunt A
+193. Grunt B
+194. Grunt C
+195. Grunt D
+196. Grunt E
+197. Grunt F
+198. Final Breath
+199. Peasant Hey
+200. Peasant Whey
+201. Peasant Hoo A
+202. Peasant Hoo B
+203. Tavern Laugh A
+204. Tavern Laugh B
+205. Tavern Laugh C
+206. Scream
+207. VVitch
+208. Witchlaughter
+209. Yell
+210. Bees
+211. Chickens
+212. Cow
+213. Donkey
+214. Firedragon
+215. Goat
+216. Horse A
+217. Horse B
+218. Birdy
+219. Piggy
+220. Rooster
